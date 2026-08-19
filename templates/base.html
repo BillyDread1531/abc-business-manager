@@ -16,6 +16,33 @@
         {% endblock %}
     </title>
 
+    <!-- ========================================================
+         ICONOS / INSTALACIÓN DE ABC
+    ========================================================= -->
+
+    <link
+        rel="icon"
+        type="image/png"
+        sizes="64x64"
+        href="{{ url_for('static', filename='icons/favicon-64.png') }}"
+    >
+
+    <link
+        rel="apple-touch-icon"
+        sizes="192x192"
+        href="{{ url_for('static', filename='icons/icon-192.png') }}"
+    >
+
+    <link
+        rel="manifest"
+        href="{{ url_for('static', filename='manifest.json') }}"
+    >
+
+    <meta
+        name="theme-color"
+        content="#051041"
+    >
+
     <link
         rel="stylesheet"
         href="{{ url_for(

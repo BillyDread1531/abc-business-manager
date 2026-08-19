@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}
+Editar variante - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Editar variante</h1>
+
+        <p>
+            {{ variante.producto }}
+        </p>
+
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    <form method="POST">
+
+        <label>
+            Nombre de la variante
+        </label>
+
+        <input
+            type="text"
+            name="nombre"
+            value="{{ variante.nombre or '' }}"
+            placeholder="Ej. Camisola talla M"
+        >
+
+
+        <label>
+            SKU
+        </label>
+
+        <input
+            type="text"
+            name="sku"
+            value="{{ variante.sku or '' }}"
+            placeholder="Ej. CAM-M-001"
+        >
+
+        <small>
+            Código interno para identificar esta variante.
+        </small>
+
+
+        <label>
+            Talla
+        </label>
+
+        <input
+            type="text"
+            name="talla"
+            value="{{ variante.talla or '' }}"
+            placeholder="Ej. M"
+        >
+
+
+        <label>
+            Color
+        </label>
+
+        <input
+            type="text"
+            name="color"
+            value="{{ variante.color or '' }}"
+            placeholder="Ej. Negro"
+        >
+
+
+        <label>
+            Precio
+        </label>
+
+        <input
+            type="number"
+            name="precio"
+            value="{{ variante.precio or '' }}"
+            min="0"
+            step="0.01"
+            placeholder="Ej. 125.00"
+        >
+
+
+        <label>
+            Costo base
+        </label>
+
+        <input
+            type="number"
+            name="costo_base"
+            value="{{ variante.costo_base or '' }}"
+            min="0"
+            step="0.01"
+            placeholder="Ej. 65.00"
+        >
+
+
+        <div class="form-actions">
+
+            <a
+                href="{{ url_for(
+                    'variantes.listar',
+                    producto_id=variante.producto_id
+                ) }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                Guardar cambios
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

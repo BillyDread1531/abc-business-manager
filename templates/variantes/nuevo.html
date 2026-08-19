@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+
+{% block title %}
+Nueva variante - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Nueva variante</h1>
+
+        <p>
+            Agrega una nueva presentación de
+            <strong>{{ producto.nombre }}</strong>.
+        </p>
+
+    </div>
+
+    <a
+        href="{{ url_for(
+            'variantes.listar',
+            producto_id=producto.id
+        ) }}"
+        class="btn-secondary"
+    >
+        ← Volver a variantes
+    </a>
+
+</div>
+
+
+<div class="card variante-nueva-card">
+
+    <form
+        method="POST"
+        class="variante-nueva-form"
+    >
+
+        <!-- ============================================================
+             INFORMACIÓN DE LA VARIANTE
+        ============================================================ -->
+
+        <div class="variante-nueva-header">
+
+            <div>
+
+                <h2>
+                    🧩 Información de la variante
+                </h2>
+
+                <p>
+                    Define sus características, código y precios.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="variante-nueva-grid">
+
+
+            <!-- NOMBRE -->
+
+            <div class="form-group">
+
+                <label for="nombre">
+                    Nombre de la variante
+                    <span class="variante-opcional">
+                        (opcional)
+                    </span>
+                </label>
+
+                <input
+                    type="text"
+                    id="nombre"
+                    name="nombre"
+                    placeholder="Ej. Camisola talla M"
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <!-- SKU -->
+
+            <div class="form-group">
+
+                <label for="sku">
+                    SKU
+                    <span class="variante-opcional">
+                        (opcional)
+                    </span>
+                </label>
+
+                <input
+                    type="text"
+                    id="sku"
+                    name="sku"
+                    placeholder="Ej. CAM-M-001"
+                    autocomplete="off"
+                >
+
+                <small class="form-help">
+                    Código interno para identificar esta variante.
+                </small>
+
+            </div>
+
+
+            <!-- TALLA -->
+
+            <div class="form-group">
+
+                <label for="talla">
+                    Talla
+                    <span class="variante-opcional">
+                        (opcional)
+                    </span>
+                </label>
+
+                <input
+                    type="text"
+                    id="talla"
+                    name="talla"
+                    placeholder="Ej. M"
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <!-- COLOR -->
+
+            <div class="form-group">
+
+                <label for="color">
+                    Color
+                    <span class="variante-opcional">
+                        (opcional)
+                    </span>
+                </label>
+
+                <input
+                    type="text"
+                    id="color"
+                    name="color"
+                    placeholder="Ej. Negro"
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <!-- PRECIO -->
+
+            <div class="form-group">
+
+                <label for="precio">
+                    Precio
+                    <span class="variante-opcional">
+                        (opcional)
+                    </span>
+                </label>
+
+                <div class="variante-money-input">
+
+                    <span>
+                        Q
+                    </span>
+
+                    <input
+                        type="number"
+                        id="precio"
+                        name="precio"
+                        min="0"
+                        step="0.01"
+                        placeholder="125.00"
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- COSTO BASE -->
+
+            <div class="form-group">
+
+                <label for="costo_base">
+                    Costo base
+                    <span class="variante-opcional">
+                        (opcional)
+                    </span>
+                </label>
+
+                <div class="variante-money-input">
+
+                    <span>
+                        Q
+                    </span>
+
+                    <input
+                        type="number"
+                        id="costo_base"
+                        name="costo_base"
+                        min="0"
+                        step="0.01"
+                        placeholder="65.00"
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             ACCIONES
+        ============================================================ -->
+
+        <div class="form-actions variante-nueva-actions">
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Guardar variante
+            </button>
+
+            <a
+                href="{{ url_for(
+                    'variantes.listar',
+                    producto_id=producto.id
+                ) }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

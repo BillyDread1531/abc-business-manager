@@ -1,0 +1,387 @@
+{% extends "base.html" %}
+
+{% block title %}
+Producciones - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>
+            Producciones
+        </h1>
+
+        <p>
+            Administra la fabricación de tus productos.
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     BUSCADOR Y FILTROS
+============================================================ -->
+
+<div class="card producciones-toolbar-card">
+
+    <form
+        method="GET"
+        action="{{ url_for('producciones.lista') }}"
+        class="producciones-toolbar"
+    >
+
+        <div class="producciones-search">
+
+            <span class="producciones-search-icon">
+                🔎
+            </span>
+
+            <input
+                type="search"
+                name="q"
+                value="{{ busqueda }}"
+                placeholder="Buscar por producción, pedido, cliente o producto..."
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <div class="producciones-filtros">
+
+            <button
+                type="submit"
+                name="filtro"
+                value="todos"
+                class="produccion-filter-btn {% if filtro == 'todos' %}active{% endif %}"
+            >
+                Todas
+                <span>{{ contadores.todos or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="pendiente"
+                class="produccion-filter-btn {% if filtro == 'pendiente' %}active{% endif %}"
+            >
+                ⏳ Pendientes
+                <span>{{ contadores.pendientes or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="en_produccion"
+                class="produccion-filter-btn {% if filtro == 'en_produccion' %}active{% endif %}"
+            >
+                🛠️ En producción
+                <span>{{ contadores.en_produccion or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="terminado"
+                class="produccion-filter-btn {% if filtro == 'terminado' %}active{% endif %}"
+            >
+                ✅ Terminadas
+                <span>{{ contadores.terminadas or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="interna"
+                class="produccion-filter-btn {% if filtro == 'interna' %}active{% endif %}"
+            >
+                Internas
+                <span>{{ contadores.internas or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="externa"
+                class="produccion-filter-btn {% if filtro == 'externa' %}active{% endif %}"
+            >
+                Externas
+                <span>{{ contadores.externas or 0 }}</span>
+            </button>
+
+        </div>
+
+
+        {% if busqueda or filtro != "todos" %}
+
+            <a
+                href="{{ url_for('producciones.lista') }}"
+                class="btn-secondary producciones-limpiar"
+            >
+                Limpiar
+            </a>
+
+        {% endif %}
+
+    </form>
+
+</div>
+
+
+<!-- ============================================================
+     LISTADO
+============================================================ -->
+
+<div class="card">
+
+    {% if producciones %}
+
+        <div class="table-container">
+
+            <table class="producciones-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Producción</th>
+                        <th>Pedido</th>
+                        <th>Cliente</th>
+                        <th>Producto</th>
+                        <th class="producciones-cantidad">Cantidad</th>
+                        <th>Tipo</th>
+                        <th>Estado</th>
+                        <th class="producciones-money">Costo estimado</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for produccion in producciones %}
+
+                        <tr>
+
+                            <!-- PRODUCCIÓN -->
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'producciones.detalle',
+                                        produccion_id=produccion.id
+                                    ) }}"
+                                    class="produccion-numero"
+                                >
+                                    #{{ produccion.id }}
+                                </a>
+
+                            </td>
+
+
+                            <!-- PEDIDO -->
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'pedidos.detalle',
+                                        pedido_id=produccion.pedido_id
+                                    ) }}"
+                                    class="pedido-numero"
+                                >
+                                    {{ produccion.pedido }}
+                                    <span class="produccion-link-icon">
+                                        ↗
+                                    </span>
+                                </a>
+
+                            </td>
+
+
+                            <!-- CLIENTE -->
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'clientes.detalle',
+                                        cliente_id=produccion.cliente_id
+                                    ) }}"
+                                    class="produccion-cliente"
+                                >
+                                    {{ produccion.cliente }}
+                                </a>
+
+                            </td>
+
+
+                            <!-- PRODUCTO -->
+
+                            <td>
+
+                                <strong class="produccion-producto">
+                                    {{ produccion.producto }}
+                                </strong>
+
+                            </td>
+
+
+                            <!-- CANTIDAD -->
+
+                            <td class="producciones-cantidad">
+
+                                {{ produccion.cantidad|numero_produccion }}
+
+                            </td>
+
+
+                            <!-- TIPO -->
+
+                            <td>
+
+                                {% if produccion.tipo == "INTERNA" %}
+
+                                    <span class="produccion-tipo">
+                                        Interna
+                                    </span>
+
+                                {% elif produccion.tipo == "EXTERNA" %}
+
+                                    <span class="produccion-tipo">
+                                        Externa
+                                    </span>
+
+                                {% else %}
+
+                                    {{ produccion.tipo }}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- ESTADO -->
+
+                            <td>
+
+                                {% if produccion.estado == "PENDIENTE" %}
+
+                                    <span class="produccion-status produccion-status-pending">
+                                        ⏳ Pendiente
+                                    </span>
+
+                                {% elif produccion.estado == "EN_PRODUCCION" %}
+
+                                    <span class="produccion-status produccion-status-active">
+                                        🛠️ En producción
+                                    </span>
+
+                                {% elif produccion.estado == "TERMINADO" %}
+
+                                    <span class="produccion-status produccion-status-done">
+                                        ✅ Terminado
+                                    </span>
+
+                                {% elif produccion.estado == "CANCELADO" %}
+
+                                    <span class="produccion-status produccion-status-cancelled">
+                                        ❌ Cancelado
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="produccion-status">
+                                        {{ produccion.estado }}
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- COSTO -->
+
+                            <td class="producciones-money">
+
+                                {% if produccion.costo_estimado and produccion.costo_estimado > 0 %}
+
+                                    <strong class="produccion-costo">
+                                        Q {{ "%.2f"|format(produccion.costo_estimado) }}
+                                    </strong>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Q 0.00
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state">
+
+            {% if busqueda or filtro != "todos" %}
+
+                <div class="empty-state-icon">
+                    🔎
+                </div>
+
+                <h3>
+                    No encontramos producciones
+                </h3>
+
+                <p>
+                    Prueba con otra búsqueda o cambia el filtro seleccionado.
+                </p>
+
+                <a
+                    href="{{ url_for('producciones.lista') }}"
+                    class="btn-secondary"
+                >
+                    Limpiar búsqueda
+                </a>
+
+            {% else %}
+
+                <div class="empty-state-icon">
+                    👨‍🏭
+                </div>
+
+                <h3>
+                    No hay producciones registradas
+                </h3>
+
+                <p>
+                    Las producciones aparecerán aquí cuando
+                    comiences a fabricar productos de tus pedidos.
+                </p>
+
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

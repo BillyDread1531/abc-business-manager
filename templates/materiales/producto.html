@@ -1,0 +1,692 @@
+{% extends "base.html" %}
+
+{% block title %}
+Materiales de {{ producto.nombre }} - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Materiales del producto</h1>
+        <p>
+            Define qué materiales utiliza
+            <strong>{{ producto.nombre }}</strong>.
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('productos.listar') }}"
+        class="btn-secondary"
+    >
+        ← Volver a productos
+    </a>
+
+</div>
+
+
+<div class="materiales-resumen">
+
+    <div class="card material-resumen-card">
+
+        <span>Precio de referencia</span>
+
+        <strong>
+            Q {{ "%.2f"|format(producto.precio_base or 0) }}
+        </strong>
+
+    </div>
+
+
+    <div class="card material-resumen-card">
+
+        <span>Costo fijo estimado</span>
+
+        <strong>
+            Q {{ "%.2f"|format(costo_total or 0) }}
+        </strong>
+
+        <small>
+            Los materiales por familia/medidas se calculan al producir.
+        </small>
+
+    </div>
+
+
+    <div class="card material-resumen-card">
+
+        <span>Margen de referencia</span>
+
+        <strong>
+            Q {{ "%.2f"|format(margen or 0) }}
+        </strong>
+
+    </div>
+
+</div>
+
+
+<div class="card material-receta-card">
+
+    <div class="material-card-header">
+
+        <div>
+            <h2>🧱 Receta del producto</h2>
+            <p>
+                Puedes fijar un material exacto o dejar que Producción
+                elija uno de una familia.
+            </p>
+        </div>
+
+    </div>
+
+
+    {% if materiales %}
+
+        <div class="table-container">
+
+            <table class="table-materiales-receta">
+
+                <thead>
+                    <tr>
+                        <th>Material requerido</th>
+                        <th>Selección</th>
+                        <th>Cantidad base</th>
+                        <th>Costo ref.</th>
+                        <th>Notas</th>
+                        <th></th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for receta in materiales %}
+
+                        <tr>
+
+                            <td>
+
+                                {% if receta.modo_seleccion == "FAMILIA" %}
+
+                                    <strong>
+                                        🧩 {{ receta.familia }}
+                                    </strong>
+
+                                    <small class="material-receta-ayuda">
+                                        El material/color real se elige en Producción.
+                                    </small>
+
+                                {% else %}
+
+                                    <strong>
+                                        {{ receta.material }}
+                                    </strong>
+
+                                    {% if receta.color %}
+                                        <small class="material-receta-ayuda">
+                                            {{ receta.color }}
+                                        </small>
+                                    {% endif %}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if receta.modo_seleccion == "FAMILIA" %}
+
+                                    <span class="material-badge material-badge-familia">
+                                        Variable
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="material-badge material-badge-exacto">
+                                        Exacto
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if receta.modo_seleccion == "FAMILIA" %}
+
+                                    {{ receta.cantidad|numero_inventario }}
+                                    <small class="material-receta-ayuda">
+                                        Base para materiales normales.
+                                        En rollos por área se usan las medidas reales.
+                                    </small>
+
+                                {% else %}
+
+                                    {{ receta.cantidad|numero_inventario }}
+                                    {{ receta.abreviatura or "" }}
+
+                                    {% if receta.modo_control == "ROLLO_AREA" %}
+                                        <small class="material-receta-ayuda">
+                                            Producción usará ancho × alto reales.
+                                        </small>
+                                    {% endif %}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if receta.costo_total is not none
+                                      and receta.modo_control != "ROLLO_AREA" %}
+
+                                    <strong>
+                                        Q {{ "%.2f"|format(receta.costo_total) }}
+                                    </strong>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Al producir
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+                                {{ receta.notas or "—" }}
+                            </td>
+
+
+                            <td>
+
+                                <form
+                                    method="POST"
+                                    action="{{ url_for(
+                                        'materiales.eliminar_material_producto',
+                                        producto_id=producto.id,
+                                        receta_id=receta.id
+                                    ) }}"
+                                    onsubmit="return confirm(
+                                        '¿Eliminar este material de la receta?'
+                                    );"
+                                >
+
+                                    <button
+                                        type="submit"
+                                        class="btn-material-eliminar"
+                                        title="Eliminar"
+                                    >
+                                        🗑️
+                                    </button>
+
+                                </form>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="materiales-vacio">
+
+            <div class="materiales-vacio-icon">
+                🧱
+            </div>
+
+            <h3>
+                Este producto todavía no tiene materiales
+            </h3>
+
+            <p>
+                Agrega el primer material o familia abajo.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<div class="card material-receta-card">
+
+    <div class="material-card-header">
+
+        <div>
+            <h2>＋ Agregar material</h2>
+            <p>
+                Para colores intercambiables, usa una familia.
+            </p>
+        </div>
+
+    </div>
+
+
+    <form
+        method="POST"
+        action="{{ url_for(
+            'materiales.agregar_material_producto',
+            producto_id=producto.id
+        ) }}"
+        class="material-receta-form"
+    >
+
+        <div class="material-form-grid">
+
+            <div class="form-group">
+
+                <label for="modo_seleccion">
+                    Forma de selección *
+                </label>
+
+                <select
+                    name="modo_seleccion"
+                    id="modo_seleccion"
+                    required
+                >
+                    <option value="EXACTO">
+                        Material exacto
+                    </option>
+
+                    <option value="FAMILIA">
+                        Elegir familia en producción
+                    </option>
+                </select>
+
+            </div>
+
+
+            <div
+                class="form-group"
+                id="grupo-material-exacto"
+            >
+
+                <label for="material_id">
+                    Material *
+                </label>
+
+                <select
+                    name="material_id"
+                    id="material_id"
+                >
+
+                    <option value="">
+                        Selecciona un material
+                    </option>
+
+                    {% for material in materiales_disponibles %}
+
+                        <option
+                            value="{{ material.id }}"
+                            data-modo="{{ material.modo_control }}"
+                            data-unidad="{{ material.abreviatura_consumo }}"
+                        >
+                            {{ material.nombre }}
+
+                            {% if material.color %}
+                                - {{ material.color }}
+                            {% endif %}
+
+                            {% if material.familia %}
+                                · {{ material.familia }}
+                            {% endif %}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div
+                class="form-group"
+                id="grupo-familia"
+                style="display: none;"
+            >
+
+                <label for="familia_material_id">
+                    Familia *
+                </label>
+
+                <select
+                    name="familia_material_id"
+                    id="familia_material_id"
+                >
+
+                    <option value="">
+                        Selecciona una familia
+                    </option>
+
+                    {% for familia in familias %}
+
+                        <option
+                            value="{{ familia.id }}"
+                            {% if familia.materiales_activos <= 0 %}
+                                disabled
+                            {% endif %}
+                        >
+                            {{ familia.nombre }}
+                            ({{ familia.materiales_activos }} materiales)
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <small class="form-help">
+                    En Producción aparecerán únicamente los materiales
+                    activos de esta familia.
+                </small>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="cantidad">
+                    Cantidad base por unidad *
+                </label>
+
+                <input
+                    type="number"
+                    name="cantidad"
+                    id="cantidad"
+                    min="0.000001"
+                    step="0.000001"
+                    value="1"
+                    required
+                >
+
+                <small
+                    class="form-help"
+                    id="ayuda-cantidad-receta"
+                >
+                    Para materiales normales indica cuánto consume una unidad.
+                </small>
+
+            </div>
+
+
+            <div class="form-group material-full">
+
+                <label for="notas">
+                    Notas
+                </label>
+
+                <input
+                    type="text"
+                    name="notas"
+                    id="notas"
+                    placeholder="Ej. Elegir color solicitado por el cliente"
+                >
+
+            </div>
+
+
+            <div class="form-group material-full">
+
+                <label class="material-check">
+
+                    <input
+                        type="checkbox"
+                        name="es_estimado"
+                        checked
+                    >
+
+                    <span>
+                        Cantidad estimada
+                    </span>
+
+                </label>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-actions">
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                ＋ Agregar a la receta
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<style>
+
+.materiales-resumen {
+    display: grid;
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.material-resumen-card {
+    padding: 17px 18px;
+}
+
+.material-resumen-card > span,
+.material-resumen-card > small {
+    display: block;
+    color: var(--text-soft);
+    font-size: 10px;
+}
+
+.material-resumen-card > strong {
+    display: block;
+    margin: 5px 0;
+    color: var(--navy);
+    font-size: 20px;
+}
+
+.material-receta-card {
+    margin-bottom: 18px;
+    padding: 22px 24px;
+}
+
+.material-card-header {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.material-card-header h2 {
+    margin: 0;
+    color: var(--navy);
+}
+
+.material-card-header p {
+    margin: 5px 0 0;
+    color: var(--text-soft);
+    font-size: 12px;
+}
+
+.material-receta-ayuda {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-soft);
+    font-size: 9px;
+    line-height: 1.4;
+}
+
+.material-badge-familia {
+    background: #eef4ff;
+    color: #1746b8;
+}
+
+.material-badge-exacto {
+    background: #ecfdf5;
+    color: #047857;
+}
+
+.material-receta-form {
+    max-width: none;
+}
+
+.material-check {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+}
+
+.material-check input {
+    width: auto;
+}
+
+@media (max-width: 800px) {
+
+    .materiales-resumen {
+        grid-template-columns: 1fr;
+    }
+
+    .material-receta-card {
+        padding: 17px;
+    }
+
+}
+
+</style>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const modo =
+            document.getElementById(
+                "modo_seleccion"
+            );
+
+        const grupoExacto =
+            document.getElementById(
+                "grupo-material-exacto"
+            );
+
+        const grupoFamilia =
+            document.getElementById(
+                "grupo-familia"
+            );
+
+        const material =
+            document.getElementById(
+                "material_id"
+            );
+
+        const familia =
+            document.getElementById(
+                "familia_material_id"
+            );
+
+        const ayudaCantidad =
+            document.getElementById(
+                "ayuda-cantidad-receta"
+            );
+
+
+        function actualizarModo() {
+
+            const porFamilia =
+                modo.value === "FAMILIA";
+
+            grupoExacto.style.display =
+                porFamilia
+                    ? "none"
+                    : "";
+
+            grupoFamilia.style.display =
+                porFamilia
+                    ? ""
+                    : "none";
+
+            material.required =
+                !porFamilia;
+
+            familia.required =
+                porFamilia;
+
+            if (porFamilia) {
+
+                ayudaCantidad.textContent =
+                    "En materiales normales esta es la cantidad por unidad. "
+                    + "Si eliges un rollo por área en Producción, "
+                    + "se usarán las medidas reales del corte.";
+
+            } else {
+
+                const opcion =
+                    material.options[
+                        material.selectedIndex
+                    ];
+
+                if (
+                    opcion
+                    && opcion.value
+                    && opcion.dataset.modo
+                        === "ROLLO_AREA"
+                ) {
+
+                    ayudaCantidad.textContent =
+                        "Este material se controla por área. "
+                        + "En Producción se usarán las medidas reales "
+                        + "del corte; esta cantidad queda solo como referencia.";
+
+                } else {
+
+                    ayudaCantidad.textContent =
+                        "Cantidad que consume una unidad del producto.";
+
+                }
+
+            }
+
+        }
+
+
+        modo.addEventListener(
+            "change",
+            actualizarModo
+        );
+
+        material.addEventListener(
+            "change",
+            actualizarModo
+        );
+
+        actualizarModo();
+
+    }
+);
+
+</script>
+
+{% endblock %}

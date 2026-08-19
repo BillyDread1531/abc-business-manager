@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+
+{% block title %}
+Variantes - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Variantes</h1>
+
+        <p>
+            Administra las presentaciones y opciones de
+            <strong>{{ producto.nombre }}</strong>.
+        </p>
+
+    </div>
+
+    <a
+        href="{{ url_for(
+            'variantes.nuevo',
+            producto_id=producto.id
+        ) }}"
+        class="btn-primary"
+    >
+        + Nueva variante
+    </a>
+
+</div>
+
+
+<div class="card variantes-card">
+
+    {% if variantes %}
+
+        <div class="table-container">
+
+            <table class="variantes-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Nombre</th>
+                        <th>SKU</th>
+                        <th>Talla</th>
+                        <th>Color</th>
+                        <th>Precio</th>
+                        <th>Costo base</th>
+                        <th>Acciones</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for variante in variantes %}
+
+                        <tr>
+
+                            <td>
+
+                                <strong class="variante-nombre">
+                                    {{ variante.nombre or "-" }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                <span class="variante-sku">
+                                    {{ variante.sku or "-" }}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+                                {{ variante.talla or "-" }}
+                            </td>
+
+
+                            <td>
+                                {{ variante.color or "-" }}
+                            </td>
+
+
+                            <td>
+
+                                {% if variante.precio is not none %}
+
+                                    <strong>
+                                        Q {{ "%.2f"|format(variante.precio) }}
+                                    </strong>
+
+                                {% else %}
+
+                                    -
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if variante.costo_base is not none %}
+
+                                    <strong>
+                                        Q {{ "%.2f"|format(variante.costo_base) }}
+                                    </strong>
+
+                                {% else %}
+
+                                    -
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <div class="table-actions variantes-actions">
+
+                                    <a
+                                        href="{{ url_for(
+                                            'variantes.editar',
+                                            variante_id=variante.id
+                                        ) }}"
+                                        class="btn-action btn-action-edit"
+                                    >
+                                        ✏️ Editar
+                                    </a>
+
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'variantes.desactivar',
+                                            variante_id=variante.id
+                                        ) }}"
+                                        class="action-form"
+                                        onsubmit="return confirm(
+                                            '¿Seguro que deseas desactivar esta variante?'
+                                        );"
+                                    >
+
+                                        <button
+                                            type="submit"
+                                            class="btn-action btn-action-secondary"
+                                        >
+                                            ⏸️ Desactivar
+                                        </button>
+
+                                    </form>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="variantes-empty">
+
+            <div class="variantes-empty-icon">
+                🧩
+            </div>
+
+            <div>
+
+                <h3>
+                    Este producto todavía no tiene variantes
+                </h3>
+
+                <p>
+                    Crea variantes para diferenciar tamaños, colores,
+                    presentaciones u otras opciones del producto.
+                </p>
+
+                <a
+                    href="{{ url_for(
+                        'variantes.nuevo',
+                        producto_id=producto.id
+                    ) }}"
+                    class="btn-primary"
+                >
+                    + Crear primera variante
+                </a>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

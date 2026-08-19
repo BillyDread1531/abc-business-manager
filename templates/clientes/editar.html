@@ -1,0 +1,123 @@
+
+{% extends "base.html" %}
+
+{% block title %}
+Editar cliente - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>✏️ Editar cliente</h1>
+
+        <p>
+            Modifica la información de
+            <strong>{{ cliente.nombre }}</strong>
+        </p>
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    <h2>Información del cliente</h2>
+
+
+    <form
+        method="POST"
+        style="margin-top: 20px;"
+    >
+
+        <label for="nombre">
+            Nombre *
+        </label>
+
+        <input
+            type="text"
+            id="nombre"
+            name="nombre"
+            value="{{ cliente.nombre }}"
+            required
+        >
+
+
+        <label for="telefono">
+            Teléfono / WhatsApp
+        </label>
+
+        <input
+            type="text"
+            id="telefono"
+            name="telefono"
+            value="{{ cliente.telefono or '' }}"
+        >
+
+
+        <label for="email">
+            Correo electrónico
+        </label>
+
+        <input
+            type="email"
+            id="email"
+            name="email"
+            value="{{ cliente.email or '' }}"
+        >
+
+
+        <label for="direccion">
+            Dirección
+        </label>
+
+        <input
+            type="text"
+            id="direccion"
+            name="direccion"
+            value="{{ cliente.direccion or '' }}"
+        >
+
+
+        <label for="notas">
+            Notas
+        </label>
+
+        <textarea
+            id="notas"
+            name="notas"
+            rows="4"
+        >{{ cliente.notas or '' }}</textarea>
+
+
+        <div
+            class="form-actions"
+            style="margin-top: 20px;"
+        >
+
+            <a
+                href="{{ url_for(
+                    'clientes.detalle',
+                    cliente_id=cliente.id
+                ) }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Guardar cambios
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

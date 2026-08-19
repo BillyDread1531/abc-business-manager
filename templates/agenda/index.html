@@ -1,0 +1,1087 @@
+{% extends "base.html" %}
+
+{% block title %}
+Agenda - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+
+<!-- ============================================================
+     CABECERA
+============================================================ -->
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Agenda</h1>
+
+        <p>
+            Organiza las entregas y revisa los pedidos
+            próximos o atrasados.
+        </p>
+
+    </div>
+
+
+    <a
+        href="{{ url_for('pedidos.nuevo') }}"
+        class="btn-primary"
+    >
+        + Nuevo pedido
+    </a>
+
+</div>
+
+
+<!-- ============================================================
+     FILTROS
+============================================================ -->
+
+<div class="card agenda-toolbar-card">
+
+    <div class="agenda-toolbar">
+
+        <div class="agenda-filtros">
+
+            <a
+                href="{{ url_for(
+                    'agenda.index',
+                    filtro='hoy'
+                ) }}"
+                class="agenda-filter {% if filtro == 'hoy' %}active{% endif %}"
+            >
+                Hoy
+
+                <span>
+                    {{ contadores.hoy or 0 }}
+                </span>
+
+            </a>
+
+
+            <a
+                href="{{ url_for(
+                    'agenda.index',
+                    filtro='semana'
+                ) }}"
+                class="agenda-filter {% if filtro == 'semana' %}active{% endif %}"
+            >
+                Esta semana
+
+                <span>
+                    {{ contadores.semana or 0 }}
+                </span>
+
+            </a>
+
+
+            <a
+                href="{{ url_for(
+                    'agenda.index',
+                    filtro='mes'
+                ) }}"
+                class="agenda-filter {% if filtro == 'mes' %}active{% endif %}"
+            >
+                Este mes
+
+                <span>
+                    {{ contadores.mes or 0 }}
+                </span>
+
+            </a>
+
+
+            <a
+                href="{{ url_for(
+                    'agenda.index',
+                    filtro='vencidos'
+                ) }}"
+                class="
+                    agenda-filter
+                    agenda-filter-danger
+                    {% if filtro == 'vencidos' %}
+                        active
+                    {% endif %}
+                "
+            >
+                ⚠️ Vencidos
+
+                <span>
+                    {{ contadores.vencidos or 0 }}
+                </span>
+
+            </a>
+
+
+            <a
+                href="{{ url_for(
+                    'agenda.index',
+                    filtro='todos'
+                ) }}"
+                class="agenda-filter {% if filtro == 'todos' %}active{% endif %}"
+            >
+                Todos
+
+                <span>
+                    {{ contadores.todos or 0 }}
+                </span>
+
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     INFORMACIÓN DEL PERÍODO
+============================================================ -->
+
+<div class="agenda-resumen">
+
+    <div class="agenda-resumen-card">
+
+        <span>
+            📅
+        </span>
+
+        <div>
+
+            <strong>
+
+                {% if filtro == "hoy" %}
+
+                    Entregas de hoy
+
+                {% elif filtro == "semana" %}
+
+                    Esta semana
+
+                {% elif filtro == "mes" %}
+
+                    Este mes
+
+                {% elif filtro == "vencidos" %}
+
+                    Entregas vencidas
+
+                {% else %}
+
+                    Todas las entregas
+
+                {% endif %}
+
+            </strong>
+
+
+            <small>
+
+                {% if filtro == "semana" %}
+
+                    {{ inicio_semana.strftime('%d/%m/%Y') }}
+                    —
+                    {{ fin_semana.strftime('%d/%m/%Y') }}
+
+                {% elif filtro == "mes" %}
+
+                    {{ inicio_mes.strftime('%d/%m/%Y') }}
+                    —
+                    {{ fin_mes.strftime('%d/%m/%Y') }}
+
+                {% elif filtro == "hoy" %}
+
+                    {{ hoy.strftime('%d/%m/%Y') }}
+
+                {% elif filtro == "vencidos" %}
+
+                    Pedidos cuya fecha de entrega ya pasó.
+
+                {% else %}
+
+                    Todos los pedidos que tienen fecha de entrega.
+
+                {% endif %}
+
+            </small>
+
+        </div>
+
+    </div>
+
+
+    {% if pedidos_sin_fecha > 0 %}
+
+        <div class="agenda-resumen-card agenda-resumen-warning">
+
+            <span>
+                💡
+            </span>
+
+            <div>
+
+                <strong>
+                    {{ pedidos_sin_fecha }}
+                    pedido(s) sin fecha
+                </strong>
+
+                <small>
+                    No aparecen en la agenda hasta
+                    asignarles una fecha de entrega.
+                </small>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     AGENDA
+============================================================ -->
+
+{% if agenda_dias %}
+
+    <div class="agenda-lista">
+
+        {% for dia in agenda_dias %}
+
+            <section class="agenda-dia">
+
+
+                <!-- FECHA -->
+
+                <div class="agenda-dia-header">
+
+                    <div class="agenda-dia-numero">
+
+                        {{ dia.fecha.strftime('%d') }}
+
+                    </div>
+
+
+                    <div>
+
+                        <strong>
+
+                            {% if dia.fecha == hoy %}
+
+                                Hoy
+
+                            {% else %}
+
+                                {% set dias_semana = [
+                                    'Lunes',
+                                    'Martes',
+                                    'Miércoles',
+                                    'Jueves',
+                                    'Viernes',
+                                    'Sábado',
+                                    'Domingo'
+                                ] %}
+
+                                {{
+                                    dias_semana[
+                                        dia.fecha.weekday()
+                                    ]
+                                }}
+
+                            {% endif %}
+
+                        </strong>
+
+                        <span>
+
+                            {% set meses = [
+                                '',
+                                'enero',
+                                'febrero',
+                                'marzo',
+                                'abril',
+                                'mayo',
+                                'junio',
+                                'julio',
+                                'agosto',
+                                'septiembre',
+                                'octubre',
+                                'noviembre',
+                                'diciembre'
+                            ] %}
+
+                            {{ dia.fecha.day }}
+                            de
+                            {{ meses[dia.fecha.month] }}
+                            de
+                            {{ dia.fecha.year }}
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="agenda-dia-total">
+
+                        {{ dia.pedidos|length }}
+
+                        {% if dia.pedidos|length == 1 %}
+                            entrega
+                        {% else %}
+                            entregas
+                        {% endif %}
+
+                    </div>
+
+                </div>
+
+
+                <!-- PEDIDOS DEL DÍA -->
+
+                <div class="agenda-dia-pedidos">
+
+                    {% for pedido in dia.pedidos %}
+
+                        <article
+                            class="
+                                agenda-pedido
+
+                                {% if pedido.vencido %}
+                                    agenda-pedido-vencido
+                                {% elif pedido.estado == 'LISTO' %}
+                                    agenda-pedido-listo
+                                {% elif pedido.estado == 'EN_PRODUCCION' %}
+                                    agenda-pedido-produccion
+                                {% endif %}
+                            "
+                        >
+
+
+                            <!-- HORA -->
+
+                            <div class="agenda-pedido-hora">
+
+                                <strong>
+                                    {{
+                                        pedido.fecha_entrega.strftime(
+                                            '%H:%M'
+                                        )
+                                    }}
+                                </strong>
+
+                                {% if pedido.es_hoy %}
+
+                                    <span>
+                                        Hoy
+                                    </span>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- INFORMACIÓN -->
+
+                            <div class="agenda-pedido-info">
+
+                                <div class="agenda-pedido-top">
+
+                                    <a
+                                        href="{{ url_for(
+                                            'pedidos.detalle',
+                                            pedido_id=pedido.id
+                                        ) }}"
+                                        class="agenda-pedido-numero"
+                                    >
+                                        {{ pedido.numero }}
+                                    </a>
+
+
+                                    {% if pedido.vencido %}
+
+                                        <span class="agenda-badge agenda-badge-vencido">
+                                            ⚠️ Vencido
+                                        </span>
+
+
+                                    {% elif pedido.estado == "COTIZACION" %}
+
+                                        <span class="agenda-badge agenda-badge-cotizacion">
+                                            📝 Cotización
+                                        </span>
+
+
+                                    {% elif pedido.estado == "CONFIRMADO" %}
+
+                                        <span class="agenda-badge agenda-badge-confirmado">
+                                            ✅ Confirmado
+                                        </span>
+
+
+                                    {% elif pedido.estado == "EN_PRODUCCION" %}
+
+                                        <span class="agenda-badge agenda-badge-produccion">
+                                            🛠️ En producción
+                                        </span>
+
+
+                                    {% elif pedido.estado == "LISTO" %}
+
+                                        <span class="agenda-badge agenda-badge-listo">
+                                            📦 Listo
+                                        </span>
+
+
+                                    {% elif pedido.estado == "ENTREGADO" %}
+
+                                        <span class="agenda-badge agenda-badge-entregado">
+                                            🎉 Entregado
+                                        </span>
+
+
+                                    {% else %}
+
+                                        <span class="agenda-badge">
+                                            {{ pedido.estado }}
+                                        </span>
+
+                                    {% endif %}
+
+                                </div>
+
+
+                                <a
+                                    href="{{ url_for(
+                                        'clientes.detalle',
+                                        cliente_id=pedido.cliente_id
+                                    ) }}"
+                                    class="agenda-cliente"
+                                >
+                                    👤 {{ pedido.cliente }}
+                                </a>
+
+
+                                <div class="agenda-pedido-meta">
+
+                                    <span>
+
+                                        📦
+                                        {{ pedido.productos }}
+
+                                        {% if pedido.productos == 1 %}
+                                            producto
+                                        {% else %}
+                                            productos
+                                        {% endif %}
+
+                                    </span>
+
+
+                                    <span>
+
+                                        🔢
+                                        {{ pedido.unidades }}
+                                        unidades
+
+                                    </span>
+
+
+                                    {% if pedido.telefono %}
+
+                                        <span>
+                                            📱 {{ pedido.telefono }}
+                                        </span>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </div>
+
+
+                            <!-- FINANZAS -->
+
+                            <div class="agenda-pedido-finanzas">
+
+                                <span>
+                                    Total
+                                </span>
+
+                                <strong>
+                                    Q {{ "%.2f"|format(pedido.total) }}
+                                </strong>
+
+
+                                {% if pedido.saldo_pendiente > 0 %}
+
+                                    <small class="agenda-saldo-pendiente">
+
+                                        Pendiente:
+                                        Q {{
+                                            "%.2f"|format(
+                                                pedido.saldo_pendiente
+                                            )
+                                        }}
+
+                                    </small>
+
+                                {% else %}
+
+                                    <small class="agenda-saldo-pagado">
+                                        ✓ Pagado
+                                    </small>
+
+                                {% endif %}
+
+                            </div>
+
+
+                            <!-- ACCIÓN -->
+
+                            <div class="agenda-pedido-action">
+
+                                <a
+                                    href="{{ url_for(
+                                        'pedidos.detalle',
+                                        pedido_id=pedido.id
+                                    ) }}"
+                                    class="btn-secondary btn-sm"
+                                >
+                                    Ver pedido →
+                                </a>
+
+                            </div>
+
+                        </article>
+
+                    {% endfor %}
+
+                </div>
+
+            </section>
+
+        {% endfor %}
+
+    </div>
+
+
+{% else %}
+
+    <div class="card">
+
+        <div class="empty-state">
+
+            <div class="empty-state-icon">
+
+                {% if filtro == "vencidos" %}
+                    ✅
+                {% else %}
+                    📅
+                {% endif %}
+
+            </div>
+
+
+            {% if filtro == "vencidos" %}
+
+                <h3>
+                    No tienes entregas vencidas
+                </h3>
+
+                <p>
+                    Todos los pedidos están dentro
+                    de su fecha de entrega.
+                </p>
+
+
+            {% else %}
+
+                <h3>
+                    No hay entregas
+                </h3>
+
+                <p>
+                    No hay pedidos con fecha de entrega
+                    para este período.
+                </p>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+{% endif %}
+
+
+<style>
+
+/* ============================================================
+   AGENDA
+============================================================ */
+
+.agenda-toolbar-card {
+    padding: 14px 18px;
+    margin-bottom: 18px;
+}
+
+.agenda-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.agenda-filtros {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+
+/* FILTROS */
+
+.agenda-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 8px 12px;
+
+    border: 1px solid var(--border);
+    border-radius: 8px;
+
+    background: #ffffff;
+
+    color: var(--text);
+    text-decoration: none;
+
+    font-size: 12px;
+    font-weight: 600;
+
+    transition: 0.15s ease;
+}
+
+.agenda-filter:hover {
+    border-color: #94a3b8;
+}
+
+.agenda-filter span {
+    min-width: 21px;
+
+    padding: 2px 6px;
+
+    background: #f1f5f9;
+
+    border-radius: 999px;
+
+    text-align: center;
+
+    font-size: 10px;
+}
+
+.agenda-filter.active {
+    background: #081b5c;
+    border-color: #081b5c;
+    color: #ffffff;
+}
+
+.agenda-filter.active span {
+    background: rgba(255,255,255,0.16);
+}
+
+.agenda-filter-danger.active {
+    background: #b91c1c;
+    border-color: #b91c1c;
+}
+
+
+/* RESUMEN */
+
+.agenda-resumen {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 12px;
+
+    margin-bottom: 20px;
+}
+
+.agenda-resumen-card {
+    display: flex;
+
+    align-items: center;
+
+    gap: 13px;
+
+    padding: 15px 18px;
+
+    background: #ffffff;
+
+    border: 1px solid var(--border);
+
+    border-radius: 10px;
+}
+
+.agenda-resumen-card > span {
+    font-size: 23px;
+}
+
+.agenda-resumen-card strong {
+    display: block;
+
+    margin-bottom: 3px;
+
+    color: #081b5c;
+}
+
+.agenda-resumen-card small {
+    color: var(--text-soft);
+}
+
+.agenda-resumen-warning {
+    background: #fffdf6;
+    border-color: #fde68a;
+}
+
+
+/* DÍA */
+
+.agenda-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.agenda-dia {
+    overflow: hidden;
+
+    background: #ffffff;
+
+    border: 1px solid var(--border);
+
+    border-radius: 11px;
+}
+
+.agenda-dia-header {
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 15px 20px;
+
+    background: #f8fafc;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.agenda-dia-numero {
+    display: flex;
+
+    align-items: center;
+    justify-content: center;
+
+    width: 42px;
+    height: 42px;
+
+    background: #081b5c;
+
+    border-radius: 9px;
+
+    color: #ffffff;
+
+    font-size: 18px;
+    font-weight: 800;
+}
+
+.agenda-dia-header strong {
+    display: block;
+
+    color: #081b5c;
+
+    font-size: 14px;
+}
+
+.agenda-dia-header span {
+    color: var(--text-soft);
+
+    font-size: 11px;
+}
+
+.agenda-dia-total {
+    margin-left: auto;
+
+    color: var(--text-soft);
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+
+/* PEDIDOS */
+
+.agenda-dia-pedidos {
+    display: flex;
+    flex-direction: column;
+}
+
+.agenda-pedido {
+    display: grid;
+
+    grid-template-columns:
+        90px
+        minmax(260px, 1fr)
+        150px
+        auto;
+
+    align-items: center;
+
+    gap: 18px;
+
+    padding: 17px 20px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.agenda-pedido:last-child {
+    border-bottom: 0;
+}
+
+.agenda-pedido:hover {
+    background: #fafbfc;
+}
+
+.agenda-pedido-vencido {
+    border-left: 4px solid #dc2626;
+
+    background: #fffafa;
+}
+
+.agenda-pedido-listo {
+    border-left: 4px solid #16a34a;
+}
+
+.agenda-pedido-produccion {
+    border-left: 4px solid #7c3aed;
+}
+
+
+/* HORA */
+
+.agenda-pedido-hora strong {
+    display: block;
+
+    color: #081b5c;
+
+    font-size: 17px;
+}
+
+.agenda-pedido-hora span {
+    display: inline-block;
+
+    margin-top: 3px;
+
+    color: #2563eb;
+
+    font-size: 10px;
+    font-weight: 700;
+}
+
+
+/* INFORMACIÓN */
+
+.agenda-pedido-top {
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    flex-wrap: wrap;
+
+    margin-bottom: 5px;
+}
+
+.agenda-pedido-numero {
+    color: #081b5c;
+
+    font-size: 14px;
+    font-weight: 800;
+
+    text-decoration: none;
+}
+
+.agenda-pedido-numero:hover {
+    text-decoration: underline;
+}
+
+.agenda-cliente {
+    display: inline-block;
+
+    color: var(--text);
+
+    font-size: 13px;
+    font-weight: 600;
+
+    text-decoration: none;
+}
+
+.agenda-cliente:hover {
+    color: #081b5c;
+}
+
+.agenda-pedido-meta {
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+
+    flex-wrap: wrap;
+
+    margin-top: 6px;
+
+    color: var(--text-soft);
+
+    font-size: 10px;
+}
+
+
+/* BADGES */
+
+.agenda-badge {
+    display: inline-flex;
+
+    padding: 4px 8px;
+
+    border-radius: 999px;
+
+    background: #f1f5f9;
+
+    color: #475569;
+
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.agenda-badge-vencido {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.agenda-badge-cotizacion {
+    background: #fef9c3;
+    color: #854d0e;
+}
+
+.agenda-badge-confirmado {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.agenda-badge-produccion {
+    background: #ede9fe;
+    color: #6d28d9;
+}
+
+.agenda-badge-listo {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.agenda-badge-entregado {
+    background: #dcfce7;
+    color: #166534;
+}
+
+
+/* FINANZAS */
+
+.agenda-pedido-finanzas span {
+    display: block;
+
+    margin-bottom: 2px;
+
+    color: var(--text-soft);
+
+    font-size: 10px;
+}
+
+.agenda-pedido-finanzas strong {
+    display: block;
+
+    color: #081b5c;
+
+    font-size: 15px;
+}
+
+.agenda-pedido-finanzas small {
+    display: block;
+
+    margin-top: 4px;
+
+    font-size: 10px;
+}
+
+.agenda-saldo-pendiente {
+    color: #dc2626;
+}
+
+.agenda-saldo-pagado {
+    color: #15803d;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 1000px) {
+
+    .agenda-pedido {
+        grid-template-columns:
+            70px
+            minmax(220px, 1fr)
+            130px;
+    }
+
+    .agenda-pedido-action {
+        grid-column: 2 / -1;
+    }
+
+}
+
+@media (max-width: 700px) {
+
+    .agenda-resumen {
+        grid-template-columns: 1fr;
+    }
+
+    .agenda-pedido {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .agenda-pedido-action {
+        grid-column: auto;
+    }
+
+    .agenda-dia-header {
+        padding: 14px 16px;
+    }
+
+    .agenda-pedido {
+        padding: 16px;
+    }
+
+}
+
+</style>
+
+{% endblock %}

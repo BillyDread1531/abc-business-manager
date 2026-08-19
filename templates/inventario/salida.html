@@ -1,0 +1,833 @@
+{% extends "base.html" %}
+
+{% block title %}
+Salida de inventario - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Salida de inventario</h1>
+
+        <p>
+            Registra el consumo o salida de materiales del inventario.
+        </p>
+
+    </div>
+
+    <a
+        href="{{ url_for('inventario.lista') }}"
+        class="btn-secondary"
+    >
+        ← Volver al inventario
+    </a>
+
+</div>
+
+
+<div class="card inventario-salida-card">
+
+    <form
+        method="POST"
+        class="inventario-salida-form"
+    >
+
+        <!-- ============================================================
+             DATOS DE LA SALIDA
+        ============================================================ -->
+
+        <div class="inventario-salida-section-header">
+
+            <div>
+
+                <h2>
+                    📤 Datos de la salida
+                </h2>
+
+                <p>
+                    Selecciona el material e indica cuánto se utilizó.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- MATERIAL -->
+
+        <div class="form-group inventario-salida-full">
+
+            <label for="material_id">
+                Material *
+            </label>
+
+            <select
+                name="material_id"
+                id="material_id"
+                required
+            >
+
+                <option value="">
+                    Selecciona un material
+                </option>
+
+                {% for material in materiales %}
+
+                    <option
+                        value="{{ material.id }}"
+                        data-compra="{{ material.unidad_compra_id }}"
+                        data-consumo="{{ material.unidad_consumo_id }}"
+                        data-tipo="{{ material.tipo_consumo }}"
+                        data-stock="{{ material.stock_actual }}"
+                        data-abreviatura-consumo="{{ material.abreviatura_consumo }}"
+                    >
+
+                        {{ material.nombre }}
+
+                        {% if material.color %}
+                            - {{ material.color }}
+                        {% endif %}
+
+                        — Stock:
+                        {{ "%.4f"|format(material.stock_actual) }}
+                        {{ material.abreviatura_consumo }}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+
+        <!-- ============================================================
+             STOCK DISPONIBLE
+        ============================================================ -->
+
+        <div
+            id="stockInfo"
+            class="inventario-salida-stock"
+            style="display: none;"
+        >
+
+            <div class="inventario-salida-stock-icon">
+                📦
+            </div>
+
+            <div>
+
+                <span>
+                    Stock disponible
+                </span>
+
+                <strong id="stockDisponible">
+                    -
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             CANTIDAD Y UNIDAD
+        ============================================================ -->
+
+        <div class="inventario-salida-grid">
+
+
+            <!-- CANTIDAD -->
+
+            <div class="form-group">
+
+                <label for="cantidad">
+                    Cantidad *
+                </label>
+
+                <input
+                    type="number"
+                    name="cantidad"
+                    id="cantidad"
+                    step="0.0001"
+                    min="0.0001"
+                    placeholder="Ej. 1"
+                    required
+                >
+
+                <small class="form-help">
+                    Ingresa la cantidad de material utilizado.
+                </small>
+
+            </div>
+
+
+            <!-- UNIDAD -->
+
+            <div class="form-group">
+
+                <label for="unidad_id">
+                    Unidad utilizada *
+                </label>
+
+                <select
+                    name="unidad_id"
+                    id="unidad_id"
+                    required
+                >
+
+                    <option value="">
+                        Selecciona primero un material
+                    </option>
+
+                    {% for unidad in unidades %}
+
+                        <option
+                            value="{{ unidad.id }}"
+                            data-tipo="{{ unidad.tipo }}"
+                        >
+
+                            {{ unidad.nombre }}
+                            ({{ unidad.abreviatura }})
+
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+                <small
+                    id="ayuda-unidad"
+                    class="form-help"
+                >
+                    Selecciona la unidad en la que utilizaste el material.
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             PREVISUALIZACIÓN
+        ============================================================ -->
+
+        <div
+            id="conversion-preview"
+            class="inventario-salida-preview"
+            style="display: none;"
+        >
+
+            <div class="inventario-salida-preview-icon">
+                💡
+            </div>
+
+            <div>
+
+                <strong>
+                    ¿Cómo se descontará?
+                </strong>
+
+                <p id="conversion-text">
+                    -
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             NOTAS
+        ============================================================ -->
+
+        <div class="form-group inventario-salida-notas">
+
+            <label for="notas">
+
+                Notas
+
+                <span class="inventario-opcional">
+                    (opcional)
+                </span>
+
+            </label>
+
+            <textarea
+                name="notas"
+                id="notas"
+                rows="3"
+                placeholder="Ej. Vinil utilizado para pedido PED-0005"
+            ></textarea>
+
+        </div>
+
+
+        <!-- ============================================================
+             ACCIONES
+        ============================================================ -->
+
+        <div class="form-actions inventario-salida-actions">
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                📤 Registrar salida
+            </button>
+
+            <a
+                href="{{ url_for('inventario.lista') }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<style>
+
+/* ============================================================
+   SALIDA DE INVENTARIO
+============================================================ */
+
+.inventario-salida-card {
+    width: 100%;
+    max-width: none;
+
+    padding: 24px 28px;
+
+    box-sizing: border-box;
+}
+
+.inventario-salida-form {
+    width: 100%;
+    max-width: none;
+}
+
+
+/* ============================================================
+   ENCABEZADO
+============================================================ */
+
+.inventario-salida-section-header {
+    margin-bottom: 20px;
+}
+
+.inventario-salida-section-header h2 {
+    margin: 0;
+
+    font-size: 20px;
+}
+
+.inventario-salida-section-header p {
+    margin: 5px 0 0;
+
+    color: var(--text-soft);
+
+    font-size: 14px;
+}
+
+
+/* ============================================================
+   GRID
+============================================================ */
+
+.inventario-salida-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 18px 24px;
+
+    margin-top: 22px;
+
+    width: 100%;
+}
+
+.inventario-salida-grid .form-group {
+    min-width: 0;
+}
+
+.inventario-salida-full {
+    width: 100%;
+}
+
+
+/* ============================================================
+   STOCK DISPONIBLE
+============================================================ */
+
+.inventario-salida-stock {
+    display: flex;
+    align-items: center;
+
+    gap: 12px;
+
+    margin-top: 18px;
+
+    padding: 14px 16px;
+
+    background: #f8fafc;
+
+    border: 1px solid #dce3ee;
+    border-radius: 10px;
+}
+
+.inventario-salida-stock-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+
+    flex-shrink: 0;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+
+    font-size: 19px;
+}
+
+.inventario-salida-stock span {
+    display: block;
+
+    margin-bottom: 2px;
+
+    color: var(--text-soft);
+
+    font-size: 12px;
+}
+
+.inventario-salida-stock strong {
+    color: var(--navy);
+
+    font-size: 16px;
+}
+
+
+/* ============================================================
+   PREVISUALIZACIÓN
+============================================================ */
+
+.inventario-salida-preview {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 13px;
+
+    margin-top: 22px;
+
+    padding: 16px 18px;
+
+    background: #f8fafc;
+
+    border: 1px solid #dce3ee;
+    border-radius: 10px;
+}
+
+.inventario-salida-preview-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 38px;
+    height: 38px;
+
+    flex-shrink: 0;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+
+    font-size: 19px;
+}
+
+.inventario-salida-preview strong {
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: var(--navy);
+
+    font-size: 14px;
+}
+
+.inventario-salida-preview p {
+    margin: 0;
+
+    color: var(--text-soft);
+
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+
+/* ============================================================
+   NOTAS
+============================================================ */
+
+.inventario-salida-notas {
+    margin-top: 22px;
+}
+
+.inventario-opcional {
+    color: #ef4444;
+
+    font-size: 12px;
+    font-weight: 500;
+}
+
+
+/* ============================================================
+   ACCIONES
+============================================================ */
+
+.inventario-salida-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+
+    gap: 10px;
+
+    margin-top: 24px;
+    padding-top: 20px;
+
+    border-top: 1px solid var(--border);
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 800px) {
+
+    .inventario-salida-card {
+        padding: 20px;
+    }
+
+    .inventario-salida-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const materialSelect =
+            document.getElementById(
+                "material_id"
+            );
+
+        const unidadSelect =
+            document.getElementById(
+                "unidad_id"
+            );
+
+        const cantidadInput =
+            document.getElementById(
+                "cantidad"
+            );
+
+        const preview =
+            document.getElementById(
+                "conversion-preview"
+            );
+
+        const conversionText =
+            document.getElementById(
+                "conversion-text"
+            );
+
+        const stockInfo =
+            document.getElementById(
+                "stockInfo"
+            );
+
+        const stockDisponible =
+            document.getElementById(
+                "stockDisponible"
+            );
+
+
+        function formatearCantidad(numero) {
+
+            if (!Number.isFinite(numero)) {
+                return "0";
+            }
+
+            return Number(
+                numero.toFixed(4)
+            ).toString();
+
+        }
+
+
+        function actualizarUnidades() {
+
+            const selected =
+                materialSelect.options[
+                    materialSelect.selectedIndex
+                ];
+
+
+            if (!selected || !selected.value) {
+
+                unidadSelect.value =
+                    "";
+
+                for (
+                    const option
+                    of unidadSelect.options
+                ) {
+
+                    if (option.value !== "") {
+
+                        option.style.display =
+                            "none";
+
+                    }
+
+                }
+
+                preview.style.display =
+                    "none";
+
+                stockInfo.style.display =
+                    "none";
+
+                return;
+
+            }
+
+
+            const unidadCompra =
+                selected.dataset.compra;
+
+            const unidadConsumo =
+                selected.dataset.consumo;
+
+            const tipoConsumo =
+                selected.dataset.tipo;
+
+            const stock =
+                parseFloat(
+                    selected.dataset.stock
+                ) || 0;
+
+            const abreviaturaConsumo =
+                selected.dataset.abreviaturaConsumo
+                || "";
+
+
+            stockDisponible.textContent =
+                formatearCantidad(stock)
+                + " "
+                + abreviaturaConsumo;
+
+
+            stockInfo.style.display =
+                "flex";
+
+
+            for (
+                const option
+                of unidadSelect.options
+            ) {
+
+                if (option.value === "") {
+
+                    option.style.display =
+                        "";
+
+                    continue;
+
+                }
+
+
+                const unidadId =
+                    option.value;
+
+                const tipo =
+                    option.dataset.tipo;
+
+
+                if (
+                    unidadId === unidadConsumo ||
+                    unidadId === unidadCompra ||
+                    tipo === tipoConsumo
+                ) {
+
+                    option.style.display =
+                        "";
+
+                } else {
+
+                    option.style.display =
+                        "none";
+
+                }
+
+            }
+
+
+            unidadSelect.value =
+                unidadConsumo;
+
+
+            actualizarPreview();
+
+        }
+
+
+        function actualizarPreview() {
+
+            const selectedMaterial =
+                materialSelect.options[
+                    materialSelect.selectedIndex
+                ];
+
+            const selectedUnidad =
+                unidadSelect.options[
+                    unidadSelect.selectedIndex
+                ];
+
+            const cantidad =
+                parseFloat(
+                    cantidadInput.value
+                );
+
+
+            if (
+                !selectedMaterial ||
+                !selectedMaterial.value ||
+                !selectedUnidad ||
+                !selectedUnidad.value ||
+                !cantidad ||
+                cantidad <= 0
+            ) {
+
+                preview.style.display =
+                    "none";
+
+                return;
+
+            }
+
+
+            const unidadCompra =
+                selectedMaterial.dataset.compra;
+
+            const unidadConsumo =
+                selectedMaterial.dataset.consumo;
+
+            const unidadTexto =
+                selectedUnidad.textContent
+                    .trim()
+                    .replace(/\s+/g, " ");
+
+
+            if (
+                selectedUnidad.value ===
+                unidadConsumo
+            ) {
+
+                conversionText.textContent =
+                    formatearCantidad(cantidad)
+                    + " "
+                    + unidadTexto
+                    + " se descontarán directamente del inventario.";
+
+            }
+
+            else if (
+                selectedUnidad.value ===
+                unidadCompra
+            ) {
+
+                conversionText.textContent =
+                    formatearCantidad(cantidad)
+                    + " "
+                    + unidadTexto
+                    + " se convertirán automáticamente a la unidad de consumo.";
+
+            }
+
+            else {
+
+                conversionText.textContent =
+                    formatearCantidad(cantidad)
+                    + " "
+                    + unidadTexto
+                    + " se convertirán automáticamente a la unidad de consumo.";
+
+            }
+
+
+            preview.style.display =
+                "flex";
+
+        }
+
+
+        materialSelect.addEventListener(
+            "change",
+            actualizarUnidades
+        );
+
+
+        unidadSelect.addEventListener(
+            "change",
+            actualizarPreview
+        );
+
+
+        cantidadInput.addEventListener(
+            "input",
+            actualizarPreview
+        );
+
+
+        /* Ocultar inicialmente todas las unidades */
+
+        for (
+            const option
+            of unidadSelect.options
+        ) {
+
+            if (option.value !== "") {
+
+                option.style.display =
+                    "none";
+
+            }
+
+        }
+
+    }
+);
+
+</script>
+
+{% endblock %}

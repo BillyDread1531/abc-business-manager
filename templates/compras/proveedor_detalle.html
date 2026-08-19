@@ -1,0 +1,698 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ proveedor.nombre }} - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>{{ proveedor.nombre }}</h1>
+
+        <p>
+            Estado de cuenta e historial de compras del proveedor.
+        </p>
+
+    </div>
+
+
+    <div class="proveedor-detalle-header-actions">
+
+        <a
+            href="{{ url_for('compras.proveedores') }}"
+            class="btn-secondary"
+        >
+            ← Volver a proveedores
+        </a>
+
+        <a
+            href="{{ url_for('compras.nueva') }}"
+            class="btn-primary"
+        >
+            + Nueva compra
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     RESUMEN
+============================================================ -->
+
+<div class="proveedor-resumen-grid">
+
+    <div class="proveedor-resumen-card">
+
+        <span>
+            Compras activas
+        </span>
+
+        <strong>
+            {{ total_compras }}
+        </strong>
+
+    </div>
+
+
+    <div class="proveedor-resumen-card">
+
+        <span>
+            Total comprado
+        </span>
+
+        <strong>
+            Q {{ "%.2f"|format(total_comprado) }}
+        </strong>
+
+    </div>
+
+
+    <div class="proveedor-resumen-card">
+
+        <span>
+            Total pagado
+        </span>
+
+        <strong class="margen-positivo">
+            Q {{ "%.2f"|format(total_pagado) }}
+        </strong>
+
+    </div>
+
+
+    <div class="proveedor-resumen-card">
+
+        <span>
+            Saldo pendiente
+        </span>
+
+        <strong
+            class="
+                {% if saldo_pendiente > 0 %}
+                    proveedor-saldo-pendiente
+                {% else %}
+                    margen-positivo
+                {% endif %}
+            "
+        >
+            Q {{ "%.2f"|format(saldo_pendiente) }}
+        </strong>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     DATOS DEL PROVEEDOR
+============================================================ -->
+
+<div class="card proveedor-info-card">
+
+    <div class="dashboard-seccion-header">
+
+        <div>
+
+            <h2>
+                🚚 Información del proveedor
+            </h2>
+
+            <p>
+                Datos de contacto y notas generales.
+            </p>
+
+        </div>
+
+
+        {% if proveedor.activo %}
+
+            <span class="inventario-status inventario-status-ok">
+                ✓ Activo
+            </span>
+
+        {% else %}
+
+            <span class="inventario-status inventario-status-empty">
+                ● Inactivo
+            </span>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="proveedor-info-grid">
+
+        <div>
+
+            <span>Teléfono</span>
+
+            <strong>
+                {{ proveedor.telefono or "—" }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>Correo electrónico</span>
+
+            <strong>
+                {{ proveedor.email or "—" }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>Dirección</span>
+
+            <strong>
+                {{ proveedor.direccion or "—" }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>Proveedor desde</span>
+
+            <strong>
+                {{
+                    proveedor.creado_en.strftime(
+                        '%d/%m/%Y'
+                    )
+                    if proveedor.creado_en
+                    else '—'
+                }}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    {% if proveedor.notas %}
+
+        <div class="proveedor-notas">
+
+            <span>
+                Notas
+            </span>
+
+            <p>
+                {{ proveedor.notas }}
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     COMPRAS
+============================================================ -->
+
+<div class="card proveedor-compras-card">
+
+    <div class="dashboard-seccion-header">
+
+        <div>
+
+            <h2>
+                🛒 Historial de compras
+            </h2>
+
+            <p>
+                Compras registradas con este proveedor.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    {% if compras %}
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Compra</th>
+                        <th>Fecha</th>
+                        <th>Total</th>
+                        <th>Pagado</th>
+                        <th>Saldo</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for compra in compras %}
+
+                        <tr>
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'compras.detalle',
+                                        compra_id=compra.id
+                                    ) }}"
+                                    class="finanza-referencia"
+                                >
+                                    {{ compra.numero }} ↗
+                                </a>
+
+                            </td>
+
+
+                            <td>
+
+                                {{
+                                    compra.fecha.strftime(
+                                        '%d/%m/%Y %H:%M'
+                                    )
+                                    if compra.fecha
+                                    else '—'
+                                }}
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    Q {{ "%.2f"|format(compra.total) }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                <strong class="margen-positivo">
+                                    Q {{
+                                        "%.2f"|format(
+                                            compra.total_pagado
+                                        )
+                                    }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {% if compra.estado == "CANCELADA" %}
+
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+
+                                {% elif compra.saldo_pendiente > 0 %}
+
+                                    <strong class="proveedor-saldo-pendiente">
+                                        Q {{
+                                            "%.2f"|format(
+                                                compra.saldo_pendiente
+                                            )
+                                        }}
+                                    </strong>
+
+                                {% else %}
+
+                                    <span class="proveedor-sin-saldo">
+                                        ✓ Pagada
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if compra.estado == "RECIBIDA" %}
+
+                                    <span class="estado estado-confirmado">
+                                        📥 Recibida
+                                    </span>
+
+                                {% elif compra.estado == "CANCELADA" %}
+
+                                    <span class="estado estado-cancelado">
+                                        ❌ Cancelada
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="estado estado-cotizacion">
+                                        ⏳ Pendiente
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'compras.detalle',
+                                        compra_id=compra.id
+                                    ) }}"
+                                    class="btn-secondary btn-sm"
+                                >
+                                    Ver compra
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <div class="empty-state-icon">
+                🛒
+            </div>
+
+            <h3>
+                Este proveedor todavía no tiene compras
+            </h3>
+
+            <p>
+                Cuando registres una compra con este proveedor,
+                aparecerá aquí.
+            </p>
+
+            <a
+                href="{{ url_for('compras.nueva') }}"
+                class="btn-primary"
+            >
+                + Registrar compra
+            </a>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     PAGOS RECIENTES
+============================================================ -->
+
+<div class="card proveedor-pagos-card">
+
+    <div class="dashboard-seccion-header">
+
+        <div>
+
+            <h2>
+                💳 Pagos recientes
+            </h2>
+
+            <p>
+                Últimos pagos realizados a este proveedor.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    {% if pagos_recientes %}
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Compra</th>
+                        <th>Método</th>
+                        <th>Referencia</th>
+                        <th>Monto</th>
+                        <th>Notas</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for pago in pagos_recientes %}
+
+                        <tr>
+
+                            <td>
+
+                                {{
+                                    pago.fecha.strftime(
+                                        '%d/%m/%Y %H:%M'
+                                    )
+                                    if pago.fecha
+                                    else '—'
+                                }}
+
+                            </td>
+
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'compras.detalle',
+                                        compra_id=pago.compra_id
+                                    ) }}"
+                                    class="finanza-referencia"
+                                >
+                                    {{ pago.compra_numero }} ↗
+                                </a>
+
+                            </td>
+
+
+                            <td>
+
+                                {% if pago.metodo_pago == "EFECTIVO" %}
+                                    💵 Efectivo
+
+                                {% elif pago.metodo_pago == "TRANSFERENCIA" %}
+                                    🏦 Transferencia
+
+                                {% elif pago.metodo_pago == "TARJETA" %}
+                                    💳 Tarjeta
+
+                                {% else %}
+                                    💰 Otro
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+                                {{ pago.referencia or "—" }}
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    Q {{ "%.2f"|format(pago.monto) }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+                                {{ pago.notas or "—" }}
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <div class="empty-state-icon">
+                💳
+            </div>
+
+            <h3>
+                No hay pagos registrados
+            </h3>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<style>
+
+/* ============================================================
+   DETALLE DE PROVEEDOR
+============================================================ */
+
+.proveedor-detalle-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.proveedor-resumen-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.proveedor-resumen-card {
+    padding: 18px 20px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.proveedor-resumen-card span {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-soft);
+    font-size: 12px;
+}
+
+.proveedor-resumen-card strong {
+    color: var(--navy);
+    font-size: 20px;
+}
+
+.proveedor-saldo-pendiente {
+    color: #dc2626 !important;
+}
+
+.proveedor-info-card,
+.proveedor-compras-card,
+.proveedor-pagos-card {
+    margin-bottom: 20px;
+    padding: 24px 28px;
+}
+
+.proveedor-info-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: 18px 24px;
+    margin-top: 20px;
+}
+
+.proveedor-info-grid > div {
+    min-width: 0;
+}
+
+.proveedor-info-grid span,
+.proveedor-notas > span {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-soft);
+    font-size: 12px;
+}
+
+.proveedor-info-grid strong {
+    display: block;
+    color: var(--navy);
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+.proveedor-notas {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.proveedor-notas p {
+    margin: 0;
+    color: var(--text);
+    line-height: 1.55;
+}
+
+.proveedor-sin-saldo {
+    color: #15803d;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+@media (max-width: 1000px) {
+
+    .proveedor-resumen-grid,
+    .proveedor-info-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 600px) {
+
+    .proveedor-resumen-grid,
+    .proveedor-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .proveedor-info-card,
+    .proveedor-compras-card,
+    .proveedor-pagos-card {
+        padding: 20px;
+    }
+
+}
+
+</style>
+
+{% endblock %}

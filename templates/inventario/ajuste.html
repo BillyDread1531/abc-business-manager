@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Ajustar inventario - ABC Business Manager{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div><h1>Ajustar inventario</h1><p>Registra una corrección, pérdida o merma para <strong>{{ material.nombre }}{% if material.color %} - {{ material.color }}{% endif %}</strong>.</p></div>
+  <a href="{{ url_for('inventario.historial', material_id=material.id) }}" class="btn-secondary">← Volver al historial</a>
+</div>
+<div class="card inventario-ajuste-card">
+<form method="POST" class="inventario-ajuste-form">
+  <div class="inventario-ajuste-stock">
+    <div><span>Stock actual</span><strong>{{ material.stock_actual|numero_inventario }} {{ material.abreviatura }}</strong></div>
+    <div><span>Stock mínimo</span><strong>{{ material.stock_minimo|numero_inventario }} {{ material.abreviatura }}</strong></div>
+  </div>
+  <div class="inventario-ajuste-section">
+    <div class="inventario-ajuste-section-header"><h2>⚖️ Tipo de ajuste</h2><p>Selecciona qué ocurrió con el inventario.</p></div>
+    <div class="inventario-ajuste-tipos">
+      <label class="inventario-ajuste-option"><input type="radio" name="tipo_ajuste" value="entrada" required><div><strong>➕ Agregar stock</strong><span>Conteo físico mayor, devolución o corrección de inventario.</span></div></label>
+      <label class="inventario-ajuste-option"><input type="radio" name="tipo_ajuste" value="salida" required><div><strong>➖ Quitar stock</strong><span>Corrección por diferencia de conteo, pérdida u otra salida manual.</span></div></label>
+      <label class="inventario-ajuste-option"><input type="radio" name="tipo_ajuste" value="merma" required><div><strong>⚠️ Registrar merma</strong><span>Material dañado, desperdicio, prueba fallida o recorte perdido.</span></div></label>
+    </div>
+  </div>
+  <div class="inventario-ajuste-section">
+    <div class="inventario-ajuste-section-header"><h2>📝 Detalle del ajuste</h2><p>Indica la cantidad y explica por qué se realiza.</p></div>
+    <div class="inventario-ajuste-grid">
+      <div class="form-group"><label for="cantidad">Cantidad *</label><div class="inventario-unidad-input"><input type="number" name="cantidad" id="cantidad" min="0.0001" step="0.0001" placeholder="Ej. 5" required><span class="inventario-unidad-addon">{{ material.abreviatura }}</span></div></div>
+      <div class="form-group"><label>Stock resultante</label><div class="inventario-ajuste-resultante"><strong id="stockResultante">{{ material.stock_actual|numero_inventario }} {{ material.abreviatura }}</strong></div></div>
+    </div>
+    <div class="form-group inventario-ajuste-notas"><label for="notas">Motivo del ajuste *</label><textarea name="notas" id="notas" rows="3" placeholder="Ej. Se dañaron 5 cm durante una prueba de corte..." required></textarea><small class="form-help">El motivo quedará guardado permanentemente en el historial del material.</small></div>
+  </div>
+  <div class="inventario-ajuste-preview"><div>💡</div><div><strong>¿Qué ocurrirá?</strong><p id="ajustePreviewTexto">Selecciona el tipo de ajuste e indica la cantidad.</p></div></div>
+  <div class="form-actions inventario-ajuste-actions"><button type="submit" class="btn-primary">💾 Registrar ajuste</button><a href="{{ url_for('inventario.historial', material_id=material.id) }}" class="btn-secondary">Cancelar</a></div>
+</form>
+</div>
+<style>
+.inventario-ajuste-card{width:100%;max-width:none;padding:24px 28px}.inventario-ajuste-form{width:100%}.inventario-ajuste-stock{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.inventario-ajuste-stock>div{padding:16px 18px;background:#f8fafc;border:1px solid var(--border);border-radius:10px}.inventario-ajuste-stock span{display:block;margin-bottom:4px;color:var(--text-soft);font-size:12px}.inventario-ajuste-stock strong{color:var(--navy);font-size:18px}.inventario-ajuste-section{margin-top:24px;padding-top:22px;border-top:1px solid var(--border)}.inventario-ajuste-section-header{margin-bottom:16px}.inventario-ajuste-section-header h2{margin:0;font-size:20px}.inventario-ajuste-section-header p{margin:5px 0 0;color:var(--text-soft);font-size:14px}.inventario-ajuste-tipos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.inventario-ajuste-option{display:flex;align-items:flex-start;gap:11px;padding:15px;background:#fff;border:1px solid var(--border);border-radius:10px;cursor:pointer}.inventario-ajuste-option:has(input:checked){background:#f8fafc;border-color:#2563eb}.inventario-ajuste-option input{width:auto;margin-top:3px}.inventario-ajuste-option strong{display:block;margin-bottom:4px;color:var(--navy);font-size:14px}.inventario-ajuste-option span{display:block;color:var(--text-soft);font-size:12px;line-height:1.45}.inventario-ajuste-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 24px}.inventario-ajuste-resultante{min-height:46px;display:flex;align-items:center;padding:0 14px;background:#f8fafc;border:1px solid var(--border);border-radius:8px}.inventario-ajuste-resultante strong{color:var(--navy)}.inventario-ajuste-notas{margin-top:18px}.inventario-ajuste-preview{display:flex;align-items:flex-start;gap:13px;margin-top:22px;padding:16px 18px;background:#f8fafc;border:1px solid #dce3ee;border-radius:10px}.inventario-ajuste-preview>div:first-child{font-size:20px}.inventario-ajuste-preview strong{display:block;margin-bottom:4px;color:var(--navy);font-size:14px}.inventario-ajuste-preview p{margin:0;color:var(--text-soft);font-size:13px}.inventario-ajuste-actions{justify-content:flex-end;margin-top:24px;padding-top:20px;border-top:1px solid var(--border)}@media(max-width:900px){.inventario-ajuste-tipos{grid-template-columns:1fr}}@media(max-width:700px){.inventario-ajuste-card{padding:20px}.inventario-ajuste-stock,.inventario-ajuste-grid{grid-template-columns:1fr}}
+</style>
+<script>
+document.addEventListener("DOMContentLoaded",function(){const cantidad=document.getElementById("cantidad");const stockResultante=document.getElementById("stockResultante");const preview=document.getElementById("ajustePreviewTexto");const radios=document.querySelectorAll('input[name="tipo_ajuste"]');const stockActual=Number({{ material.stock_actual or 0 }});const unidad="{{ material.abreviatura }}";function obtenerTipo(){const seleccionado=document.querySelector('input[name="tipo_ajuste"]:checked');return seleccionado?seleccionado.value:""}function formatear(numero){if(!Number.isFinite(numero))return"0";return Number(numero.toFixed(4)).toString()}function actualizarVista(){const tipo=obtenerTipo();const cantidadValor=parseFloat(cantidad.value)||0;let nuevoStock=stockActual;if(tipo==="entrada")nuevoStock=stockActual+cantidadValor;else if(tipo==="salida"||tipo==="merma")nuevoStock=stockActual-cantidadValor;stockResultante.textContent=formatear(nuevoStock)+" "+unidad;if(!tipo||cantidadValor<=0){preview.textContent="Selecciona el tipo de ajuste e indica la cantidad.";return}if(tipo==="entrada")preview.textContent="Se agregarán "+formatear(cantidadValor)+" "+unidad+" al inventario. El nuevo stock será "+formatear(nuevoStock)+" "+unidad+".";else if(tipo==="salida")preview.textContent="Se retirarán "+formatear(cantidadValor)+" "+unidad+" mediante un ajuste manual. El nuevo stock será "+formatear(nuevoStock)+" "+unidad+".";else preview.textContent="Se registrará una merma de "+formatear(cantidadValor)+" "+unidad+". El nuevo stock será "+formatear(nuevoStock)+" "+unidad+"."}cantidad.addEventListener("input",actualizarVista);radios.forEach(function(radio){radio.addEventListener("change",actualizarVista)});actualizarVista()});
+</script>
+{% endblock %}

@@ -1,0 +1,1773 @@
+{% extends "base.html" %}
+
+{% block title %}
+Reportes - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Reportes</h1>
+        <p>
+            Analiza ventas, cobros, costos, rentabilidad,
+            clientes e inventario.
+        </p>
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     PERÍODO
+============================================================ -->
+
+<div class="card reportes-periodo-card">
+
+    <div class="reportes-section-header">
+
+        <div>
+            <h2>📅 Período</h2>
+            <p>
+                Selecciona el rango de fechas que deseas analizar.
+            </p>
+        </div>
+
+    </div>
+
+
+    <form method="GET">
+
+        <div class="reportes-filtros">
+
+            <div class="form-group">
+
+                <label for="desde">
+                    Desde
+                </label>
+
+                <input
+                    type="date"
+                    id="desde"
+                    name="desde"
+                    value="{{ desde }}"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="hasta">
+                    Hasta
+                </label>
+
+                <input
+                    type="date"
+                    id="hasta"
+                    name="hasta"
+                    value="{{ hasta }}"
+                >
+
+            </div>
+
+
+            <div class="reportes-filtro-accion">
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
+                    🔎 Generar reporte
+                </button>
+
+            </div>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<!-- ============================================================
+     RESUMEN FINANCIERO
+============================================================ -->
+
+<div class="reportes-resumen">
+
+    <div class="reportes-resumen-card">
+
+        <span>
+            Ventas generadas
+        </span>
+
+        <strong>
+            Q {{ "%.2f"|format(ventas_generadas) }}
+        </strong>
+
+    </div>
+
+
+    <div class="reportes-resumen-card">
+
+        <span>
+            Dinero cobrado
+        </span>
+
+        <strong class="margen-positivo">
+            Q {{ "%.2f"|format(total_ingresos) }}
+        </strong>
+
+    </div>
+
+
+    <div class="reportes-resumen-card">
+
+        <span>
+            Egresos
+        </span>
+
+        <strong class="margen-negativo">
+            Q {{ "%.2f"|format(total_egresos) }}
+        </strong>
+
+    </div>
+
+
+    <div
+        class="
+            reportes-resumen-card
+            {% if resultado >= 0 %}
+                reportes-card-resultado-positivo
+            {% else %}
+                reportes-card-resultado-negativo
+            {% endif %}
+        "
+    >
+
+        <span>
+            Flujo neto
+        </span>
+
+        <strong>
+            Q {{ "%.2f"|format(resultado) }}
+        </strong>
+
+    </div>
+
+
+    <div class="reportes-resumen-card">
+
+        <span>
+            Ticket promedio
+        </span>
+
+        <strong>
+            Q {{ "%.2f"|format(ticket_promedio) }}
+        </strong>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     RESUMEN OPERATIVO
+============================================================ -->
+
+<div class="reportes-operativo">
+
+    <div class="reportes-mini-card">
+
+        <span class="reportes-mini-icon">
+            🧾
+        </span>
+
+        <div>
+            <strong>{{ total_pedidos }}</strong>
+            <span>Pedidos del período</span>
+        </div>
+
+    </div>
+
+
+    <div class="reportes-mini-card">
+
+        <span class="reportes-mini-icon">
+            🎉
+        </span>
+
+        <div>
+            <strong>{{ pedidos_entregados }}</strong>
+            <span>Entregados</span>
+        </div>
+
+    </div>
+
+
+    <div class="reportes-mini-card">
+
+        <span class="reportes-mini-icon">
+            ❌
+        </span>
+
+        <div>
+            <strong>{{ pedidos_cancelados }}</strong>
+            <span>Cancelados</span>
+        </div>
+
+    </div>
+
+
+    <div class="reportes-mini-card">
+
+        <span class="reportes-mini-icon">
+            💳
+        </span>
+
+        <div>
+            <strong>
+                Q {{ "%.2f"|format(saldo_pendiente) }}
+            </strong>
+            <span>Saldo por cobrar</span>
+        </div>
+
+    </div>
+
+
+    <div class="reportes-mini-card">
+
+        <span class="reportes-mini-icon">
+            ⚠️
+        </span>
+
+        <div>
+            <strong>{{ movimientos_merma }}</strong>
+            <span>Mermas registradas</span>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     RENTABILIDAD REAL
+============================================================ -->
+
+<div class="card reportes-rentabilidad-card">
+
+    <div class="reportes-section-header">
+
+        <div>
+
+            <h2>
+                📈 Rentabilidad real
+            </h2>
+
+            <p>
+                Calculada con los costos reales registrados
+                durante la producción.
+            </p>
+
+        </div>
+
+
+        {% if costos_completos_periodo %}
+
+            <span class="reportes-status reportes-status-ok">
+                ✓ Costos completos
+            </span>
+
+        {% elif lineas_totales > 0 %}
+
+            <span class="reportes-status reportes-status-warning">
+                ⏳ {{ lineas_costo_pendiente }} pendiente(s)
+            </span>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="reportes-rentabilidad-grid">
+
+        <div>
+            <span>Venta con costo conocido</span>
+            <strong>
+                Q {{ "%.2f"|format(venta_con_costo) }}
+            </strong>
+        </div>
+
+
+        <div>
+            <span>Costo real</span>
+            <strong>
+                Q {{ "%.2f"|format(costo_real_periodo) }}
+            </strong>
+        </div>
+
+
+        <div
+            class="
+                {% if ganancia_real_periodo >= 0 %}
+                    reportes-rentabilidad-ganancia
+                {% else %}
+                    reportes-rentabilidad-perdida
+                {% endif %}
+            "
+        >
+            <span>Ganancia real conocida</span>
+            <strong>
+                Q {{ "%.2f"|format(ganancia_real_periodo) }}
+            </strong>
+        </div>
+
+
+        <div>
+            <span>Margen real conocido</span>
+            <strong
+                class="
+                    {% if margen_real_periodo >= 0 %}
+                        margen-positivo
+                    {% else %}
+                        margen-negativo
+                    {% endif %}
+                "
+            >
+                {{ "%.2f"|format(margen_real_periodo) }}%
+            </strong>
+        </div>
+
+
+        <div>
+            <span>Costo de mermas</span>
+            <strong class="margen-negativo">
+                Q {{ "%.2f"|format(costo_mermas) }}
+            </strong>
+        </div>
+
+    </div>
+
+
+    {% if lineas_costo_pendiente > 0 %}
+
+        <div class="reportes-info-note">
+
+            <span>💡</span>
+
+            <p>
+                Hay {{ lineas_costo_pendiente }} producto(s) del período
+                sin costo real. No se cuentan como Q0.00; la rentabilidad
+                mostrada corresponde únicamente a los productos cuyo costo
+                ya está registrado.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     GRÁFICAS
+============================================================ -->
+
+<div class="reportes-grid">
+
+    <div class="card reportes-chart-card">
+
+        <div class="reportes-section-header">
+
+            <div>
+                <h2>📈 Ingresos y egresos</h2>
+                <p>Comparación diaria del período seleccionado.</p>
+            </div>
+
+        </div>
+
+        <div class="chart-container">
+            <canvas id="graficaFinanzas"></canvas>
+        </div>
+
+    </div>
+
+
+    <div class="card reportes-chart-card">
+
+        <div class="reportes-section-header">
+
+            <div>
+                <h2>📦 Pedidos por estado</h2>
+                <p>Distribución de los pedidos registrados.</p>
+            </div>
+
+        </div>
+
+        <div class="chart-container chart-container-small">
+            <canvas id="graficaEstados"></canvas>
+        </div>
+
+    </div>
+
+
+    <div class="card reportes-chart-card">
+
+        <div class="reportes-section-header">
+
+            <div>
+                <h2>💰 Ingresos por categoría</h2>
+                <p>Origen del dinero recibido durante el período.</p>
+            </div>
+
+        </div>
+
+        <div class="chart-container chart-container-small">
+            <canvas id="graficaIngresos"></canvas>
+        </div>
+
+    </div>
+
+
+    <div class="card reportes-chart-card">
+
+        <div class="reportes-section-header">
+
+            <div>
+                <h2>💸 Egresos por categoría</h2>
+                <p>Distribución de los gastos registrados.</p>
+            </div>
+
+        </div>
+
+        <div class="chart-container chart-container-small">
+            <canvas id="graficaEgresos"></canvas>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     PRODUCTOS
+============================================================ -->
+
+<div class="reportes-grid">
+
+    <div class="card">
+
+        <div class="reportes-section-header">
+
+            <div>
+                <h2>🏆 Productos más vendidos</h2>
+                <p>Productos con mayor volumen de unidades.</p>
+            </div>
+
+        </div>
+
+
+        {% if productos_mas_vendidos %}
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Unidades</th>
+                            <th>Pedidos</th>
+                            <th>Venta bruta</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for producto in productos_mas_vendidos %}
+
+                            <tr>
+
+                                <td>
+                                    <strong>{{ producto.nombre }}</strong>
+                                </td>
+
+                                <td>
+                                    {{ producto.unidades_vendidas }}
+                                </td>
+
+                                <td>
+                                    {{ producto.pedidos }}
+                                </td>
+
+                                <td>
+                                    <strong>
+                                        Q {{ "%.2f"|format(producto.total_generado) }}
+                                    </strong>
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-state-icon">
+                    📦
+                </div>
+
+                <h3>Sin productos vendidos</h3>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="reportes-section-header">
+
+            <div>
+                <h2>💎 Productos más rentables</h2>
+                <p>
+                    Rentabilidad basada solamente en costos reales conocidos.
+                </p>
+            </div>
+
+        </div>
+
+
+        {% if productos_rentables %}
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Venta neta</th>
+                            <th>Costo</th>
+                            <th>Ganancia</th>
+                            <th>Margen</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for producto in productos_rentables %}
+
+                            <tr>
+
+                                <td>
+
+                                    <strong>
+                                        {{ producto.nombre }}
+                                    </strong>
+
+                                    <small class="reportes-table-sub">
+                                        {{ producto.unidades }} unidad(es)
+                                        · {{ producto.pedidos }} pedido(s)
+                                    </small>
+
+                                </td>
+
+                                <td>
+                                    Q {{ "%.2f"|format(producto.venta_neta) }}
+                                </td>
+
+                                <td>
+                                    Q {{ "%.2f"|format(producto.costo_real) }}
+                                </td>
+
+                                <td>
+
+                                    <strong
+                                        class="
+                                            {% if producto.ganancia_real >= 0 %}
+                                                margen-positivo
+                                            {% else %}
+                                                margen-negativo
+                                            {% endif %}
+                                        "
+                                    >
+                                        Q {{ "%.2f"|format(producto.ganancia_real) }}
+                                    </strong>
+
+                                </td>
+
+                                <td>
+
+                                    <strong
+                                        class="
+                                            {% if producto.margen >= 0 %}
+                                                margen-positivo
+                                            {% else %}
+                                                margen-negativo
+                                            {% endif %}
+                                        "
+                                    >
+                                        {{ "%.2f"|format(producto.margen) }}%
+                                    </strong>
+
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-state-icon">
+                    📈
+                </div>
+
+                <h3>Aún no hay costos reales</h3>
+
+                <p>
+                    Termina producciones para comenzar
+                    a medir rentabilidad.
+                </p>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     INVENTARIO
+============================================================ -->
+
+<div class="card reportes-seccion-card">
+
+    <div class="reportes-section-header">
+
+        <div>
+            <h2>🧱 Consumo de inventario</h2>
+            <p>
+                Materiales con mayor costo de consumo durante el período.
+            </p>
+        </div>
+
+        <a
+            href="{{ url_for('inventario.lista') }}"
+            class="btn-secondary"
+        >
+            Ver inventario
+        </a>
+
+    </div>
+
+
+    {% if materiales_mas_consumidos %}
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Cantidad consumida</th>
+                        <th>Costo consumido</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {% for material in materiales_mas_consumidos %}
+
+                        <tr>
+
+                            <td>
+
+                                <strong>
+                                    {{ material.nombre }}
+                                </strong>
+
+                                {% if material.color %}
+                                    <small class="reportes-table-sub">
+                                        {{ material.color }}
+                                    </small>
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                {{ material.cantidad_consumida }}
+                                {{ material.abreviatura }}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    Q {{ "%.2f"|format(material.costo_consumido) }}
+                                </strong>
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <div class="empty-state-icon">
+                🧱
+            </div>
+
+            <h3>Sin consumo de materiales</h3>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     CLIENTES
+============================================================ -->
+
+<div class="reportes-grid">
+
+    <div class="card">
+
+        <div class="reportes-section-header">
+
+            <div>
+                <h2>👥 Clientes con más compras</h2>
+                <p>Mayor valor de pedidos en el período.</p>
+            </div>
+
+        </div>
+
+
+        {% if mejores_clientes %}
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Cliente</th>
+                            <th>Pedidos</th>
+                            <th>Total comprado</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for cliente in mejores_clientes %}
+
+                            <tr>
+
+                                <td>
+                                    <strong>#{{ loop.index }}</strong>
+                                </td>
+
+                                <td>
+
+                                    <a
+                                        href="{{ url_for(
+                                            'clientes.detalle',
+                                            cliente_id=cliente.id
+                                        ) }}"
+                                        class="pedido-numero"
+                                    >
+                                        {{ cliente.nombre }}
+                                    </a>
+
+                                </td>
+
+                                <td>
+                                    {{ cliente.pedidos }}
+                                </td>
+
+                                <td>
+                                    <strong>
+                                        Q {{ "%.2f"|format(cliente.total_comprado) }}
+                                    </strong>
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-state-icon">
+                    👥
+                </div>
+
+                <h3>Sin clientes en el período</h3>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="reportes-section-header">
+
+            <div>
+                <h2>💳 Mayores saldos pendientes</h2>
+                <p>Clientes con mayor saldo actual por cobrar.</p>
+            </div>
+
+        </div>
+
+
+        {% if clientes_con_mayor_saldo %}
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Cliente</th>
+                            <th>Saldo</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for cliente in clientes_con_mayor_saldo %}
+
+                            <tr>
+
+                                <td>
+                                    <strong>#{{ loop.index }}</strong>
+                                </td>
+
+                                <td>
+
+                                    <a
+                                        href="{{ url_for(
+                                            'clientes.detalle',
+                                            cliente_id=cliente.id
+                                        ) }}"
+                                        class="pedido-numero"
+                                    >
+                                        {{ cliente.nombre }}
+                                    </a>
+
+                                </td>
+
+                                <td>
+                                    <strong class="margen-negativo">
+                                        Q {{ "%.2f"|format(cliente.saldo_pendiente) }}
+                                    </strong>
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-state-icon">
+                    ✅
+                </div>
+
+                <h3>Sin saldos pendientes</h3>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     INGRESOS / EGRESOS POR CATEGORÍA
+============================================================ -->
+
+<div class="reportes-tablas-grid">
+
+    <div class="card">
+
+        <div class="reportes-section-header">
+
+            <div>
+                <h2>💰 Detalle de ingresos</h2>
+                <p>Ingresos registrados por categoría.</p>
+            </div>
+
+        </div>
+
+
+        {% if ingresos_categoria %}
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for ingreso in ingresos_categoria %}
+
+                            <tr>
+
+                                <td>
+                                    <strong>
+                                        {{ ingreso.categoria|replace('_', ' ')|title }}
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <strong class="margen-positivo">
+                                        Q {{ "%.2f"|format(ingreso.total) }}
+                                    </strong>
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-state-icon">
+                    💰
+                </div>
+
+                <h3>Sin ingresos</h3>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="reportes-section-header">
+
+            <div>
+                <h2>💸 Detalle de egresos</h2>
+                <p>Egresos registrados por categoría.</p>
+            </div>
+
+        </div>
+
+
+        {% if egresos_categoria %}
+
+            <div class="table-container">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Categoría</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for egreso in egresos_categoria %}
+
+                            <tr>
+
+                                <td>
+                                    <strong>
+                                        {{ egreso.categoria|replace('_', ' ')|title }}
+                                    </strong>
+                                </td>
+
+                                <td>
+                                    <strong class="margen-negativo">
+                                        Q {{ "%.2f"|format(egreso.total) }}
+                                    </strong>
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-state-icon">
+                    💸
+                </div>
+
+                <h3>Sin egresos</h3>
+
+            </div>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const ingresosDia =
+            {{ ingresos_por_dia | tojson }};
+
+        const egresosDia =
+            {{ egresos_por_dia | tojson }};
+
+        const pedidosEstado =
+            {{ pedidos_por_estado | tojson }};
+
+        const ingresosCategoria =
+            {{ ingresos_categoria | tojson }};
+
+        const egresosCategoria =
+            {{ egresos_categoria | tojson }};
+
+
+        Chart.defaults.font.family =
+            'Inter, "Segoe UI", Arial, sans-serif';
+
+        Chart.defaults.color =
+            "#62697A";
+
+
+        const mapaFechas =
+            new Set();
+
+        ingresosDia.forEach(
+            function (item) {
+                mapaFechas.add(
+                    String(item.fecha)
+                );
+            }
+        );
+
+        egresosDia.forEach(
+            function (item) {
+                mapaFechas.add(
+                    String(item.fecha)
+                );
+            }
+        );
+
+        const fechas =
+            Array.from(
+                mapaFechas
+            ).sort();
+
+
+        const formatearFecha =
+            function (fecha) {
+
+                const fechaObj =
+                    new Date(fecha);
+
+                if (
+                    isNaN(
+                        fechaObj.getTime()
+                    )
+                ) {
+                    return fecha;
+                }
+
+                return fechaObj.toLocaleDateString(
+                    "es-GT",
+                    {
+                        day: "2-digit",
+                        month: "short",
+                        timeZone: "UTC"
+                    }
+                );
+            };
+
+
+        const datosIngresos =
+            fechas.map(
+                function (fecha) {
+
+                    const registro =
+                        ingresosDia.find(
+                            function (item) {
+                                return (
+                                    String(item.fecha)
+                                    === fecha
+                                );
+                            }
+                        );
+
+                    return registro
+                        ? parseFloat(registro.total)
+                        : 0;
+                }
+            );
+
+
+        const datosEgresos =
+            fechas.map(
+                function (fecha) {
+
+                    const registro =
+                        egresosDia.find(
+                            function (item) {
+                                return (
+                                    String(item.fecha)
+                                    === fecha
+                                );
+                            }
+                        );
+
+                    return registro
+                        ? parseFloat(registro.total)
+                        : 0;
+                }
+            );
+
+
+        const graficaFinanzas =
+            document.getElementById(
+                "graficaFinanzas"
+            );
+
+        if (graficaFinanzas) {
+
+            new Chart(
+                graficaFinanzas,
+                {
+                    type: "line",
+
+                    data: {
+
+                        labels:
+                            fechas.map(
+                                formatearFecha
+                            ),
+
+                        datasets: [
+                            {
+                                label: "Ingresos",
+                                data: datosIngresos,
+                                borderColor: "#16834B",
+                                backgroundColor:
+                                    "rgba(22, 131, 75, 0.10)",
+                                borderWidth: 3,
+                                pointRadius: 4,
+                                tension: 0.3,
+                                fill: true
+                            },
+                            {
+                                label: "Egresos",
+                                data: datosEgresos,
+                                borderColor: "#C62828",
+                                backgroundColor:
+                                    "rgba(198, 40, 40, 0.08)",
+                                borderWidth: 3,
+                                pointRadius: 4,
+                                tension: 0.3,
+                                fill: true
+                            }
+                        ]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        interaction: {
+                            mode: "index",
+                            intersect: false
+                        },
+
+                        plugins: {
+                            legend: {
+                                position: "bottom"
+                            }
+                        },
+
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+
+        const graficaEstados =
+            document.getElementById(
+                "graficaEstados"
+            );
+
+        if (graficaEstados) {
+
+            const nombresEstados = {
+                COTIZACION: "Cotización",
+                CONFIRMADO: "Confirmado",
+                EN_PRODUCCION: "En producción",
+                LISTO: "Listo",
+                ENTREGADO: "Entregado",
+                CANCELADO: "Cancelado"
+            };
+
+            const coloresEstados = {
+                COTIZACION: "#FFE902",
+                CONFIRMADO: "#3549A0",
+                EN_PRODUCCION: "#7C3AED",
+                LISTO: "#DF3671",
+                ENTREGADO: "#16834B",
+                CANCELADO: "#C62828"
+            };
+
+            new Chart(
+                graficaEstados,
+                {
+                    type: "doughnut",
+
+                    data: {
+
+                        labels:
+                            pedidosEstado.map(
+                                function (item) {
+                                    return (
+                                        nombresEstados[item.estado]
+                                        || item.estado
+                                    );
+                                }
+                            ),
+
+                        datasets: [
+                            {
+                                data:
+                                    pedidosEstado.map(
+                                        function (item) {
+                                            return parseInt(
+                                                item.total,
+                                                10
+                                            );
+                                        }
+                                    ),
+
+                                backgroundColor:
+                                    pedidosEstado.map(
+                                        function (item) {
+                                            return (
+                                                coloresEstados[item.estado]
+                                                || "#94A3B8"
+                                            );
+                                        }
+                                    ),
+
+                                borderColor: "#FFFFFF",
+                                borderWidth: 3
+                            }
+                        ]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: "62%",
+
+                        plugins: {
+                            legend: {
+                                position: "bottom"
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+
+        const graficaIngresos =
+            document.getElementById(
+                "graficaIngresos"
+            );
+
+        if (graficaIngresos) {
+
+            new Chart(
+                graficaIngresos,
+                {
+                    type: "bar",
+
+                    data: {
+
+                        labels:
+                            ingresosCategoria.map(
+                                function (item) {
+                                    return item.categoria;
+                                }
+                            ),
+
+                        datasets: [
+                            {
+                                data:
+                                    ingresosCategoria.map(
+                                        function (item) {
+                                            return parseFloat(
+                                                item.total
+                                            );
+                                        }
+                                    ),
+
+                                backgroundColor: "#3549A0",
+                                borderRadius: 7
+                            }
+                        ]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+
+        const graficaEgresos =
+            document.getElementById(
+                "graficaEgresos"
+            );
+
+        if (graficaEgresos) {
+
+            new Chart(
+                graficaEgresos,
+                {
+                    type: "bar",
+
+                    data: {
+
+                        labels:
+                            egresosCategoria.map(
+                                function (item) {
+                                    return item.categoria;
+                                }
+                            ),
+
+                        datasets: [
+                            {
+                                data:
+                                    egresosCategoria.map(
+                                        function (item) {
+                                            return parseFloat(
+                                                item.total
+                                            );
+                                        }
+                                    ),
+
+                                backgroundColor: "#DF3671",
+                                borderRadius: 7
+                            }
+                        ]
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                }
+            );
+        }
+
+    }
+);
+
+</script>
+
+
+<style>
+
+.reportes-periodo-card,
+.reportes-rentabilidad-card,
+.reportes-seccion-card {
+    margin-bottom: 20px;
+    padding: 24px 28px;
+}
+
+.reportes-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.reportes-section-header h2 {
+    margin: 0;
+    color: var(--navy);
+}
+
+.reportes-section-header p {
+    margin: 5px 0 0;
+    color: var(--text-soft);
+    font-size: 13px;
+}
+
+.reportes-filtros {
+    display: grid;
+    grid-template-columns:
+        minmax(180px, 1fr)
+        minmax(180px, 1fr)
+        auto;
+    gap: 18px;
+    align-items: end;
+}
+
+.reportes-resumen {
+    display: grid;
+    grid-template-columns:
+        repeat(5, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.reportes-resumen-card {
+    min-width: 0;
+    padding: 17px 18px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.reportes-resumen-card span {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-soft);
+    font-size: 11px;
+}
+
+.reportes-resumen-card strong {
+    color: var(--navy);
+    font-size: 19px;
+}
+
+.reportes-card-resultado-positivo {
+    border-left: 4px solid #22c55e;
+}
+
+.reportes-card-resultado-positivo strong {
+    color: #15803d;
+}
+
+.reportes-card-resultado-negativo {
+    border-left: 4px solid #ef4444;
+}
+
+.reportes-card-resultado-negativo strong {
+    color: #dc2626;
+}
+
+.reportes-operativo {
+    display: grid;
+    grid-template-columns:
+        repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.reportes-mini-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 15px 16px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.reportes-mini-icon {
+    font-size: 21px;
+}
+
+.reportes-mini-card strong {
+    display: block;
+    color: var(--navy);
+    font-size: 18px;
+}
+
+.reportes-mini-card div span {
+    color: var(--text-soft);
+    font-size: 11px;
+}
+
+.reportes-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.reportes-status-ok {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.reportes-status-warning {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.reportes-rentabilidad-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(5, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.reportes-rentabilidad-grid > div {
+    min-width: 0;
+    padding: 16px 17px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+}
+
+.reportes-rentabilidad-grid span {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-soft);
+    font-size: 11px;
+}
+
+.reportes-rentabilidad-grid strong {
+    color: var(--navy);
+    font-size: 18px;
+}
+
+.reportes-rentabilidad-ganancia {
+    background: #f7fff9 !important;
+    border-left: 4px solid #22c55e !important;
+}
+
+.reportes-rentabilidad-ganancia strong {
+    color: #15803d;
+}
+
+.reportes-rentabilidad-perdida {
+    background: #fffafa !important;
+    border-left: 4px solid #ef4444 !important;
+}
+
+.reportes-rentabilidad-perdida strong {
+    color: #dc2626;
+}
+
+.reportes-info-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 16px;
+    padding: 14px 16px;
+    background: #fffdf6;
+    border: 1px solid #fde68a;
+    border-radius: 9px;
+}
+
+.reportes-info-note p {
+    margin: 0;
+    color: #6b5b22;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.reportes-grid,
+.reportes-tablas-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.reportes-grid > .card,
+.reportes-tablas-grid > .card {
+    min-width: 0;
+    padding: 24px 28px;
+}
+
+.chart-container {
+    position: relative;
+    height: 320px;
+}
+
+.chart-container-small {
+    height: 300px;
+}
+
+.reportes-table-sub {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-soft);
+    font-size: 10px;
+}
+
+@media (max-width: 1200px) {
+
+    .reportes-resumen,
+    .reportes-operativo,
+    .reportes-rentabilidad-grid {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 900px) {
+
+    .reportes-grid,
+    .reportes-tablas-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .reportes-filtros {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+    .reportes-filtro-accion {
+        grid-column: 1 / -1;
+    }
+
+}
+
+@media (max-width: 650px) {
+
+    .reportes-resumen,
+    .reportes-operativo,
+    .reportes-rentabilidad-grid,
+    .reportes-filtros {
+        grid-template-columns: 1fr;
+    }
+
+    .reportes-periodo-card,
+    .reportes-rentabilidad-card,
+    .reportes-seccion-card,
+    .reportes-grid > .card,
+    .reportes-tablas-grid > .card {
+        padding: 20px;
+    }
+
+    .reportes-section-header {
+        flex-direction: column;
+    }
+
+}
+
+</style>
+
+{% endblock %}

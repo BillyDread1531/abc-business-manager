@@ -1,0 +1,1490 @@
+{% extends "base.html" %}
+
+{% block title %}
+Dashboard - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+
+<!-- ============================================================
+     ENCABEZADO
+============================================================ -->
+
+<div class="page-header">
+
+    <div>
+
+        <h1>
+            Bienvenido
+        </h1>
+
+        <p>
+            Resumen general y estado actual del negocio.
+        </p>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     RESUMEN FINANCIERO
+============================================================ -->
+
+<div class="dashboard-resumen">
+
+
+    <!-- INGRESOS -->
+
+    <div class="dashboard-card dashboard-card-ingresos">
+
+        <span class="dashboard-card-label">
+            Ingresos del mes
+        </span>
+
+        <strong class="dashboard-card-valor">
+            Q {{ "%.2f"|format(ingresos_mes) }}
+        </strong>
+
+    </div>
+
+
+    <!-- EGRESOS -->
+
+    <div class="dashboard-card dashboard-card-egresos">
+
+        <span class="dashboard-card-label">
+            Egresos del mes
+        </span>
+
+        <strong class="dashboard-card-valor">
+            Q {{ "%.2f"|format(egresos_mes) }}
+        </strong>
+
+    </div>
+
+
+    <!-- RESULTADO -->
+
+    <div
+        class="
+            dashboard-card
+
+            {% if resultado_mes >= 0 %}
+                dashboard-card-resultado-positivo
+            {% else %}
+                dashboard-card-resultado-negativo
+            {% endif %}
+        "
+    >
+
+        <span class="dashboard-card-label">
+            Resultado del mes
+        </span>
+
+        <strong class="dashboard-card-valor">
+            Q {{ "%.2f"|format(resultado_mes) }}
+        </strong>
+
+    </div>
+
+
+    <!-- SALDO POR COBRAR -->
+
+    <div class="dashboard-card dashboard-card-cobrar">
+
+        <span class="dashboard-card-label">
+            Saldo pendiente por cobrar
+        </span>
+
+        <strong class="dashboard-card-valor">
+            Q {{ "%.2f"|format(saldo_por_cobrar) }}
+        </strong>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     ESTADO OPERATIVO
+============================================================ -->
+
+<div class="dashboard-seccion">
+
+    <div class="dashboard-seccion-header">
+
+        <h2>
+            Estado operativo
+        </h2>
+
+        <p>
+            Situación actual de pedidos, producción,
+            inventario y compras.
+        </p>
+
+    </div>
+
+
+    <div class="dashboard-operativo-grid">
+
+
+        <!-- PEDIDOS EN PRODUCCIÓN -->
+
+        <a
+            href="{{ url_for('pedidos.listar') }}"
+            class="dashboard-mini-card"
+        >
+
+            <span class="dashboard-mini-icon">
+                🛠️
+            </span>
+
+            <div>
+
+                <strong>
+                    {{ pedidos_produccion }}
+                </strong>
+
+                <span>
+                    Pedidos en producción
+                </span>
+
+            </div>
+
+        </a>
+
+
+        <!-- PEDIDOS LISTOS -->
+
+        <a
+            href="{{ url_for('pedidos.listar') }}"
+            class="dashboard-mini-card"
+        >
+
+            <span class="dashboard-mini-icon">
+                📦
+            </span>
+
+            <div>
+
+                <strong>
+                    {{ pedidos_listos }}
+                </strong>
+
+                <span>
+                    Pedidos listos
+                </span>
+
+            </div>
+
+        </a>
+
+
+        <!-- PRODUCCIONES -->
+
+        <a
+            href="{{ url_for('producciones.lista') }}"
+            class="dashboard-mini-card"
+        >
+
+            <span class="dashboard-mini-icon">
+                🏭
+            </span>
+
+            <div>
+
+                <strong>
+                    {{ producciones_activas }}
+                </strong>
+
+                <span>
+                    Producciones activas
+                </span>
+
+            </div>
+
+        </a>
+
+
+        <!-- COMPRAS PENDIENTES -->
+
+        <a
+            href="{{ url_for('compras.lista') }}"
+            class="dashboard-mini-card"
+        >
+
+            <span class="dashboard-mini-icon">
+                💳
+            </span>
+
+            <div>
+
+                <strong>
+                    {{ compras_pendientes_pago }}
+                </strong>
+
+                <span>
+                    Compras pendientes de pago
+                </span>
+
+            </div>
+
+        </a>
+
+
+        <!-- STOCK BAJO -->
+
+        <a
+            href="{{ url_for('materiales.lista') }}"
+            class="dashboard-mini-card"
+        >
+
+            <span class="dashboard-mini-icon">
+                ⚠️
+            </span>
+
+            <div>
+
+                <strong>
+                    {{ materiales_stock_bajo }}
+                </strong>
+
+                <span>
+                    Materiales con stock bajo
+                </span>
+
+            </div>
+
+        </a>
+
+
+        <!-- ENTREGAS VENCIDAS -->
+
+        <a
+            href="#entregas-vencidas"
+            class="dashboard-mini-card"
+        >
+
+            <span class="dashboard-mini-icon">
+                ⏰
+            </span>
+
+            <div>
+
+                <strong>
+                    {{ total_entregas_vencidas }}
+                </strong>
+
+                <span>
+                    Entregas vencidas
+                </span>
+
+            </div>
+
+        </a>
+
+
+        <!-- CLIENTES CON SALDO -->
+
+        <a
+            href="#clientes-con-saldo"
+            class="dashboard-mini-card"
+        >
+
+            <span class="dashboard-mini-icon">
+                💰
+            </span>
+
+            <div>
+
+                <strong>
+                    {{ total_clientes_con_saldo }}
+                </strong>
+
+                <span>
+                    Clientes con saldo
+                </span>
+
+            </div>
+
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     CENTRO DE ALERTAS
+============================================================ -->
+
+<div class="card dashboard-alertas-card">
+
+    <div class="dashboard-seccion-header">
+
+        <div>
+
+            <div class="dashboard-alertas-titulo">
+
+                <h2>
+                    🔔 Alertas y pendientes
+                </h2>
+
+                {% if total_alertas > 0 %}
+
+                    <span class="dashboard-alertas-contador">
+                        {{ total_alertas }}
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+            <p>
+                Situaciones del negocio que requieren tu atención.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    {% if alertas %}
+
+        <div class="dashboard-alertas-lista">
+
+            {% for alerta in alertas %}
+
+                <div
+                    class="
+                        dashboard-alerta-item
+                        dashboard-alerta-{{ alerta.nivel }}
+                    "
+                >
+
+                    <div class="dashboard-alerta-icono">
+
+                        {{ alerta.icono }}
+
+                    </div>
+
+
+                    <div class="dashboard-alerta-contenido">
+
+                        <div class="dashboard-alerta-meta">
+
+                            <span
+                                class="
+                                    dashboard-alerta-tipo
+                                    dashboard-alerta-tipo-{{ alerta.nivel }}
+                                "
+                            >
+                                {{ alerta.tipo }}
+                            </span>
+
+                        </div>
+
+
+                        <strong class="dashboard-alerta-titulo-item">
+
+                            {{ alerta.titulo }}
+
+                        </strong>
+
+
+                        <p>
+
+                            {{ alerta.descripcion }}
+
+                        </p>
+
+                    </div>
+
+
+                    <div class="dashboard-alerta-accion">
+
+                        <a
+                            href="{{ alerta.url }}"
+                            class="btn-secondary btn-sm"
+                        >
+                            {{ alerta.accion }}
+                        </a>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        </div>
+
+
+        {% if total_alertas > alertas|length %}
+
+            <div class="dashboard-alertas-nota">
+
+                Mostrando las
+                {{ alertas|length }}
+                alertas más importantes de
+                {{ total_alertas }}
+                situaciones activas.
+
+            </div>
+
+        {% endif %}
+
+
+    {% else %}
+
+        <div class="dashboard-alertas-vacio">
+
+            <div>
+                ✅
+            </div>
+
+            <strong>
+                Todo está bajo control
+            </strong>
+
+            <p>
+                No hay alertas importantes en este momento.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     ENTREGAS VENCIDAS
+============================================================ -->
+
+{% if entregas_vencidas %}
+
+<div
+    class="
+        card
+        dashboard-card-seccion
+        dashboard-alerta-vencida
+    "
+    id="entregas-vencidas"
+>
+
+    <div class="dashboard-seccion-header">
+
+        <div>
+
+            <h2>
+                ⏰ Entregas vencidas
+            </h2>
+
+            <p>
+                Pedidos cuya fecha de entrega ya pasó
+                y todavía no han sido entregados.
+            </p>
+
+        </div>
+
+
+        <span class="dashboard-alerta-contador">
+            {{ total_entregas_vencidas }}
+        </span>
+
+    </div>
+
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Pedido
+                    </th>
+
+                    <th>
+                        Cliente
+                    </th>
+
+                    <th>
+                        Debía entregarse
+                    </th>
+
+                    <th>
+                        Estado
+                    </th>
+
+                    <th>
+                        Acción
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for pedido in entregas_vencidas %}
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+                                {{ pedido.numero }}
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            {{ pedido.cliente }}
+
+                        </td>
+
+
+                        <td>
+
+                            <strong class="dashboard-fecha-vencida">
+
+                                {{ pedido.fecha_entrega.strftime(
+                                    '%d/%m/%Y %H:%M'
+                                ) }}
+
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            {% if pedido.estado == "COTIZACION" %}
+
+                                <span class="estado estado-cotizacion">
+                                    📝 Cotización
+                                </span>
+
+                            {% elif pedido.estado == "CONFIRMADO" %}
+
+                                <span class="estado estado-confirmado">
+                                    ✅ Confirmado
+                                </span>
+
+                            {% elif pedido.estado == "EN PRODUCCION" %}
+
+                                <span class="estado estado-produccion">
+                                    🛠️ En producción
+                                </span>
+
+                            {% elif pedido.estado == "LISTO" %}
+
+                                <span class="estado estado-listo">
+                                    📦 Listo
+                                </span>
+
+                            {% else %}
+
+                                {{ pedido.estado }}
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            <a
+                                href="{{ url_for(
+                                    'pedidos.detalle',
+                                    pedido_id=pedido.id
+                                ) }}"
+                                class="btn-secondary btn-sm"
+                            >
+                                Ver pedido
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+<!-- ============================================================
+     PRÓXIMAS ENTREGAS
+============================================================ -->
+
+<div class="card dashboard-card-seccion">
+
+    <div class="dashboard-seccion-header">
+
+        <div>
+
+            <h2>
+                Próximas entregas
+            </h2>
+
+            <p>
+                Pedidos pendientes ordenados por fecha de entrega.
+            </p>
+
+        </div>
+
+
+        <a
+            href="{{ url_for('pedidos.listar') }}"
+            class="btn-secondary"
+        >
+            Ver pedidos
+        </a>
+
+    </div>
+
+
+    {% if proximas_entregas %}
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Pedido
+                        </th>
+
+                        <th>
+                            Cliente
+                        </th>
+
+                        <th>
+                            Fecha de entrega
+                        </th>
+
+                        <th>
+                            Estado
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for pedido in proximas_entregas %}
+
+                        <tr>
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'pedidos.detalle',
+                                        pedido_id=pedido.id
+                                    ) }}"
+                                    class="finanza-referencia"
+                                >
+                                    {{ pedido.numero }}
+                                    ↗
+                                </a>
+
+                            </td>
+
+
+                            <td>
+
+                                {{ pedido.cliente }}
+
+                            </td>
+
+
+                            <td>
+
+                                {{
+                                    pedido.fecha_entrega.strftime(
+                                        '%d/%m/%Y %H:%M'
+                                    )
+                                    if pedido.fecha_entrega
+                                    else '-'
+                                }}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if pedido.estado == "COTIZACION" %}
+
+                                    <span class="estado estado-cotizacion">
+                                        📝 Cotización
+                                    </span>
+
+                                {% elif pedido.estado == "CONFIRMADO" %}
+
+                                    <span class="estado estado-confirmado">
+                                        ✅ Confirmado
+                                    </span>
+
+                                {% elif pedido.estado == "EN PRODUCCION" %}
+
+                                    <span class="estado estado-produccion">
+                                        🛠️ En producción
+                                    </span>
+
+                                {% elif pedido.estado == "LISTO" %}
+
+                                    <span class="estado estado-listo">
+                                        📦 Listo
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="estado">
+                                        {{ pedido.estado }}
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <div class="empty-state-icon">
+                📅
+            </div>
+
+            <h3>
+                No hay próximas entregas
+            </h3>
+
+            <p>
+                No hay pedidos pendientes con una
+                fecha futura de entrega.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     CLIENTES CON SALDO
+============================================================ -->
+
+{% if clientes_con_saldo %}
+
+<div
+    class="card dashboard-card-seccion"
+    id="clientes-con-saldo"
+>
+
+    <div class="dashboard-seccion-header">
+
+        <div>
+
+            <h2>
+                💰 Clientes con saldo pendiente
+            </h2>
+
+            <p>
+                Clientes que todavía tienen pagos pendientes.
+            </p>
+
+        </div>
+
+
+        <a
+            href="{{ url_for('clientes.listar') }}"
+            class="btn-secondary"
+        >
+            Ver clientes
+        </a>
+
+    </div>
+
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>
+                        Cliente
+                    </th>
+
+                    <th>
+                        Teléfono
+                    </th>
+
+                    <th>
+                        Total comprado
+                    </th>
+
+                    <th>
+                        Total pagado
+                    </th>
+
+                    <th>
+                        Saldo
+                    </th>
+
+                    <th>
+                        Acción
+                    </th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for cliente in clientes_con_saldo %}
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+                                {{ cliente.nombre }}
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            {{ cliente.telefono or "-" }}
+
+                        </td>
+
+
+                        <td>
+
+                            Q {{
+                                "%.2f"|format(
+                                    cliente.total_comprado
+                                )
+                            }}
+
+                        </td>
+
+
+                        <td>
+
+                            <strong class="margen-positivo">
+
+                                Q {{
+                                    "%.2f"|format(
+                                        cliente.total_pagado
+                                    )
+                                }}
+
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            <strong class="dashboard-saldo-pendiente">
+
+                                Q {{
+                                    "%.2f"|format(
+                                        cliente.saldo_pendiente
+                                    )
+                                }}
+
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            <a
+                                href="{{ url_for(
+                                    'clientes.detalle',
+                                    cliente_id=cliente.id
+                                ) }}"
+                                class="btn-secondary btn-sm"
+                            >
+                                Ver cliente
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+<!-- ============================================================
+     MOVIMIENTOS FINANCIEROS
+============================================================ -->
+
+<div class="card dashboard-card-seccion">
+
+    <div class="dashboard-seccion-header">
+
+        <div>
+
+            <h2>
+                Movimientos financieros recientes
+            </h2>
+
+            <p>
+                Últimos ingresos y egresos registrados.
+            </p>
+
+        </div>
+
+
+        <a
+            href="{{ url_for('finanzas.index') }}"
+            class="btn-secondary"
+        >
+            Ver Finanzas
+        </a>
+
+    </div>
+
+
+    {% if movimientos %}
+
+        <div class="table-container">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Fecha
+                        </th>
+
+                        <th>
+                            Tipo
+                        </th>
+
+                        <th>
+                            Categoría
+                        </th>
+
+                        <th>
+                            Descripción
+                        </th>
+
+                        <th>
+                            Monto
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for movimiento in movimientos %}
+
+                        <tr>
+
+                            <td>
+
+                                {{
+                                    movimiento.fecha.strftime(
+                                        '%d/%m/%Y %H:%M'
+                                    )
+                                    if movimiento.fecha
+                                    else '-'
+                                }}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if movimiento.tipo == "INGRESO" %}
+
+                                    <span class="estado-pago estado-pagado">
+                                        🟢 Ingreso
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="estado-pago estado-pendiente">
+                                        🔴 Egreso
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {{ movimiento.categoria or "-" }}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if movimiento.pedido_id %}
+
+                                    <a
+                                        href="{{ url_for(
+                                            'pedidos.detalle',
+                                            pedido_id=movimiento.pedido_id
+                                        ) }}"
+                                        class="finanza-referencia"
+                                    >
+
+                                        {{
+                                            movimiento.descripcion
+                                            or "Ver pedido"
+                                        }}
+
+                                        <span>
+                                            ↗
+                                        </span>
+
+                                    </a>
+
+
+                                {% elif movimiento.compra_id %}
+
+                                    <a
+                                        href="{{ url_for(
+                                            'compras.detalle',
+                                            compra_id=movimiento.compra_id
+                                        ) }}"
+                                        class="finanza-referencia"
+                                    >
+
+                                        {{
+                                            movimiento.descripcion
+                                            or "Ver compra"
+                                        }}
+
+                                        <span>
+                                            ↗
+                                        </span>
+
+                                    </a>
+
+
+                                {% else %}
+
+                                    {{
+                                        movimiento.descripcion
+                                        or "-"
+                                    }}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if movimiento.tipo == "INGRESO" %}
+
+                                    <strong class="margen-positivo">
+
+                                        + Q {{
+                                            "%.2f"|format(
+                                                movimiento.monto
+                                            )
+                                        }}
+
+                                    </strong>
+
+                                {% else %}
+
+                                    <strong class="margen-negativo">
+
+                                        - Q {{
+                                            "%.2f"|format(
+                                                movimiento.monto
+                                            )
+                                        }}
+
+                                    </strong>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <div class="empty-state-icon">
+                💰
+            </div>
+
+            <h3>
+                Sin movimientos recientes
+            </h3>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     ESTILOS DEL CENTRO DE ALERTAS
+============================================================ -->
+
+<style>
+
+/* ============================================================
+   CENTRO DE ALERTAS
+============================================================ */
+
+.dashboard-alertas-card {
+    margin-top: 24px;
+
+    padding: 24px;
+}
+
+
+/* TÍTULO */
+
+.dashboard-alertas-titulo {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+}
+
+
+.dashboard-alertas-titulo h2 {
+    margin: 0;
+}
+
+
+/* CONTADOR */
+
+.dashboard-alertas-contador {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 28px;
+    height: 28px;
+
+    padding: 0 8px;
+
+    background: #fee2e2;
+
+    border-radius: 999px;
+
+    color: #b91c1c;
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+
+/* LISTADO */
+
+.dashboard-alertas-lista {
+    display: flex;
+    flex-direction: column;
+
+    gap: 10px;
+
+    margin-top: 18px;
+}
+
+
+/* ALERTA */
+
+.dashboard-alerta-item {
+    display: grid;
+
+    grid-template-columns:
+        auto
+        minmax(0, 1fr)
+        auto;
+
+    align-items: center;
+
+    gap: 14px;
+
+    padding: 14px 16px;
+
+    border: 1px solid #e5e7eb;
+    border-left-width: 4px;
+
+    border-radius: 10px;
+
+    transition:
+        transform 0.15s ease,
+        box-shadow 0.15s ease;
+}
+
+
+.dashboard-alerta-item:hover {
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 4px 12px
+        rgba(15, 23, 42, 0.06);
+}
+
+
+/* NIVELES */
+
+.dashboard-alerta-danger {
+    background: #fffafa;
+
+    border-left-color: #ef4444;
+}
+
+
+.dashboard-alerta-warning {
+    background: #fffdf6;
+
+    border-left-color: #f59e0b;
+}
+
+
+.dashboard-alerta-info {
+    background: #f8fbff;
+
+    border-left-color: #3b82f6;
+}
+
+
+/* ICONO */
+
+.dashboard-alerta-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 42px;
+    height: 42px;
+
+    flex-shrink: 0;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+
+    border-radius: 10px;
+
+    font-size: 20px;
+}
+
+
+/* CONTENIDO */
+
+.dashboard-alerta-contenido {
+    min-width: 0;
+}
+
+
+.dashboard-alerta-meta {
+    margin-bottom: 3px;
+}
+
+
+.dashboard-alerta-tipo {
+    display: inline-flex;
+
+    padding: 3px 8px;
+
+    border-radius: 999px;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    letter-spacing: 0.04em;
+}
+
+
+.dashboard-alerta-tipo-danger {
+    background: #fee2e2;
+
+    color: #b91c1c;
+}
+
+
+.dashboard-alerta-tipo-warning {
+    background: #fef3c7;
+
+    color: #92400e;
+}
+
+
+.dashboard-alerta-tipo-info {
+    background: #dbeafe;
+
+    color: #1d4ed8;
+}
+
+
+.dashboard-alerta-titulo-item {
+    display: block;
+
+    color: var(--navy);
+
+    font-size: 14px;
+}
+
+
+.dashboard-alerta-contenido p {
+    margin: 3px 0 0;
+
+    color: var(--text-soft);
+
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+
+/* ACCIÓN */
+
+.dashboard-alerta-accion {
+    white-space: nowrap;
+}
+
+
+/* NOTA */
+
+.dashboard-alertas-nota {
+    margin-top: 14px;
+
+    color: var(--text-soft);
+
+    font-size: 12px;
+
+    text-align: center;
+}
+
+
+/* SIN ALERTAS */
+
+.dashboard-alertas-vacio {
+    padding: 30px 20px;
+
+    text-align: center;
+}
+
+
+.dashboard-alertas-vacio > div {
+    margin-bottom: 8px;
+
+    font-size: 30px;
+}
+
+
+.dashboard-alertas-vacio strong {
+    display: block;
+
+    color: var(--navy);
+
+    font-size: 16px;
+}
+
+
+.dashboard-alertas-vacio p {
+    margin: 5px 0 0;
+
+    color: var(--text-soft);
+
+    font-size: 13px;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 750px) {
+
+    .dashboard-alerta-item {
+        grid-template-columns:
+            auto
+            minmax(0, 1fr);
+    }
+
+
+    .dashboard-alerta-accion {
+        grid-column: 1 / -1;
+
+        padding-left: 56px;
+    }
+
+}
+
+</style>
+
+{% endblock %}

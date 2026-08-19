@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+
+{% block title %}
+Productos - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Productos</h1>
+        <p>Administra los productos y servicios de ABC.</p>
+    </div>
+
+    <a
+        href="{{ url_for('productos.nuevo') }}"
+        class="btn-primary"
+    >
+        + Nuevo producto
+    </a>
+
+</div>
+
+
+<div class="card" style="margin-bottom: 20px;">
+
+    <form
+        method="GET"
+        action="{{ url_for('productos.listar') }}"
+    >
+
+        <input
+            type="text"
+            name="q"
+            placeholder="Buscar producto o categoría..."
+            value="{{ busqueda }}"
+        >
+
+        <button
+            type="submit"
+            class="btn-primary"
+            style="margin-top: 10px;"
+        >
+            🔎 Buscar
+        </button>
+
+        {% if busqueda %}
+
+            <a
+                href="{{ url_for('productos.listar') }}"
+                class="btn-secondary"
+            >
+                Limpiar
+            </a>
+
+        {% endif %}
+
+    </form>
+
+</div>
+
+
+<div class="card">
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Producto</th>
+                    <th>Categoría</th>
+                    <th>Tipo</th>
+                    <th>Producción</th>
+                    <th>Precio</th>
+                    <th>Stock</th>
+                    <th>Acciones</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for producto in productos %}
+
+                    <tr>
+
+                        <td>
+
+                            <strong>
+                                {{ producto.nombre }}
+                            </strong>
+
+                            {% if producto.descripcion %}
+
+                                <br>
+
+                                <small>
+                                    {{ producto.descripcion }}
+                                </small>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+                            {{ producto.categoria }}
+                        </td>
+
+
+                        <td>
+
+                            {% if producto.tipo == "PRODUCTO" %}
+                                Producto
+                            {% else %}
+                                Servicio
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if producto.metodo_produccion == "INTERNA" %}
+                                Interna
+                            {% elif producto.metodo_produccion == "EXTERNA" %}
+                                Externa
+                            {% elif producto.metodo_produccion == "REVENTA" %}
+                                Reventa
+                            {% else %}
+                                {{ producto.metodo_produccion }}
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if producto.tipo_calculo_precio == "M2" %}
+
+                                <strong>
+                                    Q {{ "%.2f"|format(producto.precio_base) }}
+                                </strong>
+
+                                <small class="producto-precio-tipo">
+                                    / m²
+                                </small>
+
+                            {% elif producto.tipo_calculo_precio == "METRO_LINEAL" %}
+
+                                <strong>
+                                    Q {{ "%.2f"|format(producto.precio_base) }}
+                                </strong>
+
+                                <small class="producto-precio-tipo">
+                                    / metro
+                                </small>
+
+                            {% elif producto.tipo_calculo_precio == "MANUAL" %}
+
+                                <strong>
+                                    Manual
+                                </strong>
+
+                                {% if producto.precio_base > 0 %}
+                                    <small class="producto-precio-tipo">
+                                        Ref. Q {{ "%.2f"|format(producto.precio_base) }}
+                                    </small>
+                                {% endif %}
+
+                            {% else %}
+
+                                <strong>
+                                    Q {{ "%.2f"|format(producto.precio_base) }}
+                                </strong>
+
+                                <small class="producto-precio-tipo">
+                                    / unidad
+                                </small>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if producto.controla_stock %}
+                                Sí
+                            {% else %}
+                                No
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            <div class="table-actions">
+
+                                <a
+                                    href="{{ url_for(
+                                        'productos.precios',
+                                        producto_id=producto.id
+                                    ) }}"
+                                    class="btn-action btn-action-price"
+                                >
+                                    💰 Precios
+                                </a>
+
+                                <a
+                                    href="{{ url_for(
+                                        'variantes.listar',
+                                        producto_id=producto.id
+                                    ) }}"
+                                    class="btn-action btn-action-variant"
+                                >
+                                    🧩 Variantes
+                                </a>
+
+                                <a
+                                    href="{{ url_for(
+                                        'materiales.materiales_producto',
+                                        producto_id=producto.id
+                                    ) }}"
+                                    class="btn-action btn-action-material"
+                                >
+                                    🧱 Materiales
+                                </a>
+
+                                <a
+                                    href="{{ url_for(
+                                        'productos.editar',
+                                        producto_id=producto.id
+                                    ) }}"
+                                    class="btn-action btn-action-edit"
+                                >
+                                    ✏️ Editar
+                                </a>
+
+                            </div>
+
+                        </td>
+
+                    </tr>
+
+
+                {% else %}
+
+                    <tr>
+
+                        <td colspan="7">
+                            No hay productos registrados.
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<style>
+
+.producto-precio-tipo {
+    display: block;
+    margin-top: 3px;
+    color: #62697a;
+    font-size: 10px;
+}
+
+</style>
+
+{% endblock %}

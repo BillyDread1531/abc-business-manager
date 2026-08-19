@@ -1,0 +1,589 @@
+{% extends "base.html" %}
+
+{% block title %}
+Nuevo pedido - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Nuevo pedido</h1>
+
+        <p>
+            Selecciona el cliente y define los datos generales del pedido.
+        </p>
+    </div>
+
+</div>
+
+
+<div class="card pedido-nuevo-card">
+
+    <form method="POST" class="pedido-nuevo-form">
+
+        <!-- ============================================================
+             CLIENTE
+        ============================================================ -->
+
+        <div class="pedido-nuevo-section">
+
+            <div class="pedido-nuevo-section-header">
+
+                <div>
+                    <h2>👤 Cliente</h2>
+
+                    <p>
+                        Busca un cliente existente o registra uno nuevo.
+                    </p>
+                </div>
+
+                <a
+                    href="{{ url_for('clientes.nuevo') }}"
+                    class="btn-secondary"
+                >
+                    + Nuevo cliente
+                </a>
+
+            </div>
+
+
+            <div class="form-group pedido-cliente-autocomplete">
+
+                <label for="cliente_busqueda">
+                    Buscar cliente *
+                </label>
+
+                <div class="pedido-cliente-search-box">
+
+                    <span class="pedido-cliente-search-icon">
+                        🔎
+                    </span>
+
+                    <input
+                        type="text"
+                        id="cliente_busqueda"
+                        placeholder="Escribe nombre, teléfono o correo..."
+                        autocomplete="off"
+                    >
+
+                </div>
+
+                <input
+                    type="hidden"
+                    name="cliente_id"
+                    id="cliente_id"
+                    required
+                >
+
+
+                <div
+                    id="cliente_resultados"
+                    class="pedido-cliente-resultados"
+                    style="display: none;"
+                >
+
+                    {% for cliente in clientes %}
+
+                        <button
+                            type="button"
+                            class="pedido-cliente-resultado"
+
+                            data-id="{{ cliente.id }}"
+                            data-nombre="{{ cliente.nombre }}"
+                            data-telefono="{{ cliente.telefono or '' }}"
+                            data-email="{{ cliente.email or '' }}"
+                            data-pedidos="{{ cliente.total_pedidos or 0 }}"
+                            data-saldo="{{ '%.2f'|format(cliente.saldo_pendiente or 0) }}"
+                        >
+
+                            <div class="pedido-cliente-resultado-info">
+
+                                <strong>
+                                    {{ cliente.nombre }}
+                                </strong>
+
+                                <span>
+
+                                    {% if cliente.telefono %}
+                                        📱 {{ cliente.telefono }}
+                                    {% else %}
+                                        Sin teléfono
+                                    {% endif %}
+
+                                    {% if cliente.email %}
+                                        · {{ cliente.email }}
+                                    {% endif %}
+
+                                </span>
+
+                            </div>
+
+
+                            <div class="pedido-cliente-resultado-saldo">
+
+                                {% if cliente.saldo_pendiente and cliente.saldo_pendiente > 0 %}
+
+                                    <strong>
+                                        Q {{ "%.2f"|format(cliente.saldo_pendiente) }}
+                                    </strong>
+
+                                    <span>
+                                        pendiente
+                                    </span>
+
+                                {% else %}
+
+                                    <strong class="pedido-cliente-sin-saldo">
+                                        ✓ Sin saldo
+                                    </strong>
+
+                                {% endif %}
+
+                            </div>
+
+                        </button>
+
+                    {% endfor %}
+
+                </div>
+
+
+                <small class="form-help">
+                    Busca por nombre, teléfono o correo y selecciona un cliente.
+                </small>
+
+            </div>
+
+
+            <div
+                id="cliente_resumen"
+                class="pedido-cliente-resumen"
+                style="display: none;"
+            >
+
+                <div class="pedido-cliente-resumen-main">
+
+                    <div>
+                        <span class="pedido-cliente-resumen-label">
+                            Cliente seleccionado
+                        </span>
+
+                        <strong id="cliente_resumen_nombre">
+                            —
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="pedido-cliente-resumen-label">
+                            Teléfono
+                        </span>
+
+                        <strong id="cliente_resumen_telefono">
+                            —
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="pedido-cliente-resumen-label">
+                            Pedidos
+                        </span>
+
+                        <strong id="cliente_resumen_pedidos">
+                            0
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span class="pedido-cliente-resumen-label">
+                            Saldo pendiente
+                        </span>
+
+                        <strong id="cliente_resumen_saldo">
+                            Q 0.00
+                        </strong>
+                    </div>
+
+                </div>
+
+                <div
+                    id="cliente_saldo_aviso"
+                    class="pedido-cliente-saldo-aviso"
+                    style="display: none;"
+                >
+                    💰 Este cliente tiene saldo pendiente en pedidos anteriores.
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             DATOS DEL PEDIDO
+        ============================================================ -->
+
+        <div class="pedido-nuevo-section">
+
+            <div class="pedido-nuevo-section-header">
+
+                <div>
+                    <h2>🧾 Datos del pedido</h2>
+
+                    <p>
+                        Define la fecha de entrega y cualquier detalle general.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="pedido-nuevo-grid">
+
+                <div class="form-group">
+
+                    <label for="fecha_entrega">
+                        Fecha de entrega
+                        <span class="pedido-opcional">
+                            (opcional)
+                        </span>
+                    </label>
+
+                    <input
+                        type="datetime-local"
+                        id="fecha_entrega"
+                        name="fecha_entrega"
+                    >
+
+                    <small class="form-help">
+                        Déjalo vacío si todavía no hay una fecha acordada.
+                    </small>
+
+                </div>
+
+
+                <div class="form-group pedido-nuevo-notas">
+
+                    <label for="notas">
+                        Notas
+                        <span class="pedido-opcional">
+                            (opcional)
+                        </span>
+                    </label>
+
+                    <textarea
+                        id="notas"
+                        name="notas"
+                        rows="3"
+                        placeholder="Detalles generales del pedido..."
+                    ></textarea>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             ACCIONES
+        ============================================================ -->
+
+        <div class="form-actions pedido-nuevo-actions">
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                Crear pedido
+            </button>
+
+            <a
+                href="{{ url_for('pedidos.listar') }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<script>
+
+/* ============================================================
+   AUTOCOMPLETADO Y RESUMEN DEL CLIENTE
+============================================================ */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const busqueda =
+            document.getElementById(
+                "cliente_busqueda"
+            );
+
+        const clienteId =
+            document.getElementById(
+                "cliente_id"
+            );
+
+        const resultados =
+            document.getElementById(
+                "cliente_resultados"
+            );
+
+        const clientes =
+            Array.from(
+                document.querySelectorAll(
+                    ".pedido-cliente-resultado"
+                )
+            );
+
+
+        const resumen =
+            document.getElementById(
+                "cliente_resumen"
+            );
+
+        const resumenNombre =
+            document.getElementById(
+                "cliente_resumen_nombre"
+            );
+
+        const resumenTelefono =
+            document.getElementById(
+                "cliente_resumen_telefono"
+            );
+
+        const resumenPedidos =
+            document.getElementById(
+                "cliente_resumen_pedidos"
+            );
+
+        const resumenSaldo =
+            document.getElementById(
+                "cliente_resumen_saldo"
+            );
+
+        const avisoSaldo =
+            document.getElementById(
+                "cliente_saldo_aviso"
+            );
+
+        const formulario =
+            document.querySelector(
+                ".pedido-nuevo-form"
+            );
+
+
+        function filtrarClientes() {
+
+            const termino =
+                busqueda.value
+                    .trim()
+                    .toLowerCase();
+
+            let encontrados = 0;
+
+
+            clientes.forEach(
+                function (cliente) {
+
+                    const texto =
+                        [
+                            cliente.dataset.nombre || "",
+                            cliente.dataset.telefono || "",
+                            cliente.dataset.email || ""
+                        ]
+                        .join(" ")
+                        .toLowerCase();
+
+
+                    const coincide =
+                        termino
+                        &&
+                        texto.includes(
+                            termino
+                        );
+
+
+                    cliente.style.display =
+                        coincide
+                        ? "flex"
+                        : "none";
+
+
+                    if (coincide) {
+                        encontrados++;
+                    }
+
+                }
+            );
+
+
+            resultados.style.display =
+                encontrados > 0
+                ? "block"
+                : "none";
+
+        }
+
+
+        function seleccionarCliente(cliente) {
+
+            const saldoNumero =
+                parseFloat(
+                    cliente.dataset.saldo || "0"
+                );
+
+
+            clienteId.value =
+                cliente.dataset.id;
+
+            busqueda.value =
+                cliente.dataset.nombre;
+
+            resultados.style.display =
+                "none";
+
+
+            resumenNombre.textContent =
+                cliente.dataset.nombre || "—";
+
+            resumenTelefono.textContent =
+                cliente.dataset.telefono || "—";
+
+            resumenPedidos.textContent =
+                cliente.dataset.pedidos || "0";
+
+            resumenSaldo.textContent =
+                "Q " + saldoNumero.toFixed(2);
+
+
+            if (saldoNumero > 0) {
+
+                resumenSaldo.classList.add(
+                    "pedido-cliente-saldo-pendiente"
+                );
+
+                avisoSaldo.style.display =
+                    "block";
+
+            } else {
+
+                resumenSaldo.classList.remove(
+                    "pedido-cliente-saldo-pendiente"
+                );
+
+                avisoSaldo.style.display =
+                    "none";
+
+            }
+
+
+            resumen.style.display =
+                "block";
+
+        }
+
+
+        busqueda.addEventListener(
+            "input",
+            function () {
+
+                clienteId.value =
+                    "";
+
+                resumen.style.display =
+                    "none";
+
+                filtrarClientes();
+
+            }
+        );
+
+
+        busqueda.addEventListener(
+            "focus",
+            function () {
+
+                if (
+                    busqueda.value.trim()
+                    &&
+                    !clienteId.value
+                ) {
+                    filtrarClientes();
+                }
+
+            }
+        );
+
+
+        clientes.forEach(
+            function (cliente) {
+
+                cliente.addEventListener(
+                    "click",
+                    function () {
+
+                        seleccionarCliente(
+                            cliente
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+
+        document.addEventListener(
+            "click",
+            function (event) {
+
+                if (
+                    !event.target.closest(
+                        ".pedido-cliente-autocomplete"
+                    )
+                ) {
+
+                    resultados.style.display =
+                        "none";
+
+                }
+
+            }
+        );
+
+
+        formulario.addEventListener(
+            "submit",
+            function (event) {
+
+                if (!clienteId.value) {
+
+                    event.preventDefault();
+
+                    busqueda.focus();
+
+                    alert(
+                        "Selecciona un cliente de los resultados."
+                    );
+
+                }
+
+            }
+        );
+
+    }
+);
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,287 @@
+{% extends "base.html" %}
+
+{% block title %}
+Pedidos - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Pedidos</h1>
+        <p>Administra cotizaciones, pedidos y entregas.</p>
+    </div>
+
+    <a
+        href="{{ url_for('pedidos.nuevo') }}"
+        class="btn-primary"
+    >
+        + Nuevo pedido
+    </a>
+
+</div>
+
+
+<div class="card pedidos-buscador-card">
+
+    <form
+        method="GET"
+        class="pedidos-buscador"
+    >
+
+        <div class="pedidos-buscador-input">
+
+            <input
+                type="text"
+                name="q"
+                placeholder="Buscar por cliente o número de pedido..."
+                value="{{ busqueda }}"
+            >
+
+        </div>
+
+        <button
+            type="submit"
+            class="btn-primary"
+        >
+            🔎 Buscar
+        </button>
+
+        {% if busqueda %}
+
+            <a
+                href="{{ url_for('pedidos.listar') }}"
+                class="btn-secondary"
+            >
+                ✕ Limpiar
+            </a>
+
+        {% endif %}
+
+    </form>
+
+</div>
+
+<div class="card">
+
+    <table>
+
+        <thead>
+
+            <tr>
+
+                <th>Pedido</th>
+                <th>Cliente</th>
+                <th class="pedido-fecha-col">Fecha</th>
+                <th class="pedido-fecha-col">Entrega</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Pago</th>
+                <th>Acciones</th>
+
+            </tr>
+
+        </thead>
+
+
+        <tbody>
+
+            {% for pedido in pedidos %}
+
+            <tr>
+
+                <!-- PEDIDO -->
+
+                <td>
+
+                    <a
+                        href="{{ url_for(
+                            'pedidos.detalle',
+                            pedido_id=pedido.id
+                        ) }}"
+                        class="pedido-numero"
+                    >
+                        {{ pedido.numero }}
+                    </a>
+
+                </td>
+
+
+                <!-- CLIENTE -->
+
+                <td>
+
+                    {% if pedido.cliente_id %}
+
+                        <a
+                            href="{{ url_for(
+                                'clientes.detalle',
+                                cliente_id=pedido.cliente_id
+                            ) }}"
+                            class="pedido-cliente-link"
+                            title="Ver perfil del cliente"
+                        >
+                            {{ pedido.cliente }}
+                        </a>
+
+                    {% else %}
+
+                        {{ pedido.cliente }}
+
+                    {% endif %}
+
+                </td>
+
+
+                <!-- FECHA -->
+
+                <td class="pedido-fecha-col">
+                    {% if pedido.fecha %}
+                        {{ pedido.fecha.strftime('%d/%m/%Y %H:%M') }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+                <!-- FECHA DE ENTREGA -->
+
+                <td class="pedido-fecha-col">
+                    {% if pedido.fecha_entrega %}
+                        {{ pedido.fecha_entrega.strftime('%d/%m/%Y %H:%M') }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+
+
+                <!-- TOTAL -->
+
+                <td>
+
+                    <strong>
+                        Q {{ "%.2f"|format(pedido.total) }}
+                    </strong>
+
+                </td>
+
+
+                <!-- ESTADO DEL PEDIDO -->
+
+                <td>
+
+                    {% if pedido.estado == "COTIZACION" %}
+
+                        <span class="estado estado-cotizacion">
+                            📝 Cotización
+                        </span>
+
+                    {% elif pedido.estado == "CONFIRMADO" %}
+
+                        <span class="estado estado-confirmado">
+                            ✅ Confirmado
+                        </span>
+
+                    {% elif pedido.estado == "EN PRODUCCION" %}
+
+                        <span class="estado estado-produccion">
+                            🛠️ En producción
+                        </span>
+
+                    {% elif pedido.estado == "LISTO" %}
+
+                        <span class="estado estado-listo">
+                            📦 Listo
+                        </span>
+
+                    {% elif pedido.estado == "ENTREGADO" %}
+
+                        <span class="estado estado-entregado">
+                            🚚 Entregado
+                        </span>
+
+                    {% elif pedido.estado == "CANCELADO" %}
+
+                        <span class="estado estado-cancelado">
+                            ❌ Cancelado
+                        </span>
+
+                    {% else %}
+
+                        {{ pedido.estado }}
+
+                    {% endif %}
+
+                </td>
+
+
+                <!-- ESTADO DEL PAGO -->
+
+                <td>
+
+                    {% if pedido.total_pagado >= pedido.total %}
+
+                        <span class="estado estado-entregado">
+                            🟢 Pagado
+                        </span>
+
+                    {% elif pedido.total_pagado > 0 %}
+
+                        <span class="estado estado-produccion">
+
+                            🟡 Q {{ "%.2f"|format(pedido.total_pagado) }}
+                            /
+                            Q {{ "%.2f"|format(pedido.total) }}
+
+                        </span>
+
+                    {% else %}
+
+                        <span class="estado estado-cancelado">
+                            🔴 Pendiente
+                        </span>
+
+                    {% endif %}
+
+                </td>
+
+
+                <!-- ACCIONES -->
+
+                <td>
+
+                    <a
+                        href="{{ url_for(
+                            'pedidos.detalle',
+                            pedido_id=pedido.id
+                        ) }}"
+                        class="btn-ver-pedido"
+                        title="Ver detalle del pedido"
+                    >
+                        👁️ Ver detalle
+                    </a>
+
+                </td>
+
+            </tr>
+
+
+            {% else %}
+
+            <tr>
+
+                <td colspan="8">
+                    No hay pedidos registrados.
+                </td>
+
+            </tr>
+
+            {% endfor %}
+
+        </tbody>
+
+    </table>
+
+</div>
+
+{% endblock %}

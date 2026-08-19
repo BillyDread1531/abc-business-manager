@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+
+{% block title %}
+Materiales - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Materiales</h1>
+        <p>
+            Administra los materiales utilizados en tus productos.
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('materiales.nuevo') }}"
+        class="btn-primary"
+    >
+        + Nuevo material
+    </a>
+
+</div>
+
+
+<div class="card materiales-toolbar-card">
+
+    <form
+        method="GET"
+        action="{{ url_for('materiales.lista') }}"
+        class="materiales-toolbar"
+    >
+
+        <div class="materiales-search">
+
+            <span class="materiales-search-icon">
+                🔎
+            </span>
+
+            <input
+                type="search"
+                name="q"
+                value="{{ busqueda }}"
+                placeholder="Buscar por material, color o categoría..."
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <div class="materiales-filtros">
+
+            <button
+                type="submit"
+                name="filtro"
+                value="todos"
+                class="material-filter-btn {% if filtro == 'todos' %}active{% endif %}"
+            >
+                Todos
+                <span>{{ contadores.todos or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="bajo"
+                class="material-filter-btn {% if filtro == 'bajo' %}active{% endif %}"
+            >
+                ⚠️ Stock bajo
+                <span>{{ contadores.bajos or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="agotado"
+                class="material-filter-btn {% if filtro == 'agotado' %}active{% endif %}"
+            >
+                🔴 Agotados
+                <span>{{ contadores.agotados or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="inactivo"
+                class="material-filter-btn {% if filtro == 'inactivo' %}active{% endif %}"
+            >
+                Inactivos
+                <span>{{ contadores.inactivos or 0 }}</span>
+            </button>
+
+        </div>
+
+
+        {% if busqueda or filtro != "todos" %}
+
+            <a
+                href="{{ url_for('materiales.lista') }}"
+                class="btn-secondary materiales-limpiar"
+            >
+                Limpiar
+            </a>
+
+        {% endif %}
+
+    </form>
+
+</div>
+
+
+<div class="card">
+
+    {% if materiales %}
+
+        <div class="table-container">
+
+            <table class="materiales-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Material</th>
+                        <th>Categoría</th>
+                        <th>Unidad de compra</th>
+                        <th>Unidad de consumo</th>
+                        <th>Costo</th>
+                        <th>Stock actual</th>
+                        <th>Estado</th>
+                        <th class="materiales-acciones-col">Acciones</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for material in materiales %}
+
+                        <tr {% if not material.activo %}class="material-row-inactive"{% endif %}>
+
+                            <td>
+
+                                <div class="material-name-cell">
+
+                                    <strong class="material-name">
+                                        {{ material.nombre }}
+                                    </strong>
+
+                                    {% if material.color %}
+                                        <span class="material-variant">
+                                            {{ material.color }}
+                                        </span>
+                                    {% endif %}
+
+                                </div>
+
+                            </td>
+
+
+                            <td>
+
+                                {% if material.categoria %}
+                                    <span class="material-category">
+                                        {{ material.categoria }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <span class="material-unit-value">
+                                    {{ material.cantidad_por_compra|numero_inteligente }}
+                                    {{ material.abreviatura_compra }}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <span class="material-unit-consumo">
+                                    {{ material.abreviatura_consumo }}
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <strong class="material-cost">
+                                    Q {{ "%.2f"|format(material.costo_compra_referencia) }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {% if material.stock_actual <= 0 %}
+
+                                    <span class="material-stock material-stock-empty">
+                                        <span class="material-stock-icon">●</span>
+                                        {{ material.stock_actual|numero_inteligente }}
+                                        {{ material.abreviatura_consumo }}
+                                        <small>Agotado</small>
+                                    </span>
+
+                                {% elif material.stock_actual <= material.stock_minimo %}
+
+                                    <span class="material-stock material-stock-low">
+                                        <span class="material-stock-icon">⚠</span>
+                                        {{ material.stock_actual|numero_inteligente }}
+                                        {{ material.abreviatura_consumo }}
+                                        <small>Stock bajo</small>
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="material-stock material-stock-ok">
+                                        {{ material.stock_actual|numero_inteligente }}
+                                        {{ material.abreviatura_consumo }}
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if material.activo %}
+
+                                    <span class="estado estado-confirmado">
+                                        Activo
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="estado estado-cancelado">
+                                        Inactivo
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <div class="material-actions">
+
+                                    <a
+                                        href="{{ url_for('materiales.editar', material_id=material.id) }}"
+                                        class="btn-secondary btn-sm material-action-btn"
+                                        title="Editar material"
+                                    >
+                                        ✏️ Editar
+                                    </a>
+
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for('materiales.cambiar_estado', material_id=material.id) }}"
+                                        class="action-form"
+                                        onsubmit="return confirm('{% if material.activo %}¿Desactivar este material?{% else %}¿Activar este material?{% endif %}');"
+                                    >
+
+                                        {% if material.activo %}
+
+                                            <button
+                                                type="submit"
+                                                class="btn-secondary btn-sm material-action-btn"
+                                                title="Desactivar material"
+                                            >
+                                                🔴 Desactivar
+                                            </button>
+
+                                        {% else %}
+
+                                            <button
+                                                type="submit"
+                                                class="btn-secondary btn-sm material-action-btn"
+                                                title="Activar material"
+                                            >
+                                                🟢 Activar
+                                            </button>
+
+                                        {% endif %}
+
+                                    </form>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state">
+
+            {% if busqueda or filtro != "todos" %}
+
+                <div class="empty-state-icon">🔎</div>
+
+                <h3>
+                    No encontramos materiales
+                </h3>
+
+                <p>
+                    Prueba con otra búsqueda o cambia el filtro seleccionado.
+                </p>
+
+                <a
+                    href="{{ url_for('materiales.lista') }}"
+                    class="btn-secondary"
+                >
+                    Limpiar búsqueda
+                </a>
+
+            {% else %}
+
+                <div class="empty-state-icon">🧱</div>
+
+                <h3>
+                    No hay materiales registrados
+                </h3>
+
+                <p>
+                    Comienza agregando el primer material que utilizas
+                    en tus productos.
+                </p>
+
+                <a
+                    href="{{ url_for('materiales.nuevo') }}"
+                    class="btn-primary"
+                >
+                    + Crear material
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

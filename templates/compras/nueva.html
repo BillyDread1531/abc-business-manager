@@ -1,0 +1,1231 @@
+{% extends "base.html" %}
+
+{% block title %}
+Nueva compra - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Nueva compra</h1>
+        <p>
+            Registra materiales e insumos que aumentarán tu inventario.
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for('compras.lista') }}"
+        class="btn-secondary"
+    >
+        ← Volver a compras
+    </a>
+
+</div>
+
+
+<form
+    method="POST"
+    id="compra-form"
+>
+
+    <div class="card compra-nueva-card">
+
+        <div class="compra-section-header">
+
+            <div>
+                <h2>🛒 Información de la compra</h2>
+                <p>Proveedor, fecha y materiales adquiridos.</p>
+            </div>
+
+        </div>
+
+
+        <div class="compra-info-grid">
+
+            <div class="form-group">
+
+                <label for="proveedor_id">
+                    Proveedor
+                </label>
+
+                <div class="compra-proveedor-row">
+
+                    <select
+                        name="proveedor_id"
+                        id="proveedor_id"
+                    >
+
+                        <option value="">
+                            Sin proveedor
+                        </option>
+
+                        {% for proveedor in proveedores %}
+
+                            <option value="{{ proveedor.id }}">
+                                {{ proveedor.nombre }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                    <a
+                        href="{{ url_for('compras.nuevo_proveedor') }}"
+                        class="btn-secondary"
+                    >
+                        + Nuevo
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="fecha">
+                    Fecha de compra *
+                </label>
+
+                <input
+                    type="date"
+                    name="fecha"
+                    id="fecha"
+                    value="{{ fecha_actual }}"
+                    required
+                >
+
+            </div>
+
+
+            <div class="form-group compra-full">
+
+                <label for="notas">
+                    Notas
+                </label>
+
+                <textarea
+                    name="notas"
+                    id="notas"
+                    rows="3"
+                    placeholder="Notas adicionales..."
+                ></textarea>
+
+            </div>
+
+        </div>
+
+
+        <div class="compra-materiales-section">
+
+            <div class="compra-section-header">
+
+                <div>
+                    <h2>🧱 Materiales</h2>
+                    <p>
+                        En materiales de rollo puedes cambiar el ancho
+                        real recibido en esta compra.
+                    </p>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn-primary"
+                    id="agregar-material"
+                >
+                    + Agregar material
+                </button>
+
+            </div>
+
+
+            <div class="table-container compra-materiales-table-wrap">
+
+                <table class="compra-materiales-table">
+
+                    <thead>
+                        <tr>
+                            <th>Material</th>
+                            <th>Cantidad</th>
+                            <th>Unidad</th>
+                            <th>Ancho real</th>
+                            <th>Precio unitario</th>
+                            <th>Total</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+
+
+                    <tbody id="materiales-body">
+
+                        <tr class="material-row">
+
+                            <td>
+
+                                <select
+                                    name="material_id[]"
+                                    class="material-select"
+                                    required
+                                >
+
+                                    <option value="">
+                                        Selecciona un material
+                                    </option>
+
+                                    {% for material in materiales %}
+
+                                        <option
+                                            value="{{ material.id }}"
+                                            data-unidad="{{ material.abreviatura_compra }}"
+                                            data-modo="{{ material.modo_control }}"
+                                            data-ancho="{{ material.ancho_referencia_cm or '' }}"
+                                            data-factor-compra="{{ material.factor_compra }}"
+                                            data-factor-consumo="{{ material.factor_consumo }}"
+                                            data-unidad-consumo="{{ material.abreviatura_consumo }}"
+                                        >
+                                            {{ material.nombre }}
+
+                                            {% if material.color %}
+                                                - {{ material.color }}
+                                            {% endif %}
+                                        </option>
+
+                                    {% endfor %}
+
+                                </select>
+
+                            </td>
+
+
+                            <td>
+
+                                <input
+                                    type="number"
+                                    name="cantidad[]"
+                                    class="cantidad-input"
+                                    min="0.0001"
+                                    step="0.0001"
+                                    placeholder="0"
+                                    required
+                                >
+
+                            </td>
+
+
+                            <td>
+
+                                <span class="unidad-text text-muted">
+                                    —
+                                </span>
+
+                            </td>
+
+
+                            <td>
+
+                                <div class="ancho-cell">
+
+                                    <div
+                                        class="ancho-input-wrap"
+                                        style="display: none;"
+                                    >
+
+                                        <input
+                                            type="number"
+                                            name="ancho_real_cm[]"
+                                            class="ancho-input"
+                                            min="0.0001"
+                                            step="0.0001"
+                                            placeholder="35"
+                                        >
+
+                                        <span>cm</span>
+
+                                    </div>
+
+                                    <span class="ancho-no-aplica">
+                                        —
+                                    </span>
+
+                                    <small
+                                        class="area-preview"
+                                        style="display: none;"
+                                    ></small>
+
+                                </div>
+
+                            </td>
+
+
+                            <td>
+
+                                <div class="compra-money-input">
+
+                                    <span>Q</span>
+
+                                    <input
+                                        type="number"
+                                        name="precio_unitario[]"
+                                        class="precio-input"
+                                        min="0"
+                                        step="0.000001"
+                                        placeholder="0.00"
+                                    >
+
+                                </div>
+
+                            </td>
+
+
+                            <td>
+
+                                <div class="compra-money-input">
+
+                                    <span>Q</span>
+
+                                    <input
+                                        type="number"
+                                        name="subtotal_linea[]"
+                                        class="subtotal-input"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                    >
+
+                                </div>
+
+                            </td>
+
+
+                            <td class="compra-material-delete-cell">
+
+                                <button
+                                    type="button"
+                                    class="eliminar-material"
+                                    title="Eliminar material"
+                                >
+                                    🗑️
+                                </button>
+
+                            </td>
+
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <div class="compra-material-help">
+
+                <span>💡</span>
+
+                <p>
+                    Para un rollo, el ancho viene precargado desde
+                    el material, pero puedes editarlo para esta compra.
+                    El inventario se calculará con el ancho real recibido.
+                </p>
+
+            </div>
+
+
+            <div class="compra-total-row">
+
+                <span>
+                    Total de la compra
+                </span>
+
+                <strong id="total-compra">
+                    Q 0.00
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <div class="card">
+
+        <div class="form-actions">
+
+            <a
+                href="{{ url_for('compras.lista') }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Guardar compra
+            </button>
+
+        </div>
+
+    </div>
+
+</form>
+
+
+<style>
+
+.compra-nueva-card {
+    padding: 26px 30px;
+    margin-bottom: 20px;
+}
+
+.compra-section-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+    margin-bottom: 18px;
+}
+
+.compra-section-header h2 {
+    margin: 0;
+    color: #0b1f5c;
+}
+
+.compra-section-header p {
+    margin: 5px 0 0;
+    color: #62697a;
+    font-size: 13px;
+}
+
+.compra-info-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 24px;
+}
+
+.compra-full {
+    grid-column: 1 / -1;
+}
+
+.compra-proveedor-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+}
+
+.compra-materiales-section {
+    margin-top: 26px;
+    padding-top: 25px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.compra-materiales-table-wrap {
+    overflow-x: auto;
+}
+
+.compra-materiales-table {
+    width: 100%;
+    min-width: 1120px;
+    table-layout: fixed;
+}
+
+.compra-materiales-table th,
+.compra-materiales-table td {
+    vertical-align: middle;
+}
+
+.compra-materiales-table th:nth-child(1),
+.compra-materiales-table td:nth-child(1) {
+    width: 25%;
+}
+
+.compra-materiales-table th:nth-child(2),
+.compra-materiales-table td:nth-child(2) {
+    width: 10%;
+}
+
+.compra-materiales-table th:nth-child(3),
+.compra-materiales-table td:nth-child(3) {
+    width: 8%;
+}
+
+.compra-materiales-table th:nth-child(4),
+.compra-materiales-table td:nth-child(4) {
+    width: 16%;
+}
+
+.compra-materiales-table th:nth-child(5),
+.compra-materiales-table td:nth-child(5) {
+    width: 17%;
+}
+
+.compra-materiales-table th:nth-child(6),
+.compra-materiales-table td:nth-child(6) {
+    width: 17%;
+}
+
+.compra-materiales-table th:nth-child(7),
+.compra-materiales-table td:nth-child(7) {
+    width: 7%;
+    text-align: center;
+}
+
+.compra-materiales-table input,
+.compra-materiales-table select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.compra-money-input,
+.ancho-input-wrap {
+    position: relative;
+}
+
+.compra-money-input > span {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #62697a;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+.compra-money-input input {
+    padding-left: 35px !important;
+}
+
+.ancho-input-wrap > span {
+    position: absolute;
+    right: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #62697a;
+    font-size: 10px;
+    pointer-events: none;
+}
+
+.ancho-input-wrap input {
+    padding-right: 38px !important;
+}
+
+.area-preview {
+    display: block;
+    margin-top: 5px;
+    color: #62697a;
+    font-size: 9px;
+    line-height: 1.35;
+}
+
+.unidad-text {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-weight: 600;
+}
+
+.eliminar-material {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    border-radius: 8px;
+    background: #ef2b2d;
+    color: #fff;
+    cursor: pointer;
+}
+
+.compra-material-help {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #dbe4f0;
+    border-radius: 9px;
+}
+
+.compra-material-help p {
+    margin: 0;
+    color: #62697a;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.compra-total-row {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 18px;
+    margin-top: 18px;
+    padding-top: 18px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.compra-total-row span {
+    color: #0b1f5c;
+    font-size: 16px;
+}
+
+.compra-total-row strong {
+    color: #0b1f5c;
+    font-size: 24px;
+}
+
+@media (max-width: 760px) {
+
+    .compra-info-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .compra-full {
+        grid-column: auto;
+    }
+
+    .compra-nueva-card {
+        padding: 20px;
+    }
+
+}
+
+</style>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const tbody =
+            document.getElementById(
+                "materiales-body"
+            );
+
+        const botonAgregar =
+            document.getElementById(
+                "agregar-material"
+            );
+
+        const totalCompra =
+            document.getElementById(
+                "total-compra"
+            );
+
+
+        function numero(valor) {
+
+            const n = parseFloat(valor);
+
+            return Number.isFinite(n)
+                ? n
+                : 0;
+
+        }
+
+
+        function opcionMaterial(fila) {
+
+            const select =
+                fila.querySelector(
+                    ".material-select"
+                );
+
+            return select.options[
+                select.selectedIndex
+            ];
+
+        }
+
+
+        function actualizarMaterial(fila) {
+
+            const opcion =
+                opcionMaterial(fila);
+
+            const unidad =
+                fila.querySelector(
+                    ".unidad-text"
+                );
+
+            const anchoWrap =
+                fila.querySelector(
+                    ".ancho-input-wrap"
+                );
+
+            const anchoNoAplica =
+                fila.querySelector(
+                    ".ancho-no-aplica"
+                );
+
+            const anchoInput =
+                fila.querySelector(
+                    ".ancho-input"
+                );
+
+            if (
+                !opcion
+                || !opcion.value
+            ) {
+
+                unidad.textContent = "—";
+
+                anchoWrap.style.display =
+                    "none";
+
+                anchoNoAplica.style.display =
+                    "";
+
+                anchoInput.required = false;
+                anchoInput.value = "";
+
+                actualizarArea(fila);
+
+                return;
+
+            }
+
+            unidad.textContent =
+                opcion.dataset.unidad
+                || "—";
+
+            const esRollo =
+                opcion.dataset.modo
+                === "ROLLO_AREA";
+
+            anchoWrap.style.display =
+                esRollo
+                ? ""
+                : "none";
+
+            anchoNoAplica.style.display =
+                esRollo
+                ? "none"
+                : "";
+
+            anchoInput.required = esRollo;
+
+            if (esRollo) {
+
+                anchoInput.value =
+                    opcion.dataset.ancho
+                    || "";
+
+            } else {
+
+                anchoInput.value = "";
+
+            }
+
+            actualizarArea(fila);
+
+        }
+
+
+        function actualizarArea(fila) {
+
+            const opcion =
+                opcionMaterial(fila);
+
+            const preview =
+                fila.querySelector(
+                    ".area-preview"
+                );
+
+            if (
+                !opcion
+                || !opcion.value
+                || opcion.dataset.modo
+                    !== "ROLLO_AREA"
+            ) {
+
+                preview.style.display =
+                    "none";
+
+                preview.textContent = "";
+
+                return;
+
+            }
+
+            const cantidad =
+                numero(
+                    fila.querySelector(
+                        ".cantidad-input"
+                    ).value
+                );
+
+            const ancho =
+                numero(
+                    fila.querySelector(
+                        ".ancho-input"
+                    ).value
+                );
+
+            const factorCompra =
+                numero(
+                    opcion.dataset.factorCompra
+                );
+
+            const factorConsumo =
+                numero(
+                    opcion.dataset.factorConsumo
+                );
+
+            if (
+                cantidad <= 0
+                || ancho <= 0
+                || factorCompra <= 0
+                || factorConsumo <= 0
+            ) {
+
+                preview.style.display =
+                    "none";
+
+                return;
+
+            }
+
+            const areaConsumo =
+                (
+                    cantidad
+                    * factorCompra
+                    * ancho
+                    / factorConsumo
+                );
+
+            preview.style.display =
+                "block";
+
+            preview.textContent =
+                "Ingresarán "
+                + areaConsumo.toFixed(4)
+                + " "
+                + (
+                    opcion.dataset.unidadConsumo
+                    || ""
+                );
+
+        }
+
+
+        function calcularDesdePrecio(fila) {
+
+            const cantidad =
+                numero(
+                    fila.querySelector(
+                        ".cantidad-input"
+                    ).value
+                );
+
+            const precio =
+                numero(
+                    fila.querySelector(
+                        ".precio-input"
+                    ).value
+                );
+
+            const subtotal =
+                fila.querySelector(
+                    ".subtotal-input"
+                );
+
+            subtotal.value =
+                cantidad > 0
+                ? (
+                    cantidad
+                    * precio
+                ).toFixed(2)
+                : "";
+
+            actualizarTotal();
+            actualizarArea(fila);
+
+        }
+
+
+        function calcularDesdeTotal(fila) {
+
+            const cantidad =
+                numero(
+                    fila.querySelector(
+                        ".cantidad-input"
+                    ).value
+                );
+
+            const total =
+                numero(
+                    fila.querySelector(
+                        ".subtotal-input"
+                    ).value
+                );
+
+            const precio =
+                fila.querySelector(
+                    ".precio-input"
+                );
+
+            if (cantidad > 0) {
+
+                precio.value =
+                    (
+                        total
+                        / cantidad
+                    )
+                    .toFixed(6)
+                    .replace(
+                        /\.?0+$/,
+                        ""
+                    );
+
+            }
+
+            actualizarTotal();
+            actualizarArea(fila);
+
+        }
+
+
+        function actualizarTotal() {
+
+            let total = 0;
+
+            document
+                .querySelectorAll(
+                    ".material-row"
+                )
+                .forEach(
+                    function (fila) {
+
+                        total += numero(
+                            fila.querySelector(
+                                ".subtotal-input"
+                            ).value
+                        );
+
+                    }
+                );
+
+            totalCompra.textContent =
+                "Q "
+                + total.toFixed(2);
+
+        }
+
+
+        function configurarFila(fila) {
+
+            const material =
+                fila.querySelector(
+                    ".material-select"
+                );
+
+            const cantidad =
+                fila.querySelector(
+                    ".cantidad-input"
+                );
+
+            const precio =
+                fila.querySelector(
+                    ".precio-input"
+                );
+
+            const subtotal =
+                fila.querySelector(
+                    ".subtotal-input"
+                );
+
+            const ancho =
+                fila.querySelector(
+                    ".ancho-input"
+                );
+
+            const eliminar =
+                fila.querySelector(
+                    ".eliminar-material"
+                );
+
+
+            material.addEventListener(
+                "change",
+                function () {
+
+                    actualizarMaterial(fila);
+
+                }
+            );
+
+
+            cantidad.addEventListener(
+                "input",
+                function () {
+
+                    if (
+                        subtotal.value !== ""
+                        && numero(
+                            subtotal.value
+                        ) > 0
+                    ) {
+
+                        calcularDesdeTotal(
+                            fila
+                        );
+
+                    } else {
+
+                        calcularDesdePrecio(
+                            fila
+                        );
+
+                    }
+
+                }
+            );
+
+
+            precio.addEventListener(
+                "input",
+                function () {
+
+                    calcularDesdePrecio(
+                        fila
+                    );
+
+                }
+            );
+
+
+            subtotal.addEventListener(
+                "input",
+                function () {
+
+                    calcularDesdeTotal(
+                        fila
+                    );
+
+                }
+            );
+
+
+            ancho.addEventListener(
+                "input",
+                function () {
+
+                    actualizarArea(
+                        fila
+                    );
+
+                }
+            );
+
+
+            eliminar.addEventListener(
+                "click",
+                function () {
+
+                    const filas =
+                        document.querySelectorAll(
+                            ".material-row"
+                        );
+
+                    if (filas.length === 1) {
+
+                        material.value = "";
+                        cantidad.value = "";
+                        precio.value = "";
+                        subtotal.value = "";
+                        ancho.value = "";
+
+                        actualizarMaterial(
+                            fila
+                        );
+
+                        actualizarTotal();
+
+                        return;
+
+                    }
+
+                    fila.remove();
+
+                    actualizarTotal();
+
+                }
+            );
+
+
+            actualizarMaterial(fila);
+
+        }
+
+
+        configurarFila(
+            document.querySelector(
+                ".material-row"
+            )
+        );
+
+
+        botonAgregar.addEventListener(
+            "click",
+            function () {
+
+                const original =
+                    document.querySelector(
+                        ".material-row"
+                    );
+
+                const nueva =
+                    original.cloneNode(true);
+
+                nueva
+                    .querySelector(
+                        ".material-select"
+                    )
+                    .value = "";
+
+                nueva
+                    .querySelector(
+                        ".cantidad-input"
+                    )
+                    .value = "";
+
+                nueva
+                    .querySelector(
+                        ".precio-input"
+                    )
+                    .value = "";
+
+                nueva
+                    .querySelector(
+                        ".subtotal-input"
+                    )
+                    .value = "";
+
+                nueva
+                    .querySelector(
+                        ".ancho-input"
+                    )
+                    .value = "";
+
+                tbody.appendChild(
+                    nueva
+                );
+
+                configurarFila(
+                    nueva
+                );
+
+                actualizarTotal();
+
+            }
+        );
+
+
+        document
+            .getElementById(
+                "compra-form"
+            )
+            .addEventListener(
+                "submit",
+                function (event) {
+
+                    let valido = true;
+
+                    document
+                        .querySelectorAll(
+                            ".material-row"
+                        )
+                        .forEach(
+                            function (fila) {
+
+                                const opcion =
+                                    opcionMaterial(
+                                        fila
+                                    );
+
+                                const cantidad =
+                                    numero(
+                                        fila.querySelector(
+                                            ".cantidad-input"
+                                        ).value
+                                    );
+
+                                const precio =
+                                    numero(
+                                        fila.querySelector(
+                                            ".precio-input"
+                                        ).value
+                                    );
+
+                                const subtotal =
+                                    numero(
+                                        fila.querySelector(
+                                            ".subtotal-input"
+                                        ).value
+                                    );
+
+                                const ancho =
+                                    numero(
+                                        fila.querySelector(
+                                            ".ancho-input"
+                                        ).value
+                                    );
+
+                                if (
+                                    !opcion
+                                    || !opcion.value
+                                    || cantidad <= 0
+                                    || (
+                                        precio <= 0
+                                        && subtotal <= 0
+                                    )
+                                ) {
+
+                                    valido = false;
+
+                                }
+
+                                if (
+                                    opcion
+                                    && opcion.value
+                                    && opcion.dataset.modo
+                                        === "ROLLO_AREA"
+                                    && ancho <= 0
+                                ) {
+
+                                    valido = false;
+
+                                }
+
+                            }
+                        );
+
+                    if (!valido) {
+
+                        event.preventDefault();
+
+                        alert(
+                            "Revisa los materiales. "
+                            + "Debes indicar cantidad, precio/total "
+                            + "y, para rollos, un ancho real válido."
+                        );
+
+                    }
+
+                }
+            );
+
+    }
+);
+
+</script>
+
+{% endblock %}

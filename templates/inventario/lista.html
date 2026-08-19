@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}
+Inventario - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+    <div>
+        <h1>Inventario</h1>
+        <p>Consulta existencias y registra entradas, salidas o ajustes de materiales.</p>
+    </div>
+    <div class="inventario-header-actions">
+        <a href="{{ url_for('inventario.entrada') }}" class="btn-primary">＋ Registrar entrada</a>
+        <a href="{{ url_for('inventario.salida') }}" class="btn-secondary">− Registrar salida</a>
+    </div>
+</div>
+
+<div class="card inventario-toolbar-card">
+    <form method="GET" action="{{ url_for('inventario.lista') }}" class="inventario-toolbar">
+        <div class="inventario-search">
+            <span class="inventario-search-icon">🔎</span>
+            <input type="search" name="q" value="{{ busqueda }}" placeholder="Buscar por material, color o categoría..." autocomplete="off">
+        </div>
+        <div class="inventario-filtros">
+            <button type="submit" name="filtro" value="todos" class="inventario-filter-btn {% if filtro == 'todos' %}active{% endif %}">Todos <span>{{ contadores.todos or 0 }}</span></button>
+            <button type="submit" name="filtro" value="disponible" class="inventario-filter-btn {% if filtro == 'disponible' %}active{% endif %}">✓ Disponibles <span>{{ contadores.disponibles or 0 }}</span></button>
+            <button type="submit" name="filtro" value="bajo" class="inventario-filter-btn {% if filtro == 'bajo' %}active{% endif %}">⚠️ Stock bajo <span>{{ contadores.bajos or 0 }}</span></button>
+            <button type="submit" name="filtro" value="agotado" class="inventario-filter-btn {% if filtro == 'agotado' %}active{% endif %}">● Agotados <span>{{ contadores.agotados or 0 }}</span></button>
+        </div>
+        {% if busqueda or filtro != "todos" %}
+            <a href="{{ url_for('inventario.lista') }}" class="btn-secondary inventario-limpiar">Limpiar</a>
+        {% endif %}
+    </form>
+</div>
+
+<div class="card">
+    {% if materiales %}
+        <div class="table-container">
+            <table class="inventario-table">
+                <thead>
+                    <tr>
+                        <th>Material</th>
+                        <th>Categoría</th>
+                        <th>Stock actual</th>
+                        <th>Stock mínimo</th>
+                        <th>Costo unitario</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for material in materiales %}
+                        <tr>
+                            <td>
+                                <div class="inventario-material-cell">
+                                    <strong class="inventario-material-name">{{ material.nombre }}</strong>
+                                    {% if material.color %}<span class="inventario-material-variant">{{ material.color }}</span>{% endif %}
+                                </div>
+                            </td>
+                            <td>
+                                {% if material.categoria %}<span class="inventario-category">{{ material.categoria }}</span>{% else %}<span class="text-muted">—</span>{% endif %}
+                            </td>
+                            <td>
+                                <strong class="inventario-stock-value {% if material.stock_actual <= 0 %}inventario-stock-empty{% elif material.stock_actual <= material.stock_minimo %}inventario-stock-low{% endif %}">
+                                    {{ material.stock_actual|numero_inventario }} {{ material.abreviatura }}
+                                </strong>
+                            </td>
+                            <td><span class="inventario-minimo">{{ material.stock_minimo|numero_inventario }} {{ material.abreviatura }}</span></td>
+                            <td>
+                                <strong class="inventario-costo">Q {{ "%.2f"|format(material.costo_compra_referencia) }}</strong>
+                                <small class="inventario-costo-unidad">/ {{ material.abreviatura }}</small>
+                            </td>
+                            <td>
+                                {% if material.stock_actual <= 0 %}
+                                    <span class="inventario-status inventario-status-empty">● Agotado</span>
+                                {% elif material.stock_actual <= material.stock_minimo %}
+                                    <span class="inventario-status inventario-status-low">⚠ Stock bajo</span>
+                                {% else %}
+                                    <span class="inventario-status inventario-status-ok">✓ Disponible</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="inventario-row-actions">
+                                    <a href="{{ url_for('inventario.historial', material_id=material.id) }}" class="btn-secondary btn-sm">📜 Historial</a>
+                                    <a href="{{ url_for('inventario.ajuste', material_id=material.id) }}" class="btn-secondary btn-sm">⚖️ Ajustar</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="empty-state">
+            {% if busqueda or filtro != "todos" %}
+                <div class="empty-state-icon">🔎</div>
+                <h3>No encontramos materiales</h3>
+                <p>Prueba con otra búsqueda o cambia el filtro seleccionado.</p>
+                <a href="{{ url_for('inventario.lista') }}" class="btn-secondary">Limpiar búsqueda</a>
+            {% else %}
+                <div class="empty-state-icon">📊</div>
+                <h3>No hay materiales en inventario</h3>
+                <p>Registra materiales y sus existencias para comenzar a controlar tu inventario.</p>
+                <a href="{{ url_for('inventario.entrada') }}" class="btn-primary">+ Registrar primera entrada</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<style>
+.inventario-row-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.inventario-row-actions .btn-sm{white-space:nowrap}
+</style>
+
+{% endblock %}

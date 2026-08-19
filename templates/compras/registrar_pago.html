@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+
+{% block title %}
+Registrar pago - {{ compra.numero }} - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Registrar pago</h1>
+
+        <p>
+            Compra <strong>{{ compra.numero }}</strong>
+
+            {% if compra.proveedor %}
+                · Proveedor: <strong>{{ compra.proveedor }}</strong>
+            {% endif %}
+        </p>
+    </div>
+
+    <a
+        href="{{ url_for(
+            'compras.detalle',
+            compra_id=compra.id
+        ) }}"
+        class="btn-secondary"
+    >
+        ← Volver a la compra
+    </a>
+
+</div>
+
+
+<div class="card">
+
+    <div class="form-section">
+
+        <div class="form-section-header">
+
+            <h2>Resumen de la compra</h2>
+
+            <p>
+                Consulta el saldo antes de registrar el pago.
+            </p>
+
+        </div>
+
+
+        <div class="materiales-resumen">
+
+            <div class="material-resumen-card">
+
+                <span class="material-resumen-label">
+                    Total de la compra
+                </span>
+
+                <strong class="material-resumen-valor">
+                    Q {{ "%.2f"|format(compra.total) }}
+                </strong>
+
+            </div>
+
+
+            <div class="material-resumen-card">
+
+                <span class="material-resumen-label">
+                    Total pagado
+                </span>
+
+                <strong class="material-resumen-valor margen-positivo">
+                    Q {{ "%.2f"|format(total_pagado) }}
+                </strong>
+
+            </div>
+
+
+            <div class="material-resumen-card">
+
+                <span class="material-resumen-label">
+                    Saldo pendiente
+                </span>
+
+                <strong class="material-resumen-valor margen-negativo">
+                    Q {{ "%.2f"|format(saldo_pendiente) }}
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <form method="POST" class="pago-compra-form">
+
+        <div class="form-section">
+
+            <div class="form-section-header">
+
+                <h2>Información del pago</h2>
+
+                <p>
+                    Registra el monto realmente pagado al proveedor.
+                </p>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="form-group">
+
+                    <label for="monto">
+                        Monto *
+                    </label>
+
+                    <div class="input-money">
+
+                        <span>Q</span>
+
+                        <input
+                            type="number"
+                            id="monto"
+                            name="monto"
+                            min="0.01"
+                            step="0.01"
+                            max="{{ saldo_pendiente }}"
+                            placeholder="0.00"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="metodo_pago">
+                        Método de pago *
+                    </label>
+
+                    <select
+                        id="metodo_pago"
+                        name="metodo_pago"
+                        required
+                    >
+
+                        <option value="EFECTIVO">
+                            💵 Efectivo
+                        </option>
+
+                        <option value="TRANSFERENCIA">
+                            🏦 Transferencia
+                        </option>
+
+                        <option value="TARJETA">
+                            💳 Tarjeta
+                        </option>
+
+                        <option value="OTRO">
+                            💰 Otro
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="referencia">
+                        Referencia
+                    </label>
+
+                    <input
+                        type="text"
+                        id="referencia"
+                        name="referencia"
+                        maxlength="100"
+                        placeholder="Ej. transferencia, recibo, cheque..."
+                    >
+
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="notas">
+                    Notas
+                </label>
+
+                <textarea
+                    id="notas"
+                    name="notas"
+                    rows="3"
+                    placeholder="Información adicional sobre este pago..."
+                ></textarea>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-actions pago-compra-actions">
+
+            <a
+                href="{{ url_for(
+                    'compras.detalle',
+                    compra_id=compra.id
+                ) }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Registrar pago
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

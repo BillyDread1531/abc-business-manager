@@ -1,0 +1,409 @@
+{% extends "base.html" %}
+
+{% block title %}
+Cotización {{ pedido.numero }} - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header no-print">
+
+    <div>
+        <h1>Cotización {{ pedido.numero }}</h1>
+        <p>Vista previa de la cotización para el cliente.</p>
+    </div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+
+        <a
+            href="{{ url_for('pedidos.detalle', pedido_id=pedido.id) }}"
+            class="btn-secondary"
+        >
+            ← Volver al pedido
+        </a>
+
+        <button
+            type="button"
+            class="btn-primary"
+            onclick="window.print()"
+        >
+            🖨️ Imprimir / Guardar PDF
+        </button>
+
+    </div>
+
+</div>
+
+
+<div class="cotizacion-documento">
+
+    <div class="cotizacion-header">
+
+        <div class="cotizacion-negocio">
+
+            {% if configuracion and configuracion.logo %}
+
+                <img
+                    src="{{ url_for('static', filename=configuracion.logo) }}"
+                    alt="{{ configuracion.nombre_negocio }}"
+                    class="cotizacion-logo"
+                >
+
+            {% endif %}
+
+            <div>
+
+                <h2>
+                    {{ configuracion.nombre_negocio if configuracion else 'ABC' }}
+                </h2>
+
+                {% if configuracion and configuracion.telefono %}
+                    <p>Tel. {{ configuracion.telefono }}</p>
+                {% endif %}
+
+                {% if configuracion and configuracion.whatsapp %}
+                    <p>WhatsApp: {{ configuracion.whatsapp }}</p>
+                {% endif %}
+
+                {% if configuracion and configuracion.email %}
+                    <p>{{ configuracion.email }}</p>
+                {% endif %}
+
+                {% if configuracion and configuracion.direccion %}
+                    <p>{{ configuracion.direccion }}</p>
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <div class="cotizacion-identificacion">
+
+            <span>COTIZACIÓN</span>
+
+            <strong>
+                {{ pedido.numero }}
+            </strong>
+
+            <small>
+                Fecha:
+                {{ pedido.fecha.strftime('%d/%m/%Y') if pedido.fecha else '-' }}
+            </small>
+
+            <small>
+                Cotización válida por
+                {{ configuracion.dias_vigencia_cotizacion if configuracion else 7 }}
+                días
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="cotizacion-seccion">
+
+        <h3>Cliente</h3>
+
+        <div class="cotizacion-cliente-grid">
+
+            <div>
+                <span>Nombre</span>
+                <strong>{{ pedido.cliente }}</strong>
+            </div>
+
+            <div>
+                <span>Teléfono</span>
+                <strong>{{ pedido.cliente_telefono or '-' }}</strong>
+            </div>
+
+            <div>
+                <span>Correo</span>
+                <strong>{{ pedido.cliente_email or '-' }}</strong>
+            </div>
+
+            <div>
+                <span>Fecha de entrega</span>
+                <strong>
+                    {{ pedido.fecha_entrega.strftime('%d/%m/%Y %H:%M')
+                       if pedido.fecha_entrega else '-' }}
+                </strong>
+            </div>
+
+        </div>
+
+        {% if pedido.cliente_direccion %}
+
+            <div class="cotizacion-direccion">
+                <span>Dirección</span>
+                <strong>{{ pedido.cliente_direccion }}</strong>
+            </div>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="cotizacion-seccion">
+
+        <h3>Detalle</h3>
+
+        {% if detalles %}
+
+            <div class="table-container">
+
+                <table class="cotizacion-tabla">
+
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th class="text-right">Cantidad</th>
+                            <th class="text-right">Precio</th>
+                            <th class="text-right">Subtotal</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                        {% for detalle in detalles %}
+
+                            <tr>
+
+                                <td>
+
+                                    <strong>{{ detalle.producto }}</strong>
+
+                                    {% if detalle.variante %}
+                                        <div class="cotizacion-detalle-extra">
+                                            {{ detalle.variante }}
+                                        </div>
+                                    {% endif %}
+
+                                    {% if detalle.variante_talla %}
+                                        <div class="cotizacion-detalle-extra">
+                                            Talla: {{ detalle.variante_talla }}
+                                        </div>
+                                    {% endif %}
+
+                                    {% if detalle.variante_color %}
+                                        <div class="cotizacion-detalle-extra">
+                                            Color: {{ detalle.variante_color }}
+                                        </div>
+                                    {% endif %}
+
+                                    {% if detalle.texto_personalizado %}
+                                        <div class="cotizacion-detalle-extra">
+                                            Personalización:
+                                            {{ detalle.texto_personalizado }}
+                                        </div>
+                                    {% endif %}
+
+                                    {% if detalle.notas %}
+                                        <div class="cotizacion-detalle-extra">
+                                            {{ detalle.notas }}
+                                        </div>
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td class="text-right">
+
+                                    {% if detalle.cantidad == detalle.cantidad|int %}
+                                        {{ detalle.cantidad|int }}
+                                    {% else %}
+                                        {{ "%.2f"|format(detalle.cantidad) }}
+                                    {% endif %}
+
+                                </td>
+
+
+                                <td class="text-right">
+                                    Q {{ "%.2f"|format(detalle.precio_unitario) }}
+                                </td>
+
+
+                                <td class="text-right">
+                                    <strong>
+                                        Q {{ "%.2f"|format(detalle.subtotal) }}
+                                    </strong>
+                                </td>
+
+                            </tr>
+
+                        {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        {% else %}
+
+            <p class="text-muted">
+                Este pedido todavía no tiene productos.
+            </p>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="cotizacion-totales-wrapper">
+
+        <div class="cotizacion-totales">
+
+            <div>
+                <span>Subtotal</span>
+                <strong>Q {{ "%.2f"|format(pedido.subtotal) }}</strong>
+            </div>
+
+            {% if pedido.descuento and pedido.descuento > 0 %}
+
+                <div>
+                    <span>Descuento</span>
+                    <strong>- Q {{ "%.2f"|format(pedido.descuento) }}</strong>
+                </div>
+
+            {% endif %}
+
+            <div class="cotizacion-total-final">
+                <span>Total</span>
+                <strong>Q {{ "%.2f"|format(pedido.total) }}</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    {% if pedido.total > 0 %}
+
+        <div class="cotizacion-anticipo">
+
+            <div>
+                <span>
+                    Anticipo para comenzar la producción
+                    ({{ "%.0f"|format(porcentaje_anticipo) }}%)
+                </span>
+
+                <strong>
+                    Q {{ "%.2f"|format(anticipo_sugerido) }}
+                </strong>
+            </div>
+
+            <div>
+                <span>Saldo después del anticipo</span>
+
+                <strong>
+                    Q {{ "%.2f"|format(saldo_despues_anticipo) }}
+                </strong>
+            </div>
+
+        </div>
+
+    {% endif %}
+
+
+    {% if total_pagado > 0 %}
+
+        <div class="cotizacion-pagos">
+
+            <h3>Estado de pago actual</h3>
+
+            <div>
+                <span>Total pagado</span>
+                <strong>Q {{ "%.2f"|format(total_pagado) }}</strong>
+            </div>
+
+            <div>
+                <span>Saldo pendiente</span>
+                <strong>Q {{ "%.2f"|format(saldo_pendiente) }}</strong>
+            </div>
+
+        </div>
+
+    {% endif %}
+
+
+    {% if configuracion and (
+        configuracion.banco
+        or configuracion.numero_cuenta
+        or configuracion.titular_cuenta
+    ) %}
+
+        <div class="cotizacion-pago-info">
+
+            <h3>Datos para transferencia</h3>
+
+            {% if configuracion.banco %}
+                <p>
+                    <strong>Banco:</strong>
+                    {{ configuracion.banco }}
+                </p>
+            {% endif %}
+
+            {% if configuracion.tipo_cuenta %}
+                <p>
+                    <strong>Tipo de cuenta:</strong>
+                    {{ configuracion.tipo_cuenta }}
+                </p>
+            {% endif %}
+
+            {% if configuracion.numero_cuenta %}
+                <p>
+                    <strong>Número de cuenta:</strong>
+                    {{ configuracion.numero_cuenta }}
+                </p>
+            {% endif %}
+
+            {% if configuracion.titular_cuenta %}
+                <p>
+                    <strong>Titular:</strong>
+                    {{ configuracion.titular_cuenta }}
+                </p>
+            {% endif %}
+
+            {% if configuracion.notas_pago %}
+                <p class="cotizacion-nota-pago">
+                    {{ configuracion.notas_pago }}
+                </p>
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+
+    {% if pedido.notas %}
+
+        <div class="cotizacion-notas">
+
+            <h3>Notas</h3>
+
+            <p>
+                {{ pedido.notas }}
+            </p>
+
+        </div>
+
+    {% endif %}
+
+
+    <div class="cotizacion-footer">
+
+        <strong>
+            ¡Gracias por confiar en nosotros!
+        </strong>
+
+        <span>
+            {{ configuracion.nombre_negocio if configuracion else 'ABC' }}
+        </span>
+
+    </div>
+
+</div>
+
+{% endblock %}

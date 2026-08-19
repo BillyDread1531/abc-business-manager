@@ -1,0 +1,1071 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ cliente.nombre }} - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>{{ cliente.nombre }}</h1>
+
+        <p>
+            Estado de cuenta, pedidos y situación financiera del cliente.
+        </p>
+
+    </div>
+
+
+    <div class="cliente-header-actions">
+
+        <a
+            href="{{ url_for('clientes.listar') }}"
+            class="btn-secondary"
+        >
+            ← Volver a clientes
+        </a>
+
+        <a
+            href="{{ url_for(
+                'clientes.editar',
+                cliente_id=cliente.id
+            ) }}"
+            class="btn-primary"
+        >
+            ✏️ Editar cliente
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     RESUMEN FINANCIERO
+============================================================ -->
+
+<div class="cliente-resumen-cuenta">
+
+    <div class="cliente-resumen-cuenta-card">
+
+        <span>
+            Total comprado
+        </span>
+
+        <strong>
+            Q {{ "%.2f"|format(total_comprado) }}
+        </strong>
+
+    </div>
+
+
+    <div class="cliente-resumen-cuenta-card">
+
+        <span>
+            Total pagado
+        </span>
+
+        <strong class="cliente-valor-positivo">
+            Q {{ "%.2f"|format(total_pagado) }}
+        </strong>
+
+    </div>
+
+
+    <div
+        class="
+            cliente-resumen-cuenta-card
+
+            {% if saldo_pendiente > 0 %}
+                cliente-resumen-saldo
+            {% else %}
+                cliente-resumen-sin-saldo
+            {% endif %}
+        "
+    >
+
+        <span>
+            Saldo pendiente
+        </span>
+
+        <strong>
+            Q {{ "%.2f"|format(saldo_pendiente) }}
+        </strong>
+
+    </div>
+
+
+    <div class="cliente-resumen-cuenta-card">
+
+        <span>
+            Pedidos
+        </span>
+
+        <strong>
+            {{ total_pedidos }}
+        </strong>
+
+    </div>
+
+
+    <div class="cliente-resumen-cuenta-card">
+
+        <span>
+            Pedidos con saldo
+        </span>
+
+        <strong>
+            {{ pedidos_con_saldo }}
+        </strong>
+
+    </div>
+
+
+    <div class="cliente-resumen-cuenta-card">
+
+        <span>
+            Último pedido
+        </span>
+
+        {% if ultimo_pedido %}
+
+            <a
+                href="{{ url_for(
+                    'pedidos.detalle',
+                    pedido_id=ultimo_pedido.id
+                ) }}"
+                class="cliente-ultimo-link"
+            >
+                {{ ultimo_pedido.numero }} ↗
+            </a>
+
+            <small>
+                {{
+                    ultimo_pedido.fecha.strftime(
+                        '%d/%m/%Y'
+                    )
+                    if ultimo_pedido.fecha
+                    else '-'
+                }}
+            </small>
+
+        {% else %}
+
+            <strong>
+                —
+            </strong>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     INFORMACIÓN DEL CLIENTE
+============================================================ -->
+
+<div class="card cliente-detalle-card">
+
+    <div class="cliente-seccion-header">
+
+        <div>
+
+            <h2>
+                👤 Información del cliente
+            </h2>
+
+            <p>
+                Datos generales y de contacto.
+            </p>
+
+        </div>
+
+
+        {% if cliente.activo %}
+
+            <span class="estado estado-entregado">
+                🟢 Activo
+            </span>
+
+        {% else %}
+
+            <span class="estado estado-cancelado">
+                🔴 Inactivo
+            </span>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="cliente-info-grid-nuevo">
+
+        <div>
+
+            <span>
+                Teléfono / WhatsApp
+            </span>
+
+            <strong>
+                {{ cliente.telefono or "—" }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Correo electrónico
+            </span>
+
+            <strong>
+                {{ cliente.email or "—" }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Dirección
+            </span>
+
+            <strong>
+                {{ cliente.direccion or "—" }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Cliente desde
+            </span>
+
+            <strong>
+                {{
+                    cliente.creado_en.strftime(
+                        '%d/%m/%Y'
+                    )
+                    if cliente.creado_en
+                    else "—"
+                }}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    {% if cliente.notas %}
+
+        <div class="cliente-notas-nuevo">
+
+            <span>
+                📝 Notas
+            </span>
+
+            <p>
+                {{ cliente.notas }}
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     PEDIDOS PENDIENTES DE COBRO
+============================================================ -->
+
+{% if pedidos_pendientes %}
+
+<div class="card cliente-detalle-card cliente-cobros-card">
+
+    <div class="cliente-seccion-header">
+
+        <div>
+
+            <h2>
+                💰 Pendiente de cobro
+            </h2>
+
+            <p>
+                Pedidos que todavía tienen saldo pendiente.
+            </p>
+
+        </div>
+
+
+        <span class="cliente-cobros-contador">
+            {{ pedidos_con_saldo }}
+        </span>
+
+    </div>
+
+
+    <div class="table-container">
+
+        <table>
+
+            <thead>
+
+                <tr>
+                    <th>Pedido</th>
+                    <th>Fecha</th>
+                    <th>Total</th>
+                    <th>Pagado</th>
+                    <th>Saldo</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for pedido in pedidos_pendientes %}
+
+                    <tr>
+
+                        <td>
+
+                            <a
+                                href="{{ url_for(
+                                    'pedidos.detalle',
+                                    pedido_id=pedido.id
+                                ) }}"
+                                class="cliente-pedido-link"
+                            >
+                                {{ pedido.numero }}
+                            </a>
+
+                        </td>
+
+
+                        <td>
+
+                            {{
+                                pedido.fecha.strftime(
+                                    '%d/%m/%Y %H:%M'
+                                )
+                                if pedido.fecha
+                                else "—"
+                            }}
+
+                        </td>
+
+
+                        <td>
+
+                            <strong>
+                                Q {{ "%.2f"|format(pedido.total) }}
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            <span class="cliente-valor-positivo">
+                                Q {{ "%.2f"|format(pedido.total_pagado) }}
+                            </span>
+
+                        </td>
+
+
+                        <td>
+
+                            <strong class="cliente-valor-pendiente">
+                                Q {{ "%.2f"|format(pedido.saldo_pendiente) }}
+                            </strong>
+
+                        </td>
+
+
+                        <td>
+
+                            {% if pedido.estado == "COTIZACION" %}
+
+                                <span class="estado estado-cotizacion">
+                                    📝 Cotización
+                                </span>
+
+                            {% elif pedido.estado == "CONFIRMADO" %}
+
+                                <span class="estado estado-confirmado">
+                                    ✅ Confirmado
+                                </span>
+
+                            {% elif pedido.estado == "EN PRODUCCION" %}
+
+                                <span class="estado estado-produccion">
+                                    🛠️ En producción
+                                </span>
+
+                            {% elif pedido.estado == "LISTO" %}
+
+                                <span class="estado estado-listo">
+                                    📦 Listo
+                                </span>
+
+                            {% elif pedido.estado == "ENTREGADO" %}
+
+                                <span class="estado estado-entregado">
+                                    🎉 Entregado
+                                </span>
+
+                            {% else %}
+
+                                <span class="estado">
+                                    {{ pedido.estado }}
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            <a
+                                href="{{ url_for(
+                                    'pedidos.detalle',
+                                    pedido_id=pedido.id
+                                ) }}"
+                                class="btn-secondary btn-sm"
+                            >
+                                Ver pedido
+                            </a>
+
+                        </td>
+
+                    </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+<!-- ============================================================
+     ESTADO DE LOS PEDIDOS
+============================================================ -->
+
+<div class="card cliente-detalle-card">
+
+    <div class="cliente-seccion-header">
+
+        <div>
+
+            <h2>
+                📊 Estado de pedidos
+            </h2>
+
+            <p>
+                Distribución actual de los pedidos del cliente.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="cliente-estados-grid">
+
+        <div>
+            <span>📝 Cotización</span>
+            <strong>{{ estados.cotizacion }}</strong>
+        </div>
+
+        <div>
+            <span>✅ Confirmados</span>
+            <strong>{{ estados.confirmado }}</strong>
+        </div>
+
+        <div>
+            <span>🛠️ En producción</span>
+            <strong>{{ estados.produccion }}</strong>
+        </div>
+
+        <div>
+            <span>📦 Listos</span>
+            <strong>{{ estados.listo }}</strong>
+        </div>
+
+        <div>
+            <span>🎉 Entregados</span>
+            <strong>{{ estados.entregado }}</strong>
+        </div>
+
+        <div>
+            <span>❌ Cancelados</span>
+            <strong>{{ estados.cancelado }}</strong>
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     HISTORIAL COMPLETO DE PEDIDOS
+============================================================ -->
+
+<div class="card cliente-detalle-card">
+
+    <div class="cliente-seccion-header">
+
+        <div>
+
+            <h2>
+                🧾 Historial de pedidos
+            </h2>
+
+            <p>
+                Compras, pagos y saldos asociados a este cliente.
+            </p>
+
+        </div>
+
+
+        <a
+            href="{{ url_for('pedidos.nuevo') }}"
+            class="btn-primary"
+        >
+            + Nuevo pedido
+        </a>
+
+    </div>
+
+
+    {% if pedidos %}
+
+        <div class="table-container">
+
+            <table class="cliente-pedidos-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Pedido</th>
+                        <th>Fecha</th>
+                        <th>Entrega</th>
+                        <th>Total</th>
+                        <th>Pagado</th>
+                        <th>Saldo</th>
+                        <th>Estado</th>
+                        <th>Acción</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for pedido in pedidos %}
+
+                        <tr>
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'pedidos.detalle',
+                                        pedido_id=pedido.id
+                                    ) }}"
+                                    class="cliente-pedido-link"
+                                >
+                                    {{ pedido.numero }}
+                                </a>
+
+                            </td>
+
+
+                            <td>
+
+                                {{
+                                    pedido.fecha.strftime(
+                                        '%d/%m/%Y %H:%M'
+                                    )
+                                    if pedido.fecha
+                                    else "—"
+                                }}
+
+                            </td>
+
+
+                            <td>
+
+                                {{
+                                    pedido.fecha_entrega.strftime(
+                                        '%d/%m/%Y %H:%M'
+                                    )
+                                    if pedido.fecha_entrega
+                                    else "—"
+                                }}
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    Q {{ "%.2f"|format(pedido.total) }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {% if pedido.estado == "CANCELADO" %}
+
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+
+                                {% else %}
+
+                                    <span
+                                        class="
+                                            {% if pedido.total_pagado > 0 %}
+                                                cliente-valor-positivo
+                                            {% else %}
+                                                text-muted
+                                            {% endif %}
+                                        "
+                                    >
+                                        Q {{ "%.2f"|format(pedido.total_pagado) }}
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if pedido.estado == "CANCELADO" %}
+
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+
+                                {% elif pedido.saldo_pendiente <= 0 %}
+
+                                    <span class="cliente-saldo-pagado">
+                                        ✓ Q 0.00
+                                    </span>
+
+                                {% else %}
+
+                                    <strong class="cliente-valor-pendiente">
+                                        Q {{ "%.2f"|format(pedido.saldo_pendiente) }}
+                                    </strong>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if pedido.estado == "COTIZACION" %}
+
+                                    <span class="estado estado-cotizacion">
+                                        📝 Cotización
+                                    </span>
+
+                                {% elif pedido.estado == "CONFIRMADO" %}
+
+                                    <span class="estado estado-confirmado">
+                                        ✅ Confirmado
+                                    </span>
+
+                                {% elif pedido.estado == "EN PRODUCCION" %}
+
+                                    <span class="estado estado-produccion">
+                                        🛠️ En producción
+                                    </span>
+
+                                {% elif pedido.estado == "LISTO" %}
+
+                                    <span class="estado estado-listo">
+                                        📦 Listo
+                                    </span>
+
+                                {% elif pedido.estado == "ENTREGADO" %}
+
+                                    <span class="estado estado-entregado">
+                                        🎉 Entregado
+                                    </span>
+
+                                {% elif pedido.estado == "CANCELADO" %}
+
+                                    <span class="estado estado-cancelado">
+                                        ❌ Cancelado
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="estado">
+                                        {{ pedido.estado }}
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'pedidos.detalle',
+                                        pedido_id=pedido.id
+                                    ) }}"
+                                    class="btn-secondary btn-sm"
+                                >
+                                    👁️ Ver detalle
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <div class="empty-state-icon">
+                🧾
+            </div>
+
+            <h3>
+                Este cliente todavía no tiene pedidos
+            </h3>
+
+            <p>
+                Crea el primer pedido para comenzar
+                a registrar su historial.
+            </p>
+
+            <a
+                href="{{ url_for('pedidos.nuevo') }}"
+                class="btn-primary"
+            >
+                + Nuevo pedido
+            </a>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<style>
+
+/* ============================================================
+   DETALLE / ESTADO DE CUENTA DEL CLIENTE
+============================================================ */
+
+.cliente-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+
+/* RESUMEN */
+
+.cliente-resumen-cuenta {
+    display: grid;
+    grid-template-columns:
+        repeat(6, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.cliente-resumen-cuenta-card {
+    min-width: 0;
+    padding: 17px 18px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.cliente-resumen-cuenta-card > span {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-soft);
+    font-size: 12px;
+}
+
+.cliente-resumen-cuenta-card > strong,
+.cliente-resumen-cuenta-card > a {
+    display: block;
+    color: var(--navy);
+    font-size: 19px;
+    font-weight: 700;
+}
+
+.cliente-resumen-cuenta-card small {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-soft);
+    font-size: 11px;
+}
+
+.cliente-resumen-saldo {
+    border-left: 4px solid #ef4444;
+    background: #fffafa;
+}
+
+.cliente-resumen-saldo strong {
+    color: #dc2626;
+}
+
+.cliente-resumen-sin-saldo {
+    border-left: 4px solid #22c55e;
+    background: #f7fff9;
+}
+
+.cliente-resumen-sin-saldo strong {
+    color: #15803d;
+}
+
+.cliente-ultimo-link {
+    text-decoration: none;
+}
+
+.cliente-ultimo-link:hover {
+    text-decoration: underline;
+}
+
+
+/* SECCIONES */
+
+.cliente-detalle-card {
+    margin-bottom: 20px;
+    padding: 24px 28px;
+}
+
+.cliente-seccion-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.cliente-seccion-header h2 {
+    margin: 0;
+    color: var(--navy);
+}
+
+.cliente-seccion-header p {
+    margin: 5px 0 0;
+    color: var(--text-soft);
+}
+
+
+/* INFORMACIÓN */
+
+.cliente-info-grid-nuevo {
+    display: grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap: 18px 24px;
+}
+
+.cliente-info-grid-nuevo > div {
+    min-width: 0;
+}
+
+.cliente-info-grid-nuevo span {
+    display: block;
+    margin-bottom: 5px;
+    color: var(--text-soft);
+    font-size: 12px;
+}
+
+.cliente-info-grid-nuevo strong {
+    display: block;
+    color: var(--navy);
+    font-size: 14px;
+    overflow-wrap: anywhere;
+}
+
+.cliente-notas-nuevo {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.cliente-notas-nuevo > span {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--navy);
+    font-weight: 700;
+}
+
+.cliente-notas-nuevo p {
+    margin: 0;
+    color: var(--text);
+    line-height: 1.55;
+}
+
+
+/* COBROS */
+
+.cliente-cobros-card {
+    border-left: 4px solid #f59e0b;
+}
+
+.cliente-cobros-contador {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 30px;
+    padding: 0 9px;
+    background: #fef3c7;
+    border-radius: 999px;
+    color: #92400e;
+    font-size: 13px;
+    font-weight: 800;
+}
+
+
+/* ESTADOS */
+
+.cliente-estados-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(6, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.cliente-estados-grid > div {
+    padding: 14px 15px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 9px;
+}
+
+.cliente-estados-grid span {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-soft);
+    font-size: 11px;
+}
+
+.cliente-estados-grid strong {
+    color: var(--navy);
+    font-size: 20px;
+}
+
+
+/* TABLAS */
+
+.cliente-pedido-link {
+    color: var(--navy);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.cliente-pedido-link:hover {
+    text-decoration: underline;
+}
+
+.cliente-valor-positivo {
+    color: #15803d !important;
+    font-weight: 700;
+}
+
+.cliente-valor-pendiente {
+    color: #dc2626;
+}
+
+.cliente-saldo-pagado {
+    color: #15803d;
+    font-weight: 700;
+}
+
+
+/* RESPONSIVE */
+
+@media (max-width: 1250px) {
+
+    .cliente-resumen-cuenta {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+    .cliente-estados-grid {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 900px) {
+
+    .cliente-info-grid-nuevo {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 650px) {
+
+    .cliente-resumen-cuenta,
+    .cliente-info-grid-nuevo,
+    .cliente-estados-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cliente-detalle-card {
+        padding: 20px;
+    }
+
+    .cliente-seccion-header {
+        flex-direction: column;
+    }
+
+}
+
+</style>
+
+{% endblock %}

@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+
+{% block title %}
+Registrar pago - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>💰 Registrar pago</h1>
+
+        <p>
+            Pedido:
+            <strong>{{ pedido.numero }}</strong>
+        </p>
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    <h2>Resumen del pedido</h2>
+
+    <p style="margin-top: 15px;">
+        Total:
+        <strong>
+            Q {{ "%.2f"|format(pedido.total) }}
+        </strong>
+    </p>
+
+    <p style="margin-top: 8px;">
+        Pagado:
+        <strong>
+            Q {{ "%.2f"|format(total_pagado) }}
+        </strong>
+    </p>
+
+    <p style="margin-top: 8px; font-size: 20px;">
+        Pendiente:
+        <strong>
+            Q {{ "%.2f"|format(saldo_pendiente) }}
+        </strong>
+    </p>
+
+</div>
+
+
+<div class="card" style="margin-top: 20px;">
+
+    <h2>Nuevo pago</h2>
+
+    <form method="POST">
+
+        <div style="margin-top: 15px;">
+
+            <label for="monto">
+                <strong>💵 Monto del pago *</strong>
+            </label>
+
+            <input
+                type="number"
+                id="monto"
+                name="monto"
+                step="0.01"
+                min="0.01"
+                max="{{ saldo_pendiente }}"
+                required
+                placeholder="0.00"
+            >
+
+        </div>
+
+
+        <div style="margin-top: 15px;">
+
+            <label for="metodo_pago">
+                <strong>💳 Método de pago *</strong>
+            </label>
+
+            <select
+                id="metodo_pago"
+                name="metodo_pago"
+                required
+            >
+
+                <option value="">
+                    Seleccionar método
+                </option>
+
+                <option value="EFECTIVO">
+                    💵 Efectivo
+                </option>
+
+                <option value="TRANSFERENCIA">
+                    🏦 Transferencia
+                </option>
+
+                <option value="TARJETA">
+                    💳 Tarjeta
+                </option>
+
+                <option value="OTRO">
+                    💰 Otro
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div style="margin-top: 15px;">
+
+            <label for="referencia">
+                <strong>🔖 Referencia</strong>
+            </label>
+
+            <input
+                type="text"
+                id="referencia"
+                name="referencia"
+                maxlength="100"
+                placeholder="Ej. No. de transferencia"
+            >
+
+        </div>
+
+
+        <div style="margin-top: 15px;">
+
+            <label for="notas">
+                <strong>📝 Notas</strong>
+            </label>
+
+            <textarea
+                id="notas"
+                name="notas"
+                rows="4"
+                placeholder="Notas sobre el pago..."
+            ></textarea>
+
+        </div>
+
+
+        <div style="
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        ">
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Registrar pago
+            </button>
+
+            <a
+                href="{{ url_for(
+                    'pedidos.detalle',
+                    pedido_id=pedido.id
+                ) }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

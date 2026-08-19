@@ -1,0 +1,734 @@
+{% extends "base.html" %}
+
+{% block title %}
+Compra {{ compra.numero }} - ABC Business Manager
+{% endblock %}
+
+
+{% block content %}
+
+<!-- ============================================================
+     CABECERA
+============================================================ -->
+
+<div class="page-header compra-detalle-header">
+
+    <div>
+
+        <h1>
+            Compra {{ compra.numero }}
+        </h1>
+
+        <p>
+            Detalle de la compra y materiales recibidos.
+        </p>
+
+    </div>
+
+
+    <div class="compra-header-actions">
+
+        {% if compra.estado == "PENDIENTE" %}
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'compras.recibir',
+                    compra_id=compra.id
+                ) }}"
+                class="action-form"
+                onsubmit="return confirm(
+                    '¿Estás seguro de que deseas recibir esta compra? El inventario será actualizado.'
+                );"
+            >
+
+                <button
+                    type="submit"
+                    class="btn-primary"
+                >
+                    📥 Recibir compra
+                </button>
+
+            </form>
+
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'compras.cancelar',
+                    compra_id=compra.id
+                ) }}"
+                class="action-form"
+                onsubmit="return confirm(
+                    '¿Estás seguro de que deseas cancelar esta compra? No se actualizará el inventario.'
+                );"
+            >
+
+                <button
+                    type="submit"
+                    class="btn-secondary compra-cancelar-btn"
+                >
+                    ❌ Cancelar
+                </button>
+
+            </form>
+
+        {% endif %}
+
+
+        <a
+            href="{{ url_for('compras.lista') }}"
+            class="btn-secondary"
+        >
+            ← Volver a compras
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     INFORMACIÓN GENERAL
+============================================================ -->
+
+<div class="card compra-info-card">
+
+    <div class="compra-info-grid">
+
+
+        <div class="compra-info-item">
+
+            <span>
+                Número
+            </span>
+
+            <strong>
+                {{ compra.numero }}
+            </strong>
+
+        </div>
+
+
+        <div class="compra-info-item">
+
+            <span>
+                Fecha
+            </span>
+
+            <strong>
+
+                {% if compra.fecha %}
+
+                    {{ compra.fecha.strftime(
+                        '%d/%m/%Y'
+                    ) }}
+
+                {% else %}
+
+                    —
+
+                {% endif %}
+
+            </strong>
+
+        </div>
+
+
+        <div class="compra-info-item">
+
+            <span>
+                Proveedor
+            </span>
+
+            <strong>
+                {{ compra.proveedor or "Sin proveedor" }}
+            </strong>
+
+        </div>
+
+
+        <div class="compra-info-item">
+
+            <span>
+                Usuario
+            </span>
+
+            <strong>
+                {{ compra.usuario }}
+            </strong>
+
+        </div>
+
+
+        <div class="compra-info-item">
+
+            <span>
+                Estado
+            </span>
+
+            <div>
+
+                {% if compra.estado == "RECIBIDA" %}
+
+                    <span class="estado estado-confirmado">
+                        📦 Recibida
+                    </span>
+
+
+                {% elif compra.estado == "CANCELADA" %}
+
+                    <span class="estado estado-cancelado">
+                        ❌ Cancelada
+                    </span>
+
+
+                {% else %}
+
+                    <span class="estado compra-estado-pendiente">
+                        ⏳ Pendiente
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     MATERIALES
+============================================================ -->
+
+<div class="card compra-seccion-card">
+
+    <div class="compra-section-header">
+
+        <div>
+
+            <h2>
+                🧱 Materiales
+            </h2>
+
+            <p>
+                Materiales incluidos en esta compra.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    {% if detalles %}
+
+        <div class="table-container">
+
+            <table class="compra-materiales-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Material
+                        </th>
+
+                        <th class="compra-center">
+                            Cantidad
+                        </th>
+
+                        <th>
+                            Unidad
+                        </th>
+
+                        <th class="compra-money">
+                            Precio unitario
+                        </th>
+
+                        <th class="compra-money">
+                            Subtotal
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for detalle in detalles %}
+
+                        <tr>
+
+                            <!-- MATERIAL -->
+
+                            <td>
+
+                                <strong class="compra-material-nombre">
+                                    {{ detalle.material }}
+                                </strong>
+
+
+                                {% if detalle.color %}
+
+                                    <span class="compra-material-color">
+                                        {{ detalle.color }}
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- CANTIDAD -->
+
+                            <td class="compra-center">
+
+                                {% if detalle.cantidad == detalle.cantidad|int %}
+
+                                    {{ detalle.cantidad|int }}
+
+                                {% else %}
+
+                                    {{
+                                        "%.4f"|format(
+                                            detalle.cantidad
+                                        )
+                                        |trim("0")
+                                        |trim(".")
+                                    }}
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- UNIDAD -->
+
+                            <td>
+
+                                {{ detalle.abreviatura }}
+
+                            </td>
+
+
+                            <!-- PRECIO -->
+
+                            <td class="compra-money">
+
+                                Q {{
+                                    "%.2f"|format(
+                                        detalle.precio_unitario
+                                    )
+                                }}
+
+                            </td>
+
+
+                            <!-- SUBTOTAL -->
+
+                            <td class="compra-money">
+
+                                <strong>
+                                    Q {{
+                                        "%.2f"|format(
+                                            detalle.subtotal
+                                        )
+                                    }}
+                                </strong>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state compra-empty-state">
+
+            <div class="empty-state-icon">
+                🧱
+            </div>
+
+            <h3>
+                No hay materiales en esta compra
+            </h3>
+
+            <p>
+                Todavía no se han agregado materiales
+                a esta compra.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     TOTALES DE LA COMPRA
+============================================================ -->
+
+<div class="card compra-seccion-card">
+
+    <div class="compra-totales-grid">
+
+
+        <div class="compra-total-item">
+
+            <span>
+                Subtotal
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(compra.subtotal) }}
+            </strong>
+
+        </div>
+
+
+        <div class="compra-total-item">
+
+            <span>
+                Descuento
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(compra.descuento) }}
+            </strong>
+
+        </div>
+
+
+        <div class="compra-total-item compra-total-final">
+
+            <span>
+                Total de la compra
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(compra.total) }}
+            </strong>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     PAGOS
+============================================================ -->
+
+<div class="card compra-seccion-card">
+
+    <div class="compra-pagos-header">
+
+        <div>
+
+            <h2>
+                💰 Pagos
+            </h2>
+
+
+            <div class="compra-pago-estado">
+
+                {% if saldo_pendiente <= 0 %}
+
+                    <div class="estado-pago estado-pagado">
+                        🟢 Pagada completa
+                    </div>
+
+
+                {% elif total_pagado > 0 %}
+
+                    <div class="estado-pago estado-abono">
+                        🟡 Abono parcial
+                    </div>
+
+
+                {% else %}
+
+                    <div class="estado-pago estado-pendiente">
+                        🔴 Pendiente de pago
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        {% if saldo_pendiente > 0
+              and compra.estado != "CANCELADA" %}
+
+            <a
+                href="{{ url_for(
+                    'compras.registrar_pago',
+                    compra_id=compra.id
+                ) }}"
+                class="btn-primary"
+            >
+                + Registrar pago
+            </a>
+
+        {% endif %}
+
+    </div>
+
+
+    {% if pagos %}
+
+        <div class="table-container">
+
+            <table class="compra-pagos-table">
+
+                <thead>
+
+                    <tr>
+
+                        <th>
+                            Fecha
+                        </th>
+
+                        <th>
+                            Método
+                        </th>
+
+                        <th>
+                            Referencia
+                        </th>
+
+                        <th class="compra-money">
+                            Monto
+                        </th>
+
+                        <th>
+                            Notas
+                        </th>
+
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for pago in pagos %}
+
+                        <tr>
+
+                            <!-- FECHA -->
+
+                            <td>
+
+                                {% if pago.fecha %}
+
+                                    {{
+                                        pago.fecha.strftime(
+                                            '%d/%m/%Y %H:%M'
+                                        )
+                                    }}
+
+                                {% else %}
+
+                                    —
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- MÉTODO -->
+
+                            <td>
+
+                                {% if pago.metodo_pago == "EFECTIVO" %}
+
+                                    💵 Efectivo
+
+
+                                {% elif pago.metodo_pago == "TRANSFERENCIA" %}
+
+                                    🏦 Transferencia
+
+
+                                {% elif pago.metodo_pago == "TARJETA" %}
+
+                                    💳 Tarjeta
+
+
+                                {% else %}
+
+                                    💰 Otro
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- REFERENCIA -->
+
+                            <td>
+
+                                {% if pago.referencia %}
+
+                                    {{ pago.referencia }}
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- MONTO -->
+
+                            <td class="compra-money">
+
+                                <strong class="compra-pago-monto">
+
+                                    Q {{
+                                        "%.2f"|format(
+                                            pago.monto
+                                        )
+                                    }}
+
+                                </strong>
+
+                            </td>
+
+
+                            <!-- NOTAS -->
+
+                            <td>
+
+                                {% if pago.notas %}
+
+                                    {{ pago.notas }}
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="compra-sin-pagos">
+
+            Todavía no hay pagos registrados
+            para esta compra.
+
+        </div>
+
+    {% endif %}
+
+
+    <!-- ========================================================
+         RESUMEN DE PAGOS
+    ======================================================== -->
+
+    <div class="compra-pagos-resumen">
+
+
+        <div>
+
+            <span>
+                Total de la compra
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(compra.total) }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Total pagado
+            </span>
+
+            <strong class="compra-total-pagado">
+
+                Q {{
+                    "%.2f"|format(
+                        total_pagado
+                    )
+                }}
+
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Saldo pendiente
+            </span>
+
+
+            {% if saldo_pendiente <= 0 %}
+
+                <strong class="compra-saldo-pagado">
+                    ✓ Q 0.00
+                </strong>
+
+            {% else %}
+
+                <strong class="compra-saldo-pendiente">
+
+                    Q {{
+                        "%.2f"|format(
+                            saldo_pendiente
+                        )
+                    }}
+
+                </strong>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

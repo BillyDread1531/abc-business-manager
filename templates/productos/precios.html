@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}
+Precios - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Precios por cantidad</h1>
+
+        <p>
+            Define precios especiales según la cantidad comprada de
+            <strong>{{ producto.nombre }}</strong>.
+        </p>
+
+    </div>
+
+    <div class="precios-header-actions">
+
+        <a
+            href="{{ url_for('productos.listar') }}"
+            class="btn-secondary"
+        >
+            ← Volver a productos
+        </a>
+
+        <a
+            href="{{ url_for(
+                'productos.nuevo_precio',
+                producto_id=producto.id
+            ) }}"
+            class="btn-primary"
+        >
+            + Agregar precio
+        </a>
+
+    </div>
+
+</div>
+
+
+<div class="card precios-card">
+
+    <div class="precios-card-header">
+
+        <div>
+
+            <h2>
+                💲 Tarifas por volumen
+            </h2>
+
+            <p>
+
+                {% if producto.tipo_calculo_precio == "M2" %}
+
+                    En este producto cada tarifa representa
+                    el precio por metro cuadrado.
+
+                {% elif producto.tipo_calculo_precio == "METRO_LINEAL" %}
+
+                    En este producto cada tarifa representa
+                    el precio por metro lineal.
+
+                {% else %}
+
+                    Los precios se aplican según la cantidad solicitada.
+
+                {% endif %}
+
+            </p>
+
+        </div>
+
+        {% if precios %}
+
+            <span class="precios-count">
+
+                {{ precios|length }}
+
+                {% if precios|length == 1 %}
+                    rango
+                {% else %}
+                    rangos
+                {% endif %}
+
+            </span>
+
+        {% endif %}
+
+    </div>
+
+
+    {% if precios %}
+
+        <div class="table-container">
+
+            <table class="precios-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Desde</th>
+                        <th>Hasta</th>
+                        <th>
+                            {% if producto.tipo_calculo_precio == "M2" %}
+                                Precio por m²
+                            {% elif producto.tipo_calculo_precio == "METRO_LINEAL" %}
+                                Precio por metro
+                            {% else %}
+                                Precio unitario
+                            {% endif %}
+                        </th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for precio in precios %}
+
+                        <tr>
+
+                            <td>
+                                <strong>
+                                    {{ precio.cantidad_minima }}
+                                </strong>
+                                <span class="precio-unidades">
+                                    unidades
+                                </span>
+                            </td>
+
+
+                            <td>
+
+                                {% if precio.cantidad_maxima %}
+
+                                    <strong>
+                                        {{ precio.cantidad_maxima }}
+                                    </strong>
+
+                                    <span class="precio-unidades">
+                                        unidades
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="precio-sin-limite">
+                                        ∞ Sin límite
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <strong class="precio-unitario-valor">
+                                    Q {{ "%.2f"|format(precio.precio_unitario) }}
+                                </strong>
+
+                                <span class="precio-unidades">
+
+                                    {% if producto.tipo_calculo_precio == "M2" %}
+                                        por m²
+                                    {% elif producto.tipo_calculo_precio == "METRO_LINEAL" %}
+                                        por metro
+                                    {% else %}
+                                        por unidad
+                                    {% endif %}
+
+                                </span>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="precios-empty">
+
+            <div class="precios-empty-icon">
+                💲
+            </div>
+
+            <div>
+
+                <h3>
+                    Este producto todavía no tiene precios por cantidad
+                </h3>
+
+                <p>
+                    Puedes seguir utilizando su precio base
+                    o crear tarifas especiales por volumen.
+                </p>
+
+                <a
+                    href="{{ url_for(
+                        'productos.nuevo_precio',
+                        producto_id=producto.id
+                    ) }}"
+                    class="btn-primary"
+                >
+                    + Agregar primer precio
+                </a>
+
+            </div>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

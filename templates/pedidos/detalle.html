@@ -1,0 +1,1532 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ pedido.numero }} - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<!-- ============================================================
+     CABECERA
+============================================================ -->
+
+<div class="page-header pedido-page-header">
+
+    <div>
+
+        <h1>
+            {{ pedido.numero }}
+        </h1>
+
+        <p>
+            Cliente:
+
+            <a
+                href="{{ url_for(
+                    'clientes.detalle',
+                    cliente_id=pedido.cliente_id
+                ) }}"
+                class="pedido-cliente-link"
+            >
+                {{ pedido.cliente }}
+            </a>
+        </p>
+
+    </div>
+
+
+    <div class="pedido-header-actions">
+
+        <a
+            href="{{ url_for(
+                'pedidos.editar',
+                pedido_id=pedido.id
+            ) }}"
+            class="btn-secondary"
+        >
+            ✏️ Editar pedido
+        </a>
+
+
+        <a
+            href="{{ url_for(
+                'pedidos.cotizacion',
+                pedido_id=pedido.id
+            ) }}"
+            class="btn-secondary"
+        >
+            🧾 Ver cotización
+        </a>
+
+        {% if pedido.estado == "COTIZACION" %}
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'pedidos.eliminar_pedido',
+                    pedido_id=pedido.id
+                ) }}"
+                class="action-form"
+                onsubmit="return confirm(
+                    '¿Estás seguro de eliminar esta cotización?\\n\\n' +
+                    'Se eliminarán también todos sus productos y pagos.\\n\\n' +
+                    'Esta acción no se puede deshacer.'
+                );"
+            >
+
+                <button
+                    type="submit"
+                    class="btn-secondary pedido-danger-action"
+                >
+                    🗑️ Eliminar 
+                </button>
+
+            </form>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     INFORMACIÓN DEL PEDIDO
+============================================================ -->
+
+<div class="card pedido-info-card">
+
+    <div class="pedido-section-title">
+
+        <h2>
+            Información del pedido
+        </h2>
+
+    </div>
+
+
+    <div class="pedido-info-layout">
+
+
+        <!-- ESTADO ACTUAL -->
+
+        <div class="pedido-info-bloque">
+
+            <span class="pedido-info-label">
+                Estado actual
+            </span>
+
+            <div class="estado-pedido">
+
+                {% if pedido.estado == "COTIZACION" %}
+
+                    <span class="estado estado-cotizacion">
+                        📝 Cotización
+                    </span>
+
+                {% elif pedido.estado == "CONFIRMADO" %}
+
+                    <span class="estado estado-confirmado">
+                        ✅ Confirmado
+                    </span>
+
+                {% elif pedido.estado == "EN PRODUCCION" %}
+
+                    <span class="estado estado-produccion">
+                        🛠️ En producción
+                    </span>
+
+                {% elif pedido.estado == "LISTO" %}
+
+                    <span class="estado estado-listo">
+                        📦 Listo
+                    </span>
+
+                {% elif pedido.estado == "ENTREGADO" %}
+
+                    <span class="estado estado-entregado">
+                        🎉 Entregado
+                    </span>
+
+                {% elif pedido.estado == "CANCELADO" %}
+
+                    <span class="estado estado-cancelado">
+                        ❌ Cancelado
+                    </span>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        <!-- CAMBIAR ESTADO -->
+
+        <form
+            method="POST"
+            action="{{ url_for(
+                'pedidos.cambiar_estado',
+                pedido_id=pedido.id
+            ) }}"
+            class="pedido-estado-form"
+        >
+
+            <div class="pedido-estado-field">
+
+                <label for="estado">
+                    Cambiar estado
+                </label>
+
+                <select
+                    name="estado"
+                    id="estado"
+                >
+
+                    {% if pedido.estado == "COTIZACION" %}
+
+                        <option value="COTIZACION" selected>
+                            📝 Cotización
+                        </option>
+
+                        <option value="CONFIRMADO">
+                            ✅ Confirmado
+                        </option>
+
+                        <option value="CANCELADO">
+                            ❌ Cancelado
+                        </option>
+
+
+                    {% elif pedido.estado == "CONFIRMADO" %}
+
+                        <option value="CONFIRMADO" selected>
+                            ✅ Confirmado
+                        </option>
+
+                        <option value="EN PRODUCCION">
+                            🛠️ En producción
+                        </option>
+
+                        <option value="CANCELADO">
+                            ❌ Cancelado
+                        </option>
+
+
+                    {% elif pedido.estado == "EN PRODUCCION" %}
+
+                        <option value="EN_PRODUCCION" selected>
+                            🛠️ En producción
+                        </option>
+
+                        <option value="LISTO">
+                            📦 Listo
+                        </option>
+
+                        <option value="CANCELADO">
+                            ❌ Cancelado
+                        </option>
+
+
+                    {% elif pedido.estado == "LISTO" %}
+
+                        <option value="LISTO" selected>
+                            📦 Listo
+                        </option>
+
+                        <option value="ENTREGADO">
+                            🎉 Entregado
+                        </option>
+
+
+                    {% elif pedido.estado == "ENTREGADO" %}
+
+                        <option value="ENTREGADO" selected>
+                            🎉 Entregado
+                        </option>
+
+
+                    {% elif pedido.estado == "CANCELADO" %}
+
+                        <option value="CANCELADO" selected>
+                            ❌ Cancelado
+                        </option>
+
+                    {% endif %}
+
+                </select>
+
+            </div>
+
+
+            <button
+                type="submit"
+                class="btn-primary pedido-actualizar-estado"
+            >
+                💾 Actualizar estado
+            </button>
+
+        </form>
+
+
+        <!-- ENTREGA -->
+
+        <div class="pedido-info-bloque">
+
+            <span class="pedido-info-label">
+                Fecha de entrega
+            </span>
+
+            <strong class="pedido-fecha-entrega">
+
+                {% if pedido.fecha_entrega %}
+
+                    {{ pedido.fecha_entrega.strftime(
+                        '%d/%m/%Y %H:%M'
+                    ) }}
+
+                {% else %}
+
+                    Sin definir
+
+                {% endif %}
+
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    {% if pedido.notas %}
+
+        <div class="pedido-notas">
+
+            <strong>
+                📝 Notas
+            </strong>
+
+            <p>
+                {{ pedido.notas }}
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<!-- ============================================================
+     PRODUCTOS DEL PEDIDO
+============================================================ -->
+
+<div class="card pedido-card-seccion">
+
+    <div class="pedido-seccion-header">
+
+        <div>
+
+            <h2>
+                Productos del pedido
+            </h2>
+
+        </div>
+
+
+        <a
+            href="{{ url_for(
+                'pedidos.agregar_producto',
+                pedido_id=pedido.id
+            ) }}"
+            class="btn-primary"
+        >
+            + Agregar producto
+        </a>
+
+    </div>
+
+
+    {% if detalles %}
+
+        <div class="table-container">
+
+            <table class="pedido-productos-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Producto</th>
+                        <th class="pedido-cantidad-col">Cantidad</th>
+                        <th class="pedido-money-col">Precio</th>
+                        <th class="pedido-money-col">Subtotal</th>
+                        <th class="pedido-acciones-col">Acciones</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for detalle in detalles %}
+
+                        <tr>
+
+                            <td>
+
+                                <strong class="pedido-producto-nombre">
+                                    {{ detalle.producto }}
+                                </strong>
+
+
+                                {% if detalle.variante %}
+
+                                    <span class="pedido-producto-variante">
+
+                                        🧩 {{ detalle.variante }}
+
+                                        {% if detalle.variante_talla %}
+                                            — Talla {{ detalle.variante_talla }}
+                                        {% endif %}
+
+                                        {% if detalle.variante_color %}
+                                            — {{ detalle.variante_color }}
+                                        {% endif %}
+
+                                        {% if detalle.variante_sku %}
+                                            — SKU: {{ detalle.variante_sku }}
+                                        {% endif %}
+
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td class="pedido-cantidad-col">
+
+                                {{
+                                    detalle.cantidad|int
+                                    if detalle.cantidad == detalle.cantidad|int
+                                    else detalle.cantidad
+                                }}
+
+                            </td>
+
+
+                            <td class="pedido-money-col">
+
+                                Q {{
+                                    "%.2f"|format(
+                                        detalle.precio_unitario
+                                    )
+                                }}
+
+                            </td>
+
+
+                            <td class="pedido-money-col">
+
+                                <strong>
+                                    Q {{
+                                        "%.2f"|format(
+                                            detalle.subtotal
+                                        )
+                                    }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                <div class="pedido-producto-actions">
+
+                                    <a
+                                        href="{{ url_for(
+                                            'pedidos.editar_producto',
+                                            pedido_id=pedido.id,
+                                            detalle_id=detalle.id
+                                        ) }}"
+                                        class="btn-secondary btn-sm pedido-action-btn"
+                                    >
+                                        ✏️ Editar
+                                    </a>
+
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'producciones.crear',
+                                            detalle_pedido_id=detalle.id
+                                        ) }}"
+                                        class="action-form"
+                                        onsubmit="return confirm(
+                                            '¿Crear una producción para este producto?'
+                                        );"
+                                    >
+
+                                        <button
+                                            type="submit"
+                                            class="btn-secondary btn-sm pedido-action-btn"
+                                        >
+                                            👨‍🏭 Producción
+                                        </button>
+
+                                    </form>
+
+
+                                    <form
+                                        method="POST"
+                                        action="{{ url_for(
+                                            'pedidos.eliminar_producto',
+                                            pedido_id=pedido.id,
+                                            detalle_id=detalle.id
+                                        ) }}"
+                                        class="action-form"
+                                        onsubmit="return confirm(
+                                            '¿Eliminar este producto del pedido?'
+                                        );"
+                                    >
+
+                                        <button
+                                            type="submit"
+                                            class="btn-secondary btn-sm pedido-action-btn pedido-action-delete"
+                                        >
+                                            🗑️ Eliminar
+                                        </button>
+
+                                    </form>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+
+                        {% if detalle.texto_personalizado or detalle.notas or detalle.ancho or detalle.alto or detalle.largo %}
+
+                            <tr class="fila-detalles">
+
+                                <td colspan="5">
+
+                                    <button
+                                        type="button"
+                                        class="btn-ver-detalles"
+                                        onclick="toggleDetalles(
+                                            'detalles-{{ detalle.id }}',
+                                            this
+                                        )"
+                                    >
+                                        👁️ Ver detalles
+                                    </button>
+
+
+                                    <div
+                                        id="detalles-{{ detalle.id }}"
+                                        class="detalles-personalizacion"
+                                        style="display: none;"
+                                    >
+
+                                        {% if detalle.texto_personalizado %}
+
+                                            <div>
+
+                                                <strong>
+                                                    ✍️ Texto:
+                                                </strong>
+
+                                                {{ detalle.texto_personalizado }}
+
+                                            </div>
+
+                                        {% endif %}
+
+
+                                        {% if detalle.ancho or detalle.alto or detalle.largo %}
+
+                                            <div>
+
+                                                <strong>
+                                                    📐 Medidas:
+                                                </strong>
+
+                                                {% if detalle.ancho %}
+                                                    Ancho: {{ detalle.ancho }} cm
+                                                {% endif %}
+
+                                                {% if detalle.alto %}
+
+                                                    {% if detalle.ancho %}
+                                                        ·
+                                                    {% endif %}
+
+                                                    Alto: {{ detalle.alto }} cm
+
+                                                {% endif %}
+
+                                                {% if detalle.largo %}
+
+                                                    {% if detalle.ancho or detalle.alto %}
+                                                        ·
+                                                    {% endif %}
+
+                                                    Largo: {{ detalle.largo }} cm
+
+                                                {% endif %}
+
+                                            </div>
+
+                                        {% endif %}
+
+
+                                        {% if detalle.notas %}
+
+                                            <div>
+
+                                                <strong>
+                                                    📝 Notas:
+                                                </strong>
+
+                                                {{ detalle.notas }}
+
+                                            </div>
+
+                                        {% endif %}
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+
+                        {% endif %}
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <div class="empty-state-icon">
+                📦
+            </div>
+
+            <h3>
+                Este pedido todavía no tiene productos
+            </h3>
+
+            <p>
+                Agrega el primer producto para comenzar a trabajar el pedido.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+
+<!-- ============================================================
+     RENTABILIDAD DEL PEDIDO
+============================================================ -->
+
+<div class="card pedido-card-seccion pedido-rentabilidad-card">
+
+    <div class="pedido-seccion-header">
+
+        <div>
+
+            <h2>
+                📈 Rentabilidad del pedido
+            </h2>
+
+            <p class="pedido-rentabilidad-descripcion">
+                Compara el valor vendido con los costos reales
+                registrados durante la producción.
+            </p>
+
+        </div>
+
+        {% if costos_completos %}
+
+            <span class="pedido-rentabilidad-status rentabilidad-completa">
+                ✓ Costos completos
+            </span>
+
+        {% else %}
+
+            <span class="pedido-rentabilidad-status rentabilidad-pendiente">
+                ⏳ Costos pendientes
+            </span>
+
+        {% endif %}
+
+    </div>
+
+
+    <div class="pedido-rentabilidad-resumen">
+
+        <div>
+
+            <span>
+                Venta neta
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(pedido.total) }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Costo estimado
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(costo_estimado_total) }}
+            </strong>
+
+            {% if costos_estimados_pendientes > 0 %}
+                <small class="rentabilidad-estimado-pendiente">
+                    + {{ costos_estimados_pendientes }}
+                    {% if costos_estimados_pendientes == 1 %}
+                        costo variable por calcular
+                    {% else %}
+                        costos variables por calcular
+                    {% endif %}
+                </small>
+            {% endif %}
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Costo real conocido
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(costo_real_conocido) }}
+            </strong>
+
+        </div>
+
+
+        <div
+            class="
+                {% if costos_completos and ganancia_real_pedido >= 0 %}
+                    rentabilidad-ganancia
+                {% elif costos_completos %}
+                    rentabilidad-perdida
+                {% endif %}
+            "
+        >
+
+            <span>
+                Ganancia real
+            </span>
+
+            {% if costos_completos %}
+
+                <strong>
+                    Q {{ "%.2f"|format(ganancia_real_pedido) }}
+                </strong>
+
+            {% else %}
+
+                <strong class="rentabilidad-sin-dato">
+                    Pendiente
+                </strong>
+
+            {% endif %}
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Margen real
+            </span>
+
+            {% if costos_completos %}
+
+                <strong
+                    class="
+                        {% if margen_real_pedido >= 0 %}
+                            rentabilidad-margen-positivo
+                        {% else %}
+                            rentabilidad-margen-negativo
+                        {% endif %}
+                    "
+                >
+                    {{ "%.2f"|format(margen_real_pedido) }}%
+                </strong>
+
+            {% else %}
+
+                <strong class="rentabilidad-sin-dato">
+                    Pendiente
+                </strong>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    {% if detalles %}
+
+        <div class="table-container pedido-rentabilidad-tabla">
+
+            <table>
+
+                <thead>
+
+                    <tr>
+                        <th>Producto</th>
+                        <th>Venta neta</th>
+                        <th>Costo estimado</th>
+                        <th>Costo real</th>
+                        <th>Ganancia</th>
+                        <th>Margen</th>
+                        <th>Producción</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for detalle in detalles %}
+
+                        <tr>
+
+                            <td>
+
+                                <strong>
+                                    {{ detalle.producto }}
+                                </strong>
+
+                                {% if detalle.variante %}
+
+                                    <small class="rentabilidad-variante">
+                                        {{ detalle.variante }}
+                                    </small>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    Q {{ "%.2f"|format(detalle.venta_neta) }}
+                                </strong>
+
+                                {% if detalle.descuento_asignado > 0 %}
+
+                                    <small class="rentabilidad-descuento">
+                                        Incluye Q {{
+                                            "%.2f"|format(
+                                                detalle.descuento_asignado
+                                            )
+                                        }} de descuento
+                                    </small>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if detalle.costo_estimado_disponible %}
+
+                                    Q {{
+                                        "%.2f"|format(
+                                            detalle.costo_estimado_actual
+                                            or 0
+                                        )
+                                    }}
+
+                                {% else %}
+
+                                    <span class="rentabilidad-pendiente-texto">
+                                        Por calcular
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if detalle.costo_real is not none %}
+
+                                    <strong>
+                                        Q {{
+                                            "%.2f"|format(
+                                                detalle.costo_real
+                                            )
+                                        }}
+                                    </strong>
+
+                                {% else %}
+
+                                    <span class="rentabilidad-pendiente-texto">
+                                        Pendiente
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if detalle.ganancia_neta is not none %}
+
+                                    <strong
+                                        class="
+                                            {% if detalle.ganancia_neta >= 0 %}
+                                                margen-positivo
+                                            {% else %}
+                                                margen-negativo
+                                            {% endif %}
+                                        "
+                                    >
+                                        Q {{
+                                            "%.2f"|format(
+                                                detalle.ganancia_neta
+                                            )
+                                        }}
+                                    </strong>
+
+                                {% else %}
+
+                                    <span class="rentabilidad-pendiente-texto">
+                                        Pendiente
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if detalle.margen_neto is not none %}
+
+                                    <strong
+                                        class="
+                                            {% if detalle.margen_neto >= 0 %}
+                                                margen-positivo
+                                            {% else %}
+                                                margen-negativo
+                                            {% endif %}
+                                        "
+                                    >
+                                        {{
+                                            "%.2f"|format(
+                                                detalle.margen_neto
+                                            )
+                                        }}%
+                                    </strong>
+
+                                {% else %}
+
+                                    <span class="rentabilidad-pendiente-texto">
+                                        —
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if detalle.produccion_id %}
+
+                                    <a
+                                        href="{{ url_for(
+                                            'producciones.detalle',
+                                            produccion_id=detalle.produccion_id
+                                        ) }}"
+                                        class="btn-secondary btn-sm"
+                                    >
+                                        Ver producción
+                                    </a>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        Sin producción
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    {% endif %}
+
+
+    {% if not costos_completos %}
+
+        <div class="pedido-rentabilidad-aviso">
+
+            <span>
+                💡
+            </span>
+
+            <p>
+                La ganancia total se mostrará cuando todos los productos
+                del pedido tengan un costo real registrado. Los valores
+                pendientes no se cuentan como Q0.00.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<style>
+
+.pedido-rentabilidad-descripcion {
+    margin: 5px 0 0;
+    color: var(--text-soft);
+    font-size: 13px;
+}
+
+.pedido-rentabilidad-status {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.rentabilidad-completa {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.rentabilidad-pendiente {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.pedido-rentabilidad-resumen {
+    display: grid;
+    grid-template-columns:
+        repeat(5, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.pedido-rentabilidad-resumen > div {
+    min-width: 0;
+    padding: 17px 18px;
+    background: #f8fafc;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.pedido-rentabilidad-resumen span {
+    display: block;
+    margin-bottom: 6px;
+    color: var(--text-soft);
+    font-size: 11px;
+}
+
+.pedido-rentabilidad-resumen strong {
+    color: var(--navy);
+    font-size: 18px;
+}
+
+.pedido-rentabilidad-resumen .rentabilidad-ganancia {
+    background: #f7fff9;
+    border-left: 4px solid #22c55e;
+}
+
+.pedido-rentabilidad-resumen .rentabilidad-ganancia strong {
+    color: #15803d;
+}
+
+.pedido-rentabilidad-resumen .rentabilidad-perdida {
+    background: #fffafa;
+    border-left: 4px solid #ef4444;
+}
+
+.pedido-rentabilidad-resumen .rentabilidad-perdida strong {
+    color: #dc2626;
+}
+
+.rentabilidad-sin-dato,
+.rentabilidad-pendiente-texto {
+    color: #a16207 !important;
+    font-weight: 700;
+}
+
+.rentabilidad-margen-positivo {
+    color: #15803d !important;
+}
+
+.rentabilidad-margen-negativo {
+    color: #dc2626 !important;
+}
+
+.pedido-rentabilidad-tabla {
+    margin-top: 6px;
+}
+
+.rentabilidad-variante,
+.rentabilidad-descuento {
+    display: block;
+    margin-top: 4px;
+    color: var(--text-soft);
+    font-size: 10px;
+}
+
+.pedido-rentabilidad-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: #fffdf6;
+    border: 1px solid #fde68a;
+    border-radius: 9px;
+}
+
+.pedido-rentabilidad-aviso p {
+    margin: 0;
+    color: #6b5b22;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+@media (max-width: 1100px) {
+
+    .pedido-rentabilidad-resumen {
+        grid-template-columns:
+            repeat(3, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width: 650px) {
+
+    .pedido-rentabilidad-resumen {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+</style>
+
+<!-- ============================================================
+     RESUMEN
+============================================================ -->
+
+<div class="card pedido-card-seccion">
+
+    <div class="pedido-section-title">
+
+        <h2>
+            Resumen
+        </h2>
+
+    </div>
+
+
+    <div class="pedido-resumen-grid">
+
+        <div class="pedido-resumen-item">
+
+            <span>
+                Subtotal
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(pedido.subtotal) }}
+            </strong>
+
+        </div>
+
+
+        <div class="pedido-resumen-item">
+
+            <span>
+                Descuento
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(pedido.descuento) }}
+            </strong>
+
+        </div>
+
+
+        <div class="pedido-resumen-item pedido-resumen-total">
+
+            <span>
+                Total
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(pedido.total) }}
+            </strong>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     PAGOS
+============================================================ -->
+
+<div class="card pedido-card-seccion">
+
+    <div class="pedido-seccion-header">
+
+        <div>
+
+            <h2>
+                💰 Pagos
+            </h2>
+
+            <div class="pedido-pago-estado">
+
+                {% if saldo_pendiente <= 0 %}
+
+                    <div class="estado-pago estado-pagado">
+                        🟢 Pagado completo
+                    </div>
+
+                {% elif total_pagado > 0 %}
+
+                    <div class="estado-pago estado-abono">
+                        🟡 Abono parcial
+                    </div>
+
+                {% else %}
+
+                    <div class="estado-pago estado-pendiente">
+                        🔴 Pendiente de pago
+                    </div>
+
+                {% endif %}
+
+            </div>
+
+        </div>
+
+
+        {% if saldo_pendiente > 0 %}
+
+            <a
+                href="{{ url_for(
+                    'pedidos.registrar_pago',
+                    pedido_id=pedido.id
+                ) }}"
+                class="btn-primary"
+            >
+                + Registrar pago
+            </a>
+
+        {% endif %}
+
+    </div>
+
+
+    {% if pagos %}
+
+        <div class="table-container">
+
+            <table class="pedido-pagos-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Método</th>
+                        <th>Referencia</th>
+                        <th class="pedido-money-col">Monto</th>
+                        <th>Comprobante</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for pago in pagos %}
+
+                        <tr>
+
+                            <td>
+
+                                {% if pago.fecha %}
+
+                                    {{ pago.fecha.strftime(
+                                        '%d/%m/%Y %H:%M'
+                                    ) }}
+
+                                {% else %}
+
+                                    —
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if pago.metodo_pago == "EFECTIVO" %}
+
+                                    💵 Efectivo
+
+                                {% elif pago.metodo_pago == "TRANSFERENCIA" %}
+
+                                    🏦 Transferencia
+
+                                {% elif pago.metodo_pago == "TARJETA" %}
+
+                                    💳 Tarjeta
+
+                                {% else %}
+
+                                    💰 Otro
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {{ pago.referencia or "—" }}
+
+                            </td>
+
+
+                            <td class="pedido-money-col">
+
+                                <strong>
+                                    Q {{ "%.2f"|format(pago.monto) }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {% if pago.comprobantes %}
+
+                                    {% for comprobante in pago.comprobantes %}
+
+                                        <div class="pedido-comprobante">
+
+                                            📎
+
+                                            <strong>
+                                                {{ comprobante.nombre_original }}
+                                            </strong>
+
+                                        </div>
+
+                                    {% endfor %}
+
+
+                                {% else %}
+
+                                    <form
+                                        method="POST"
+                                        enctype="multipart/form-data"
+                                        action="{{ url_for(
+                                            'pedidos.subir_comprobante',
+                                            pago_id=pago.id
+                                        ) }}"
+                                        class="pedido-comprobante-form"
+                                    >
+
+                                        <input
+                                            type="file"
+                                            name="comprobante"
+                                            accept=".jpg,.jpeg,.png,.webp,.pdf"
+                                            required
+                                        >
+
+                                        <button
+                                            type="submit"
+                                            class="btn-secondary btn-sm"
+                                        >
+                                            📎 Adjuntar
+                                        </button>
+
+                                    </form>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="pedido-sin-pagos">
+
+            <span>
+                Todavía no hay pagos registrados para este pedido.
+            </span>
+
+        </div>
+
+    {% endif %}
+
+
+    <div class="pedido-pagos-resumen">
+
+        <div>
+
+            <span>
+                Total del pedido
+            </span>
+
+            <strong>
+                Q {{ "%.2f"|format(pedido.total) }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Total pagado
+            </span>
+
+            <strong class="margen-positivo">
+                Q {{ "%.2f"|format(total_pagado) }}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Saldo pendiente
+            </span>
+
+            <strong
+                class="
+                    {% if saldo_pendiente > 0 %}
+                        pedido-saldo-pendiente
+                    {% else %}
+                        margen-positivo
+                    {% endif %}
+                "
+            >
+                Q {{ "%.2f"|format(saldo_pendiente) }}
+            </strong>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+function toggleDetalles(id, boton) {
+
+    const elemento =
+        document.getElementById(id);
+
+    if (
+        elemento.style.display
+        ===
+        "none"
+    ) {
+
+        elemento.style.display =
+            "block";
+
+        boton.innerHTML =
+            "🙈 Ocultar detalles";
+
+    } else {
+
+        elemento.style.display =
+            "none";
+
+        boton.innerHTML =
+            "👁️ Ver detalles";
+
+    }
+
+}
+
+</script>
+
+
+<style>
+.rentabilidad-estimado-pendiente {
+    display: block;
+    margin-top: 5px;
+    color: #8a6a13;
+    font-size: 10px;
+    line-height: 1.35;
+}
+</style>
+
+{% endblock %}

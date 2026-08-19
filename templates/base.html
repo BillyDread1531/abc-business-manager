@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {% block title %}
+        ABC Business Manager
+        {% endblock %}
+    </title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for(
+            'static',
+            filename='css/style.css'
+        ) }}"
+    >
+
+</head>
+
+
+<body>
+
+
+    <!-- ========================================================
+         BOTÓN MÓVIL
+    ========================================================= -->
+
+    <button
+        type="button"
+        class="mobile-menu-button"
+        id="mobile-menu-button"
+        aria-label="Abrir menú"
+    >
+        ☰
+    </button>
+
+
+    <!-- Fondo oscuro al abrir menú en móvil -->
+
+    <div
+        class="sidebar-overlay"
+        id="sidebar-overlay"
+    ></div>
+
+
+    <div class="app">
+
+
+        <!-- ====================================================
+             SIDEBAR
+        ===================================================== -->
+
+        <aside
+            class="sidebar"
+            id="sidebar"
+        >
+
+
+            <!-- BOTÓN CONTRAER / EXPANDIR -->
+
+            <button
+                type="button"
+                class="sidebar-toggle"
+                id="sidebar-toggle"
+                title="Contraer menú"
+                aria-label="Contraer menú"
+            >
+                <span id="sidebar-toggle-icon">
+                    ‹
+                </span>
+            </button>
+
+
+            <!-- LOGO -->
+
+            <div class="logo">
+
+                {% if configuracion_negocio
+                      and configuracion_negocio.logo %}
+
+                    <img
+                        src="{{ url_for(
+                            'static',
+                            filename=configuracion_negocio.logo
+                        ) }}"
+                        alt="{{ configuracion_negocio.nombre_negocio }}"
+                        class="sidebar-logo-img"
+                    >
+
+                {% else %}
+
+                    <h1>
+                        ABC
+                    </h1>
+
+                {% endif %}
+
+
+                <span class="sidebar-business-name">
+                    Business Manager
+                </span>
+
+            </div>
+
+
+            <!-- =================================================
+                 NAVEGACIÓN
+            ================================================== -->
+
+            <nav>
+
+
+                <a
+                    href="{{ url_for('dashboard.index') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('dashboard.') %}active{% endif %}"
+                    title="Inicio"
+                >
+
+                    <span class="nav-icon">
+                        🏠
+                    </span>
+
+                    <span class="nav-text">
+                        Inicio
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('pedidos.listar') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('pedidos.') %}active{% endif %}"
+                    title="Pedidos"
+                >
+
+                    <span class="nav-icon">
+                        📝
+                    </span>
+
+                    <span class="nav-text">
+                        Pedidos
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('clientes.listar') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('clientes.') %}active{% endif %}"
+                    title="Clientes"
+                >
+
+                    <span class="nav-icon">
+                        👥
+                    </span>
+
+                    <span class="nav-text">
+                        Clientes
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('productos.listar') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('productos.') %}active{% endif %}"
+                    title="Productos"
+                >
+
+                    <span class="nav-icon">
+                        📦
+                    </span>
+
+                    <span class="nav-text">
+                        Productos
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('catalogo.index') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('catalogo.') %}active{% endif %}"
+                    title="Catálogo de precios"
+                >
+
+                    <span class="nav-icon">
+                        💵
+                    </span>
+
+                    <span class="nav-text">
+                        Catálogo de precios
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('materiales.lista') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('materiales.') %}active{% endif %}"
+                    title="Materiales"
+                >
+
+                    <span class="nav-icon">
+                        🧱
+                    </span>
+
+                    <span class="nav-text">
+                        Materiales
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('inventario.lista') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('inventario.') %}active{% endif %}"
+                    title="Inventario"
+                >
+
+                    <span class="nav-icon">
+                        📊
+                    </span>
+
+                    <span class="nav-text">
+                        Inventario
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('compras.lista') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('compras.') %}active{% endif %}"
+                    title="Compras"
+                >
+
+                    <span class="nav-icon">
+                        🛒
+                    </span>
+
+                    <span class="nav-text">
+                        Compras
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('producciones.lista') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('producciones.') %}active{% endif %}"
+                    title="Producción"
+                >
+
+                    <span class="nav-icon">
+                        🏭
+                    </span>
+
+                    <span class="nav-text">
+                        Producción
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('agenda.index') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('agenda.') %}active{% endif %}"
+                    title="Agenda"
+                >
+
+                    <span class="nav-icon">
+                        📅
+                    </span>
+
+                    <span class="nav-text">
+                        Agenda
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('finanzas.index') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('finanzas.') %}active{% endif %}"
+                    title="Finanzas"
+                >
+
+                    <span class="nav-icon">
+                        💰
+                    </span>
+
+                    <span class="nav-text">
+                        Finanzas
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="{{ url_for('reportes.index') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('reportes.') %}active{% endif %}"
+                    title="Reportes"
+                >
+
+                    <span class="nav-icon">
+                        📊
+                    </span>
+
+                    <span class="nav-text">
+                        Reportes
+                    </span>
+
+                </a>
+
+            </nav>
+
+
+            <!-- =================================================
+                 PARTE INFERIOR
+            ================================================== -->
+
+            <div class="sidebar-bottom">
+
+                <a
+                    href="{{ url_for('configuracion.index') }}"
+                    class="{% if request.endpoint and request.endpoint.startswith('configuracion.') %}active{% endif %}"
+                    title="Configuración"
+                >
+
+                    <span class="nav-icon">
+                        ⚙️
+                    </span>
+
+                    <span class="nav-text">
+                        Configuración
+                    </span>
+
+                </a>
+
+            </div>
+
+
+        </aside>
+
+
+        <!-- ====================================================
+             CONTENIDO
+        ===================================================== -->
+
+        <main class="content">
+
+
+            <!-- TOASTS -->
+
+            {% with messages =
+                get_flashed_messages(
+                    with_categories=true
+                )
+            %}
+
+                {% if messages %}
+
+                    <div class="toast-container">
+
+                        {% for category, message in messages %}
+
+                            <div
+                                class="toast toast-{{ category }}"
+                            >
+
+                                <div class="toast-icon">
+
+                                    {% if category == "success" %}
+
+                                        ✓
+
+                                    {% elif category == "danger" %}
+
+                                        !
+
+                                    {% elif category == "warning" %}
+
+                                        !
+
+                                    {% else %}
+
+                                        i
+
+                                    {% endif %}
+
+                                </div>
+
+
+                                <div class="toast-content">
+
+                                    {{ message }}
+
+                                </div>
+
+
+                                <button
+                                    type="button"
+                                    class="toast-close"
+                                    onclick="cerrarToast(this.parentElement)"
+                                >
+                                    ×
+                                </button>
+
+                            </div>
+
+                        {% endfor %}
+
+                    </div>
+
+                {% endif %}
+
+            {% endwith %}
+
+
+            {% block content %}
+            {% endblock %}
+
+
+        </main>
+
+    </div>
+
+    <!-- ============================================================
+        BARRA HORIZONTAL FLOTANTE
+    ============================================================ -->
+
+    <div
+        class="floating-horizontal-scroll"
+        id="floating-horizontal-scroll"
+        aria-hidden="true"
+    >
+        <div
+            class="floating-horizontal-scroll-inner"
+            id="floating-horizontal-scroll-inner"
+        ></div>
+    </div>
+
+<script>
+
+/* ============================================================
+   TOASTS
+============================================================ */
+
+function cerrarToast(toast) {
+
+    toast.style.animation =
+        "toastSalida 0.3s ease forwards";
+
+    setTimeout(
+        function () {
+            toast.remove();
+        },
+        300
+    );
+
+}
+
+
+/* ============================================================
+   SIDEBAR
+============================================================ */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+
+        const body =
+            document.body;
+
+        const sidebar =
+            document.getElementById(
+                "sidebar"
+            );
+
+        const toggle =
+            document.getElementById(
+                "sidebar-toggle"
+            );
+
+        const toggleIcon =
+            document.getElementById(
+                "sidebar-toggle-icon"
+            );
+
+        const mobileButton =
+            document.getElementById(
+                "mobile-menu-button"
+            );
+
+        const overlay =
+            document.getElementById(
+                "sidebar-overlay"
+            );
+
+
+        /* ====================================================
+           SABER SI ESTAMOS EN MÓVIL
+        ==================================================== */
+
+        function esMovil() {
+
+            return window.innerWidth <= 980;
+
+        }
+
+        /* ====================================================
+           ESTADO DEL SIDEBAR EN ESCRITORIO
+        ==================================================== */
+
+        function aplicarEstadoSidebar() {
+
+            if (esMovil()) {
+
+                body.classList.remove(
+                    "sidebar-collapsed"
+                );
+
+                return;
+
+            }
+
+
+            const guardado =
+                localStorage.getItem(
+                    "abcSidebarCollapsed"
+                );
+
+
+            /*
+             * Si nunca se ha guardado preferencia:
+             * en ventanas medianas se contrae automáticamente.
+             */
+
+            if (guardado === null) {
+
+                if (window.innerWidth <= 1150) {
+
+                    body.classList.add(
+                        "sidebar-collapsed"
+                    );
+
+                } else {
+
+                    body.classList.remove(
+                        "sidebar-collapsed"
+                    );
+
+                }
+
+            }
+
+            else if (guardado === "1") {
+
+                body.classList.add(
+                    "sidebar-collapsed"
+                );
+
+            }
+
+            else {
+
+                body.classList.remove(
+                    "sidebar-collapsed"
+                );
+
+            }
+
+
+            actualizarIcono();
+
+        }
+
+
+        function actualizarIcono() {
+
+            if (
+                body.classList.contains(
+                    "sidebar-collapsed"
+                )
+            ) {
+
+                toggleIcon.textContent = "›";
+
+                toggle.title =
+                    "Expandir menú";
+
+            } else {
+
+                toggleIcon.textContent = "‹";
+
+                toggle.title =
+                    "Contraer menú";
+
+            }
+
+        }
+
+
+        /* ====================================================
+           BOTÓN ESCRITORIO
+        ==================================================== */
+
+        toggle.addEventListener(
+            "click",
+            function () {
+
+                if (esMovil()) {
+
+                    cerrarMenuMovil();
+
+                    return;
+
+                }
+
+
+                body.classList.toggle(
+                    "sidebar-collapsed"
+                );
+
+
+                const contraido =
+                    body.classList.contains(
+                        "sidebar-collapsed"
+                    );
+
+
+                localStorage.setItem(
+                    "abcSidebarCollapsed",
+                    contraido
+                        ? "1"
+                        : "0"
+                );
+
+
+                actualizarIcono();
+
+            }
+        );
+
+
+        /* ====================================================
+           MENÚ MÓVIL
+        ==================================================== */
+
+        function abrirMenuMovil() {
+
+            body.classList.add(
+                "mobile-menu-open"
+            );
+
+        }
+
+
+        function cerrarMenuMovil() {
+
+            body.classList.remove(
+                "mobile-menu-open"
+            );
+
+        }
+
+
+        mobileButton.addEventListener(
+            "click",
+            abrirMenuMovil
+        );
+
+
+        overlay.addEventListener(
+            "click",
+            cerrarMenuMovil
+        );
+
+
+        /*
+         * Cerrar cuando se selecciona una opción
+         * en teléfono.
+         */
+
+        sidebar
+            .querySelectorAll("a")
+            .forEach(
+                function (link) {
+
+                    link.addEventListener(
+                        "click",
+                        function () {
+
+                            if (esMovil()) {
+                                cerrarMenuMovil();
+                            }
+
+                        }
+                    );
+
+                }
+            );
+
+
+        /* ====================================================
+           ESC
+        ==================================================== */
+
+        document.addEventListener(
+            "keydown",
+            function (event) {
+
+                if (event.key === "Escape") {
+
+                    cerrarMenuMovil();
+
+                }
+
+            }
+        );
+
+
+        /* ====================================================
+           CAMBIO DE TAMAÑO
+        ==================================================== */
+
+        let resizeTimer;
+
+
+        window.addEventListener(
+            "resize",
+            function () {
+
+                clearTimeout(
+                    resizeTimer
+                );
+
+
+                resizeTimer =
+                    setTimeout(
+                        function () {
+
+                            if (!esMovil()) {
+
+                                cerrarMenuMovil();
+
+                                aplicarEstadoSidebar();
+
+                            } else {
+
+                                body.classList.remove(
+                                    "sidebar-collapsed"
+                                );
+
+                            }
+
+                        },
+                        120
+                    );
+
+            }
+        );
+
+
+        aplicarEstadoSidebar();
+
+
+        /* ====================================================
+           TOASTS
+        ==================================================== */
+
+        const toasts =
+            document.querySelectorAll(
+                ".toast"
+            );
+
+
+        toasts.forEach(
+            function (toast) {
+
+                setTimeout(
+                    function () {
+
+                        if (toast.isConnected) {
+                            toast.remove();
+                        }
+
+                    },
+                    5000
+
+
+
+                );
+
+            }
+        );
+
+        /* ====================================================
+           BARRA HORIZONTAL FLOTANTE
+        ==================================================== */
+
+        const floatingScroll =
+            document.getElementById(
+                "floating-horizontal-scroll"
+            );
+
+        const floatingScrollInner =
+            document.getElementById(
+                "floating-horizontal-scroll-inner"
+            );
+
+
+        let activeScrollContainer = null;
+        let syncingScroll = false;
+        let floatingScrollTimer = null;
+
+
+        function obtenerContenedoresHorizontales() {
+
+            return Array.from(
+                document.querySelectorAll(
+                    ".table-container, "
+                    + ".table-responsive, "
+                    + ".compra-materiales-table-wrap"
+                )
+            ).filter(
+                function (elemento) {
+
+                    return (
+                        elemento.offsetParent !== null
+                        &&
+                        elemento.scrollWidth >
+                        elemento.clientWidth + 2
+                    );
+
+                }
+            );
+
+        }
+
+
+        function ocultarBarraFlotante() {
+
+            activeScrollContainer = null;
+
+            floatingScroll.classList.remove(
+                "is-visible"
+            );
+
+            floatingScroll.setAttribute(
+                "aria-hidden",
+                "true"
+            );
+
+        }
+
+
+        function actualizarBarraFlotante() {
+
+            if (!activeScrollContainer) {
+
+                ocultarBarraFlotante();
+                return;
+
+            }
+
+
+            if (
+                activeScrollContainer.scrollWidth
+                <= activeScrollContainer.clientWidth + 2
+            ) {
+
+                ocultarBarraFlotante();
+                return;
+
+            }
+
+
+            floatingScrollInner.style.width =
+                activeScrollContainer.scrollWidth
+                + "px";
+
+
+            if (!syncingScroll) {
+
+                floatingScroll.scrollLeft =
+                    activeScrollContainer.scrollLeft;
+
+            }
+
+
+            floatingScroll.classList.add(
+                "is-visible"
+            );
+
+            floatingScroll.setAttribute(
+                "aria-hidden",
+                "false"
+            );
+
+        }
+
+
+        function buscarContenedorActivo() {
+
+            const contenedores =
+                obtenerContenedoresHorizontales();
+
+
+            if (!contenedores.length) {
+
+                ocultarBarraFlotante();
+                return;
+
+            }
+
+
+            const alturaVentana =
+                window.innerHeight;
+
+            let mejor = null;
+            let mejorPuntuacion = -Infinity;
+
+
+            contenedores.forEach(
+                function (contenedor) {
+
+                    const rect =
+                        contenedor.getBoundingClientRect();
+
+                    const visibleTop =
+                        Math.max(
+                            rect.top,
+                            0
+                        );
+
+                    const visibleBottom =
+                        Math.min(
+                            rect.bottom,
+                            alturaVentana
+                        );
+
+                    const visibleHeight =
+                        Math.max(
+                            0,
+                            visibleBottom - visibleTop
+                        );
+
+                    const centroElemento =
+                        rect.top
+                        + rect.height / 2;
+
+                    const centroPantalla =
+                        alturaVentana / 2;
+
+                    const distanciaCentro =
+                        Math.abs(
+                            centroElemento
+                            - centroPantalla
+                        );
+
+                    const puntuacion =
+                        visibleHeight > 0
+                            ? (
+                                100000
+                                + visibleHeight
+                                - distanciaCentro
+                            )
+                            : (
+                                -Math.abs(rect.top)
+                            );
+
+
+                    if (
+                        puntuacion >
+                        mejorPuntuacion
+                    ) {
+
+                        mejorPuntuacion =
+                            puntuacion;
+
+                        mejor =
+                            contenedor;
+
+                    }
+
+                }
+            );
+
+
+            if (!mejor) {
+
+                ocultarBarraFlotante();
+                return;
+
+            }
+
+
+            activeScrollContainer =
+                mejor;
+
+            actualizarBarraFlotante();
+
+        }
+
+
+        if (
+            floatingScroll
+            &&
+            floatingScrollInner
+        ) {
+
+            floatingScroll.addEventListener(
+                "scroll",
+                function () {
+
+                    if (
+                        !activeScrollContainer
+                        ||
+                        syncingScroll
+                    ) {
+                        return;
+                    }
+
+
+                    syncingScroll = true;
+
+                    activeScrollContainer.scrollLeft =
+                        floatingScroll.scrollLeft;
+
+
+                    requestAnimationFrame(
+                        function () {
+
+                            syncingScroll = false;
+
+                        }
+                    );
+
+                }
+            );
+
+
+            function conectarContenedores() {
+
+                document
+                    .querySelectorAll(
+                        ".table-container, "
+                        + ".table-responsive, "
+                        + ".compra-materiales-table-wrap"
+                    )
+                    .forEach(
+                        function (contenedor) {
+
+                            if (
+                                contenedor.dataset
+                                    .floatingScrollConnected
+                            ) {
+                                return;
+                            }
+
+
+                            contenedor.dataset
+                                .floatingScrollConnected =
+                                "1";
+
+
+                            contenedor.addEventListener(
+                                "scroll",
+                                function () {
+
+                                    if (syncingScroll) {
+                                        return;
+                                    }
+
+
+                                    activeScrollContainer =
+                                        contenedor;
+
+                                    syncingScroll = true;
+
+                                    floatingScroll.scrollLeft =
+                                        contenedor.scrollLeft;
+
+
+                                    requestAnimationFrame(
+                                        function () {
+
+                                            syncingScroll =
+                                                false;
+
+                                        }
+                                    );
+
+                                },
+                                {
+                                    passive: true
+                                }
+                            );
+
+                        }
+                    );
+
+            }
+
+
+            window.addEventListener(
+                "scroll",
+                function () {
+
+                    clearTimeout(
+                        floatingScrollTimer
+                    );
+
+
+                    floatingScrollTimer =
+                        setTimeout(
+                            buscarContenedorActivo,
+                            40
+                        );
+
+                },
+                {
+                    passive: true
+                }
+            );
+
+
+            window.addEventListener(
+                "resize",
+                function () {
+
+                    clearTimeout(
+                        floatingScrollTimer
+                    );
+
+
+                    floatingScrollTimer =
+                        setTimeout(
+                            function () {
+
+                                conectarContenedores();
+                                buscarContenedorActivo();
+
+                            },
+                            100
+                        );
+
+                }
+            );
+
+
+            const contentElement =
+                document.querySelector(
+                    ".content"
+                );
+
+
+            if (contentElement) {
+
+                const floatingObserver =
+                    new MutationObserver(
+                        function () {
+
+                            clearTimeout(
+                                floatingScrollTimer
+                            );
+
+
+                            floatingScrollTimer =
+                                setTimeout(
+                                    function () {
+
+                                        conectarContenedores();
+                                        buscarContenedorActivo();
+
+                                    },
+                                    80
+                                );
+
+                        }
+                    );
+
+
+                floatingObserver.observe(
+                    contentElement,
+                    {
+                        childList: true,
+                        subtree: true
+                    }
+                );
+
+            }
+
+
+            /*
+             * Al contraer/expandir el sidebar cambia
+             * el ancho útil del contenido.
+             */
+
+            toggle.addEventListener(
+                "click",
+                function () {
+
+                    setTimeout(
+                        function () {
+
+                            conectarContenedores();
+                            buscarContenedorActivo();
+
+                        },
+                        260
+                    );
+
+                }
+            );
+
+
+            conectarContenedores();
+            buscarContenedorActivo();
+
+        }
+
+
+    }
+    
+);
+
+</script>
+
+
+</body>
+</html>

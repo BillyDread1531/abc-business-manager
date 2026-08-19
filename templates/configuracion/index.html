@@ -1,0 +1,1126 @@
+{% extends "base.html" %}
+
+{% block title %}
+Configuración - ABC Business Manager
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Configuración</h1>
+
+        <p>
+            Administra los datos generales y preferencias del negocio.
+        </p>
+
+    </div>
+
+</div>
+
+
+<form
+    method="POST"
+    enctype="multipart/form-data"
+    class="configuracion-form"
+>
+
+
+<!-- ============================================================
+     INFORMACIÓN DEL NEGOCIO
+============================================================ -->
+
+<div class="card configuracion-card-compacta">
+
+    <div class="configuracion-section-header">
+
+        <div>
+
+            <h2>
+                🏪 Información del negocio
+            </h2>
+
+            <p>
+                Datos generales que podrán utilizarse en documentos,
+                cotizaciones y comprobantes.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================
+         LOGO
+    ======================================================== -->
+
+    <div class="configuracion-logo-box configuracion-logo-box-compacta">
+
+        <div class="configuracion-logo-preview">
+
+            {% if configuracion and configuracion.logo %}
+
+                <img
+                    src="{{ url_for(
+                        'static',
+                        filename=configuracion.logo
+                    ) }}"
+                    alt="Logo del negocio"
+                    id="logo-preview"
+                >
+
+                <div
+                    class="configuracion-logo-placeholder"
+                    id="logo-placeholder"
+                    style="display: none;"
+                >
+                    🖼️
+                </div>
+
+            {% else %}
+
+                <div
+                    class="configuracion-logo-placeholder"
+                    id="logo-placeholder"
+                >
+                    🖼️
+                </div>
+
+                <img
+                    src=""
+                    alt="Vista previa del logo"
+                    id="logo-preview"
+                    style="display: none;"
+                >
+
+            {% endif %}
+
+        </div>
+
+
+        <div class="configuracion-logo-content">
+
+            <h3>
+                Logo del negocio
+            </h3>
+
+            <p>
+                Se utilizará en cotizaciones,
+                comprobantes y otros documentos del negocio.
+            </p>
+
+
+            <label
+                for="logo"
+                class="btn-secondary configuracion-logo-button"
+            >
+                📁 Seleccionar logo
+            </label>
+
+
+            <input
+                type="file"
+                id="logo"
+                name="logo"
+                accept=".png,.jpg,.jpeg,.webp"
+                class="configuracion-logo-input"
+            >
+
+
+            <small
+                class="form-help"
+                id="logo-file-name"
+            >
+                Formatos permitidos: PNG, JPG, JPEG y WEBP.
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================================================
+         DATOS GENERALES
+    ======================================================== -->
+
+    <div class="configuracion-grid">
+
+
+        <div class="form-group">
+
+            <label for="nombre_negocio">
+                Nombre del negocio *
+            </label>
+
+            <input
+                type="text"
+                id="nombre_negocio"
+                name="nombre_negocio"
+                required
+                value="{{ configuracion.nombre_negocio if configuracion else '' }}"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="telefono">
+                Teléfono
+            </label>
+
+            <input
+                type="text"
+                id="telefono"
+                name="telefono"
+                value="{{ configuracion.telefono or '' if configuracion else '' }}"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="whatsapp">
+                WhatsApp
+            </label>
+
+            <input
+                type="text"
+                id="whatsapp"
+                name="whatsapp"
+                value="{{ configuracion.whatsapp or '' if configuracion else '' }}"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="email">
+                Correo electrónico
+            </label>
+
+            <input
+                type="email"
+                id="email"
+                name="email"
+                value="{{ configuracion.email or '' if configuracion else '' }}"
+            >
+
+        </div>
+
+
+        <div class="form-group configuracion-full">
+
+            <label for="direccion">
+                Dirección
+            </label>
+
+            <input
+                type="text"
+                id="direccion"
+                name="direccion"
+                value="{{ configuracion.direccion or '' if configuracion else '' }}"
+            >
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     VENTAS Y PEDIDOS
+============================================================ -->
+
+<div class="card configuracion-card-compacta">
+
+    <div class="configuracion-section-header">
+
+        <div>
+
+            <h2>
+                🧾 Ventas y pedidos
+            </h2>
+
+            <p>
+                Preferencias generales utilizadas al trabajar con pedidos.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="configuracion-grid">
+
+
+        <div class="form-group">
+
+            <label for="moneda">
+                Moneda
+            </label>
+
+            <select
+                id="moneda"
+                name="moneda"
+            >
+
+                <option
+                    value="GTQ"
+                    {% if not configuracion or configuracion.moneda == "GTQ" %}
+                        selected
+                    {% endif %}
+                >
+                    Quetzal (GTQ)
+                </option>
+
+                <option
+                    value="USD"
+                    {% if configuracion and configuracion.moneda == "USD" %}
+                        selected
+                    {% endif %}
+                >
+                    Dólar (USD)
+                </option>
+
+            </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="prefijo_pedido">
+                Prefijo de pedidos
+            </label>
+
+            <input
+                type="text"
+                id="prefijo_pedido"
+                name="prefijo_pedido"
+                maxlength="20"
+                value="{{ configuracion.prefijo_pedido if configuracion else 'PED-' }}"
+            >
+
+            <small class="form-help">
+                Ejemplo: PED-0014.
+            </small>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="porcentaje_anticipo">
+                Anticipo predeterminado
+            </label>
+
+            <div class="configuracion-input-suffix">
+
+                <input
+                    type="number"
+                    id="porcentaje_anticipo"
+                    name="porcentaje_anticipo"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    value="{{ configuracion.porcentaje_anticipo if configuracion else 60 }}"
+                >
+
+                <span>
+                    %
+                </span>
+
+            </div>
+
+            <small class="form-help">
+                Se utilizará como referencia al generar cotizaciones.
+            </small>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="dias_vigencia_cotizacion">
+                Vigencia de la cotización
+            </label>
+
+            <div class="configuracion-input-suffix">
+
+                <input
+                    type="number"
+                    id="dias_vigencia_cotizacion"
+                    name="dias_vigencia_cotizacion"
+                    min="1"
+                    max="365"
+                    step="1"
+                    required
+                    value="{{ configuracion.dias_vigencia_cotizacion if configuracion else 7 }}"
+                >
+
+                <span>
+                    días
+                </span>
+
+            </div>
+
+            <small class="form-help">
+                Cantidad de días durante los que una cotización será válida.
+            </small>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+
+<!-- ============================================================
+     DISTRIBUCIÓN DE UTILIDADES
+============================================================ -->
+
+<div class="card configuracion-card-compacta">
+
+    <div class="configuracion-section-header">
+
+        <div>
+
+            <h2>
+                💰 Distribución de utilidades
+            </h2>
+
+            <p>
+                Define cómo se reparte la utilidad real generada
+                por el negocio. Esto es informativo: no tendrás
+                que registrar cada vez que uses tu dinero personal.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="configuracion-grid configuracion-utilidades-grid">
+
+        <div class="form-group">
+
+            <label for="porcentaje_propietario">
+                👤 Para mí
+            </label>
+
+            <div class="configuracion-input-suffix">
+
+                <input
+                    type="number"
+                    id="porcentaje_propietario"
+                    name="porcentaje_propietario"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    required
+                    value="{{ configuracion.porcentaje_propietario if configuracion and configuracion.porcentaje_propietario is not none else 50 }}"
+                >
+
+                <span>%</span>
+
+            </div>
+
+            <small class="form-help">
+                Parte de la utilidad que puedes considerar tuya
+                para usar libremente.
+            </small>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="porcentaje_reinversion">
+                📈 Reinversión
+            </label>
+
+            <div class="configuracion-input-suffix">
+
+                <input
+                    type="number"
+                    id="porcentaje_reinversion"
+                    name="porcentaje_reinversion"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    required
+                    value="{{ configuracion.porcentaje_reinversion if configuracion and configuracion.porcentaje_reinversion is not none else 30 }}"
+                >
+
+                <span>%</span>
+
+            </div>
+
+            <small class="form-help">
+                Dinero destinado a hacer crecer ABC: más inventario,
+                publicidad, herramientas o equipo.
+            </small>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="porcentaje_reserva">
+                🛡️ Reserva
+            </label>
+
+            <div class="configuracion-input-suffix">
+
+                <input
+                    type="number"
+                    id="porcentaje_reserva"
+                    name="porcentaje_reserva"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                    required
+                    value="{{ configuracion.porcentaje_reserva if configuracion and configuracion.porcentaje_reserva is not none else 20 }}"
+                >
+
+                <span>%</span>
+
+            </div>
+
+            <small class="form-help">
+                Fondo para reparaciones, errores, meses flojos
+                e imprevistos del negocio.
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="configuracion-utilidad-total"
+        id="configuracion-utilidad-total"
+    >
+
+        <span>
+            Total de distribución
+        </span>
+
+        <strong id="configuracion-utilidad-total-valor">
+            100%
+        </strong>
+
+        <small id="configuracion-utilidad-total-estado">
+            ✓ Correcto
+        </small>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     DATOS PARA TRANSFERENCIAS
+============================================================ -->
+
+<div class="card configuracion-card-compacta">
+
+    <div class="configuracion-section-header">
+
+        <div>
+
+            <h2>
+                🏦 Datos para transferencias
+            </h2>
+
+            <p>
+                Información que podrá mostrarse al cliente
+                para realizar pagos.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="configuracion-grid">
+
+
+        <div class="form-group">
+
+            <label for="banco">
+                Banco
+            </label>
+
+            <input
+                type="text"
+                id="banco"
+                name="banco"
+                value="{{ configuracion.banco or '' if configuracion else '' }}"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="tipo_cuenta">
+                Tipo de cuenta
+            </label>
+
+            <select
+                id="tipo_cuenta"
+                name="tipo_cuenta"
+            >
+
+                <option
+                    value=""
+                    {% if not configuracion or not configuracion.tipo_cuenta %}
+                        selected
+                    {% endif %}
+                >
+                    Selecciona un tipo
+                </option>
+
+                <option
+                    value="Ahorro"
+                    {% if configuracion and configuracion.tipo_cuenta == "Ahorro" %}
+                        selected
+                    {% endif %}
+                >
+                    Ahorro
+                </option>
+
+                <option
+                    value="Monetaria"
+                    {% if configuracion and configuracion.tipo_cuenta == "Monetaria" %}
+                        selected
+                    {% endif %}
+                >
+                    Monetaria
+                </option>
+
+                {% if configuracion
+                      and configuracion.tipo_cuenta
+                      and configuracion.tipo_cuenta not in ["Ahorro", "Monetaria"] %}
+
+                    <option
+                        value="{{ configuracion.tipo_cuenta }}"
+                        selected
+                    >
+                        {{ configuracion.tipo_cuenta }}
+                    </option>
+
+                {% endif %}
+
+            </select>
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="numero_cuenta">
+                Número de cuenta
+            </label>
+
+            <input
+                type="text"
+                id="numero_cuenta"
+                name="numero_cuenta"
+                value="{{ configuracion.numero_cuenta or '' if configuracion else '' }}"
+            >
+
+        </div>
+
+
+        <div class="form-group">
+
+            <label for="titular_cuenta">
+                Titular de la cuenta
+            </label>
+
+            <input
+                type="text"
+                id="titular_cuenta"
+                name="titular_cuenta"
+                value="{{ configuracion.titular_cuenta or '' if configuracion else '' }}"
+            >
+
+        </div>
+
+
+        <div class="form-group configuracion-full">
+
+            <label for="notas_pago">
+                Instrucciones adicionales de pago
+            </label>
+
+            <textarea
+                id="notas_pago"
+                name="notas_pago"
+                rows="4"
+                placeholder="Ej. Enviar comprobante después de realizar la transferencia."
+            >{{ configuracion.notas_pago or '' if configuracion else '' }}</textarea>
+
+            <small class="form-help">
+                Este texto podrá aparecer en cotizaciones
+                y documentos enviados al cliente.
+            </small>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     GUARDAR
+============================================================ -->
+
+<div class="configuracion-actions">
+
+    <button
+        type="submit"
+        class="btn-primary"
+    >
+        💾 Guardar configuración
+    </button>
+
+</div>
+
+</form>
+
+
+<!-- ============================================================
+     VISTA PREVIA DEL LOGO
+============================================================ -->
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const inputLogo =
+            document.getElementById(
+                "logo"
+            );
+
+        const preview =
+            document.getElementById(
+                "logo-preview"
+            );
+
+        const placeholder =
+            document.getElementById(
+                "logo-placeholder"
+            );
+
+        const nombreArchivo =
+            document.getElementById(
+                "logo-file-name"
+            );
+
+
+        if (
+            !inputLogo
+            ||
+            !preview
+        ) {
+
+            return;
+
+        }
+
+
+        inputLogo.addEventListener(
+            "change",
+            function () {
+
+                const archivo =
+                    this.files[0];
+
+
+                if (!archivo) {
+
+                    return;
+
+                }
+
+
+                const tiposPermitidos = [
+                    "image/png",
+                    "image/jpeg",
+                    "image/webp"
+                ];
+
+
+                if (
+                    !tiposPermitidos.includes(
+                        archivo.type
+                    )
+                ) {
+
+                    alert(
+                        "Selecciona una imagen PNG, JPG, JPEG o WEBP."
+                    );
+
+                    this.value = "";
+
+                    return;
+
+                }
+
+
+                const urlTemporal =
+                    URL.createObjectURL(
+                        archivo
+                    );
+
+
+                preview.src =
+                    urlTemporal;
+
+                preview.style.display =
+                    "block";
+
+
+                if (placeholder) {
+
+                    placeholder.style.display =
+                        "none";
+
+                }
+
+
+                if (nombreArchivo) {
+
+                    nombreArchivo.textContent =
+                        archivo.name;
+
+                }
+
+
+                preview.onload =
+                    function () {
+
+                        URL.revokeObjectURL(
+                            urlTemporal
+                        );
+
+                    };
+
+            }
+        );
+
+    }
+);
+
+
+/* ============================================================
+   AVISO DE CAMBIOS SIN GUARDAR
+============================================================ */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const formulario =
+            document.querySelector(
+                ".configuracion-form"
+            );
+
+        if (!formulario) {
+            return;
+        }
+
+        let formularioModificado =
+            false;
+
+        const marcarCambios =
+            function () {
+
+                formularioModificado =
+                    true;
+
+            };
+
+
+        formulario.addEventListener(
+            "input",
+            marcarCambios
+        );
+
+
+        formulario.addEventListener(
+            "change",
+            marcarCambios
+        );
+
+
+        formulario.addEventListener(
+            "submit",
+            function () {
+
+                formularioModificado =
+                    false;
+
+            }
+        );
+
+
+        window.addEventListener(
+            "beforeunload",
+            function (event) {
+
+                if (!formularioModificado) {
+                    return;
+                }
+
+                event.preventDefault();
+
+                event.returnValue =
+                    "";
+
+            }
+        );
+
+    }
+);
+
+
+
+/* ============================================================
+   DISTRIBUCIÓN DE UTILIDADES
+============================================================ */
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const propietario =
+            document.getElementById(
+                "porcentaje_propietario"
+            );
+
+        const reinversion =
+            document.getElementById(
+                "porcentaje_reinversion"
+            );
+
+        const reserva =
+            document.getElementById(
+                "porcentaje_reserva"
+            );
+
+        const totalValor =
+            document.getElementById(
+                "configuracion-utilidad-total-valor"
+            );
+
+        const totalEstado =
+            document.getElementById(
+                "configuracion-utilidad-total-estado"
+            );
+
+        const formulario =
+            document.querySelector(
+                ".configuracion-form"
+            );
+
+
+        if (
+            !propietario
+            || !reinversion
+            || !reserva
+            || !totalValor
+            || !totalEstado
+        ) {
+            return;
+        }
+
+
+        function numero(input) {
+
+            const valor =
+                parseFloat(
+                    input.value
+                    || "0"
+                );
+
+            return Number.isFinite(valor)
+                ? valor
+                : 0;
+
+        }
+
+
+        function actualizarTotal() {
+
+            const total =
+                numero(propietario)
+                + numero(reinversion)
+                + numero(reserva);
+
+            totalValor.textContent =
+                total.toFixed(2)
+                .replace(".00", "")
+                + "%";
+
+            if (
+                Math.abs(
+                    total - 100
+                ) < 0.001
+            ) {
+
+                totalEstado.textContent =
+                    "✓ Correcto";
+
+                totalEstado.classList.remove(
+                    "configuracion-total-error"
+                );
+
+                totalEstado.classList.add(
+                    "configuracion-total-ok"
+                );
+
+                return true;
+
+            }
+
+            totalEstado.textContent =
+                "Debe sumar exactamente 100%";
+
+            totalEstado.classList.remove(
+                "configuracion-total-ok"
+            );
+
+            totalEstado.classList.add(
+                "configuracion-total-error"
+            );
+
+            return false;
+
+        }
+
+
+        [
+            propietario,
+            reinversion,
+            reserva
+        ].forEach(
+            function (input) {
+
+                input.addEventListener(
+                    "input",
+                    actualizarTotal
+                );
+
+            }
+        );
+
+
+        if (formulario) {
+
+            formulario.addEventListener(
+                "submit",
+                function (event) {
+
+                    if (!actualizarTotal()) {
+
+                        event.preventDefault();
+
+                        alert(
+                            "La distribución de utilidades "
+                            + "debe sumar exactamente 100%."
+                        );
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        actualizarTotal();
+
+    }
+);
+
+</script>
+
+
+<style>
+
+.configuracion-utilidades-grid {
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+}
+
+.configuracion-utilidad-total {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: #f8fafc;
+    border: 1px solid #e5e9f1;
+    border-radius: 9px;
+}
+
+.configuracion-utilidad-total > span {
+    color: #657086;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.configuracion-utilidad-total > strong {
+    margin-left: auto;
+    color: #0b2a72;
+    font-size: 18px;
+}
+
+.configuracion-utilidad-total > small {
+    font-size: 10px;
+    font-weight: 700;
+}
+
+.configuracion-total-ok {
+    color: #15803d;
+}
+
+.configuracion-total-error {
+    color: #c62828;
+}
+
+@media (max-width: 800px) {
+
+    .configuracion-utilidades-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .configuracion-utilidad-total {
+        align-items: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .configuracion-utilidad-total > strong {
+        margin-left: 0;
+    }
+
+}
+
+</style>
+
+{% endblock %}

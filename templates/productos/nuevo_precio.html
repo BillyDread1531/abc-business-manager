@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}
+Nuevo precio - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Agregar precio</h1>
+
+        <p>
+            {{ producto.nombre }}
+        </p>
+
+    </div>
+
+</div>
+
+
+<div class="card">
+
+        {% if error %}
+
+    <div style="
+        background: #fee2e2;
+        color: #991b1b;
+        padding: 12px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+    ">
+        {{ error }}
+    </div>
+
+    {% endif %}
+
+    <form method="POST">
+
+        <label>
+            Cantidad mínima *
+        </label>
+
+        <input
+            type="number"
+            name="cantidad_minima"
+            min="1"
+            step="1"
+            required
+            placeholder="Ej. 12"
+        >
+
+
+        <label>
+            Cantidad máxima
+        </label>
+
+        <input
+            type="number"
+            name="cantidad_maxima"
+            min="1"
+            step="1"
+            placeholder="Ej. 23"
+        >
+
+        <small>
+            Déjalo vacío si este precio no tiene límite superior.
+        </small>
+
+
+        <label>
+            Precio unitario *
+        </label>
+
+        <input
+            type="number"
+            name="precio_unitario"
+            min="0"
+            step="0.01"
+            required
+            placeholder="Ej. 20.00"
+        >
+
+
+        <div class="form-actions">
+
+            <a
+                href="{{ url_for(
+                    'productos.precios',
+                    producto_id=producto.id
+                ) }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                Guardar precio
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

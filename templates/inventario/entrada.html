@@ -1,0 +1,1137 @@
+{% extends "base.html" %}
+
+{% block title %}
+Entrada de inventario - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Entrada de inventario</h1>
+
+        <p>
+            Registra la compra o ingreso de materiales al inventario.
+        </p>
+
+    </div>
+
+    <a
+        href="{{ url_for('inventario.lista') }}"
+        class="btn-secondary"
+    >
+        ← Volver al inventario
+    </a>
+
+</div>
+
+
+<div class="card inventario-entrada-card">
+
+    <form
+        method="POST"
+        id="formEntrada"
+        class="inventario-entrada-form"
+    >
+
+        <!-- ============================================================
+             DATOS DE LA ENTRADA
+        ============================================================ -->
+
+        <div class="inventario-entrada-section-header">
+
+            <div>
+
+                <h2>
+                    📥 Datos de la entrada
+                </h2>
+
+                <p>
+                    Selecciona el material e indica la cantidad comprada.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- MATERIAL -->
+
+        <div class="form-group inventario-entrada-full">
+
+            <label for="material_id">
+                Material *
+            </label>
+
+            <select
+                name="material_id"
+                id="material_id"
+                required
+            >
+
+                <option value="">
+                    Selecciona un material
+                </option>
+
+                {% for material in materiales %}
+
+                    <option
+                        value="{{ material.id }}"
+                        data-unidad-compra="{{ material.unidad_compra }}"
+                        data-abreviatura-compra="{{ material.abreviatura_compra }}"
+                        data-unidad-consumo="{{ material.unidad_consumo }}"
+                        data-abreviatura-consumo="{{ material.abreviatura_consumo }}"
+                        data-cantidad-por-compra="{{ material.cantidad_por_compra }}"
+                    >
+
+                        {{ material.nombre }}
+
+                        {% if material.color %}
+                            - {{ material.color }}
+                        {% endif %}
+
+                    </option>
+
+                {% endfor %}
+
+            </select>
+
+        </div>
+
+
+        <!-- ============================================================
+             INFORMACIÓN DE CONVERSIÓN
+        ============================================================ -->
+
+        <div
+            id="infoConversion"
+            class="inventario-conversion"
+            style="display: none;"
+        >
+
+            <div class="inventario-conversion-icon">
+                📐
+            </div>
+
+
+            <div class="inventario-conversion-content">
+
+                <div class="inventario-conversion-top">
+
+                    <div class="conversion-item">
+
+                        <span class="conversion-label">
+                            Unidad de compra
+                        </span>
+
+                        <strong id="unidadCompra">
+                            -
+                        </strong>
+
+                    </div>
+
+
+                    <div class="conversion-flecha">
+                        →
+                    </div>
+
+
+                    <div class="conversion-item">
+
+                        <span class="conversion-label">
+                            Unidad de consumo
+                        </span>
+
+                        <strong id="unidadConsumo">
+                            -
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div
+                    id="cantidadConversion"
+                    class="conversion-cantidad"
+                >
+                    Ingresa una cantidad para ver la conversión.
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             COMPRA
+        ============================================================ -->
+
+        <div class="inventario-entrada-grid">
+
+
+            <!-- CANTIDAD -->
+
+            <div class="form-group">
+
+                <label for="cantidad">
+                    Cantidad comprada *
+                </label>
+
+                <div class="inventario-unidad-input">
+
+                    <input
+                        type="number"
+                        name="cantidad"
+                        id="cantidad"
+                        min="0.0001"
+                        step="0.0001"
+                        placeholder="Ej. 10"
+                        required
+                    >
+
+                    <span
+                        id="cantidadUnidad"
+                        class="inventario-unidad-addon"
+                    >
+                        —
+                    </span>
+
+                </div>
+
+                <small class="form-help">
+                    Ingresa la cantidad utilizando la unidad de compra.
+                </small>
+
+            </div>
+
+
+            <!-- COSTO TOTAL -->
+
+            <div class="form-group">
+
+                <label for="costo_unitario">
+                    Costo total pagado *
+                </label>
+
+                <div class="inventario-money-input">
+
+                    <span>
+                        Q
+                    </span>
+
+                    <input
+                        type="number"
+                        name="costo_unitario"
+                        id="costo_unitario"
+                        min="0"
+                        step="0.01"
+                        placeholder="80.00"
+                        required
+                    >
+
+                </div>
+
+                <small class="form-help">
+                    Ingresa cuánto pagaste en total por esta compra.
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             RESUMEN
+        ============================================================ -->
+
+        <div
+            id="resumenCompra"
+            class="inventario-resumen"
+            style="display: none;"
+        >
+
+            <div class="inventario-resumen-header">
+
+                <div>
+
+                    <h3>
+                        📊 Resumen de la entrada
+                    </h3>
+
+                    <p>
+                        Así se registrará este movimiento en el inventario.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="inventario-resumen-grid">
+
+
+                <div class="inventario-resumen-item">
+
+                    <span>
+                        Cantidad comprada
+                    </span>
+
+                    <strong id="resumenCantidadCompra">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="inventario-resumen-item">
+
+                    <span>
+                        Stock que se agregará
+                    </span>
+
+                    <strong id="resumenStock">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="inventario-resumen-item">
+
+                    <span>
+                        Costo total
+                    </span>
+
+                    <strong id="resumenCostoTotal">
+                        -
+                    </strong>
+
+                </div>
+
+
+                <div class="inventario-resumen-item inventario-resumen-destacado">
+
+                    <span>
+                        Costo por unidad de consumo
+                    </span>
+
+                    <strong id="resumenCostoUnidad">
+                        -
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             NOTAS
+        ============================================================ -->
+
+        <div class="form-group inventario-entrada-notas">
+
+            <label for="notas">
+
+                Notas
+
+                <span class="inventario-opcional">
+                    (opcional)
+                </span>
+
+            </label>
+
+            <textarea
+                name="notas"
+                id="notas"
+                rows="3"
+                placeholder="Ej. Compra de vinil rojo, proveedor, número de factura..."
+            ></textarea>
+
+        </div>
+
+
+        <!-- ============================================================
+             ACCIONES
+        ============================================================ -->
+
+        <div class="form-actions inventario-entrada-actions">
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                📥 Registrar entrada
+            </button>
+
+            <a
+                href="{{ url_for('inventario.lista') }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<style>
+
+/* ============================================================
+   ENTRADA DE INVENTARIO
+============================================================ */
+
+.inventario-entrada-card {
+    width: 100%;
+    max-width: none;
+
+    padding: 24px 28px;
+
+    box-sizing: border-box;
+}
+
+
+.inventario-entrada-form {
+    width: 100%;
+    max-width: none;
+}
+
+
+/* ============================================================
+   ENCABEZADO INTERNO
+============================================================ */
+
+.inventario-entrada-section-header {
+    margin-bottom: 20px;
+}
+
+
+.inventario-entrada-section-header h2 {
+    margin: 0;
+
+    font-size: 20px;
+}
+
+
+.inventario-entrada-section-header p {
+    margin: 5px 0 0;
+
+    color: var(--text-soft);
+
+    font-size: 14px;
+}
+
+
+/* ============================================================
+   GRID
+============================================================ */
+
+.inventario-entrada-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 18px 24px;
+
+    width: 100%;
+
+    margin-top: 22px;
+}
+
+
+.inventario-entrada-grid .form-group {
+    min-width: 0;
+}
+
+
+.inventario-entrada-full {
+    width: 100%;
+}
+
+
+/* ============================================================
+   CONVERSIÓN
+============================================================ */
+
+.inventario-conversion {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 14px;
+
+    margin-top: 18px;
+
+    padding: 16px 18px;
+
+    background: #f8fafc;
+
+    border: 1px solid #dce3ee;
+    border-radius: 10px;
+}
+
+
+.inventario-conversion-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    width: 40px;
+    height: 40px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+
+    font-size: 20px;
+}
+
+
+.inventario-conversion-content {
+    flex: 1;
+    min-width: 0;
+}
+
+
+.inventario-conversion-top {
+    display: flex;
+    align-items: center;
+
+    gap: 20px;
+
+    flex-wrap: wrap;
+}
+
+
+.conversion-item {
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+}
+
+
+.conversion-label {
+    color: var(--text-soft);
+
+    font-size: 12px;
+}
+
+
+.conversion-item strong {
+    color: var(--navy);
+
+    font-size: 14px;
+}
+
+
+.conversion-flecha {
+    color: var(--text-soft);
+
+    font-size: 20px;
+}
+
+
+.conversion-cantidad {
+    margin-top: 12px;
+    padding-top: 11px;
+
+    border-top: 1px solid #e5e7eb;
+
+    color: var(--text-soft);
+
+    font-size: 13px;
+}
+
+
+/* ============================================================
+   INPUT DE UNIDAD
+============================================================ */
+
+.inventario-unidad-input {
+    display: flex;
+    align-items: stretch;
+
+    width: 100%;
+}
+
+
+.inventario-unidad-input input {
+    flex: 1;
+    min-width: 0;
+
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+}
+
+
+.inventario-unidad-addon {
+    min-width: 65px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 12px;
+
+    background: #f4f6fb;
+
+    border: 1px solid var(--border-strong);
+    border-left: 0;
+
+    border-top-right-radius: 8px;
+    border-bottom-right-radius: 8px;
+
+    color: var(--text-soft);
+
+    font-size: 13px;
+    font-weight: 700;
+}
+
+
+/* ============================================================
+   DINERO
+============================================================ */
+
+.inventario-money-input {
+    position: relative;
+
+    width: 100%;
+}
+
+
+.inventario-money-input > span {
+    position: absolute;
+
+    left: 14px;
+    top: 50%;
+
+    transform: translateY(-50%);
+
+    color: var(--text-soft);
+
+    font-weight: 700;
+
+    pointer-events: none;
+}
+
+
+.inventario-money-input input {
+    width: 100%;
+
+    padding-left: 38px;
+
+    box-sizing: border-box;
+}
+
+
+/* ============================================================
+   RESUMEN
+============================================================ */
+
+.inventario-resumen {
+    margin-top: 24px;
+
+    padding: 18px 20px;
+
+    background: #f8fafc;
+
+    border: 1px solid #dce3ee;
+    border-radius: 10px;
+}
+
+
+.inventario-resumen-header {
+    margin-bottom: 15px;
+}
+
+
+.inventario-resumen-header h3 {
+    margin: 0;
+
+    color: var(--navy);
+
+    font-size: 17px;
+}
+
+
+.inventario-resumen-header p {
+    margin: 4px 0 0;
+
+    color: var(--text-soft);
+
+    font-size: 13px;
+}
+
+
+.inventario-resumen-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 12px;
+}
+
+
+.inventario-resumen-item {
+    padding: 14px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+}
+
+
+.inventario-resumen-item span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: var(--text-soft);
+
+    font-size: 12px;
+}
+
+
+.inventario-resumen-item strong {
+    display: block;
+
+    color: var(--navy);
+
+    font-size: 16px;
+}
+
+
+.inventario-resumen-destacado strong {
+    color: #2563eb;
+}
+
+
+/* ============================================================
+   NOTAS
+============================================================ */
+
+.inventario-entrada-notas {
+    margin-top: 22px;
+}
+
+
+.inventario-opcional {
+    color: #ef4444;
+
+    font-size: 12px;
+    font-weight: 500;
+}
+
+
+/* ============================================================
+   ACCIONES
+============================================================ */
+
+.inventario-entrada-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+
+    gap: 10px;
+
+    margin-top: 24px;
+    padding-top: 20px;
+
+    border-top: 1px solid var(--border);
+}
+
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1100px) {
+
+    .inventario-resumen-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 800px) {
+
+    .inventario-entrada-card {
+        padding: 20px;
+    }
+
+
+    .inventario-entrada-grid {
+        grid-template-columns: 1fr;
+    }
+
+}
+
+
+@media (max-width: 600px) {
+
+    .inventario-resumen-grid {
+        grid-template-columns: 1fr;
+    }
+
+
+    .inventario-conversion-top {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 10px;
+    }
+
+
+    .conversion-flecha {
+        transform: rotate(90deg);
+    }
+
+}
+
+</style>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const materialSelect =
+            document.getElementById(
+                "material_id"
+            );
+
+        const cantidadInput =
+            document.getElementById(
+                "cantidad"
+            );
+
+        const costoInput =
+            document.getElementById(
+                "costo_unitario"
+            );
+
+        const infoConversion =
+            document.getElementById(
+                "infoConversion"
+            );
+
+        const unidadCompra =
+            document.getElementById(
+                "unidadCompra"
+            );
+
+        const unidadConsumo =
+            document.getElementById(
+                "unidadConsumo"
+            );
+
+        const cantidadConversion =
+            document.getElementById(
+                "cantidadConversion"
+            );
+
+        const cantidadUnidad =
+            document.getElementById(
+                "cantidadUnidad"
+            );
+
+        const resumenCompra =
+            document.getElementById(
+                "resumenCompra"
+            );
+
+        const resumenCantidadCompra =
+            document.getElementById(
+                "resumenCantidadCompra"
+            );
+
+        const resumenStock =
+            document.getElementById(
+                "resumenStock"
+            );
+
+        const resumenCostoTotal =
+            document.getElementById(
+                "resumenCostoTotal"
+            );
+
+        const resumenCostoUnidad =
+            document.getElementById(
+                "resumenCostoUnidad"
+            );
+
+
+        function formatearCantidad(numero) {
+
+            if (!Number.isFinite(numero)) {
+                return "0";
+            }
+
+            return Number(
+                numero.toFixed(4)
+            ).toString();
+
+        }
+
+
+        function actualizarVista() {
+
+            const opcion =
+                materialSelect.options[
+                    materialSelect.selectedIndex
+                ];
+
+
+            if (!opcion || !opcion.value) {
+
+                infoConversion.style.display =
+                    "none";
+
+                resumenCompra.style.display =
+                    "none";
+
+                cantidadUnidad.textContent =
+                    "—";
+
+                return;
+
+            }
+
+
+            const unidadCompraTexto =
+                opcion.dataset.unidadCompra;
+
+            const abreviaturaCompra =
+                opcion.dataset.abreviaturaCompra;
+
+            const unidadConsumoTexto =
+                opcion.dataset.unidadConsumo;
+
+            const abreviaturaConsumo =
+                opcion.dataset.abreviaturaConsumo;
+
+            const cantidadPorCompra =
+                parseFloat(
+                    opcion.dataset.cantidadPorCompra
+                ) || 1;
+
+
+            unidadCompra.textContent =
+                unidadCompraTexto
+                + " ("
+                + abreviaturaCompra
+                + ")";
+
+
+            unidadConsumo.textContent =
+                unidadConsumoTexto
+                + " ("
+                + abreviaturaConsumo
+                + ")";
+
+
+            cantidadUnidad.textContent =
+                abreviaturaCompra || "—";
+
+
+            infoConversion.style.display =
+                "flex";
+
+
+            const cantidad =
+                parseFloat(
+                    cantidadInput.value
+                ) || 0;
+
+
+            let cantidadConsumo = 0;
+
+
+            /* ========================================================
+               CONVERSIÓN DE UNIDADES
+            ======================================================== */
+
+            if (
+                abreviaturaCompra ===
+                abreviaturaConsumo
+            ) {
+
+                cantidadConsumo =
+                    cantidad;
+
+            }
+
+            else if (
+                abreviaturaCompra === "ft" &&
+                abreviaturaConsumo === "cm"
+            ) {
+
+                cantidadConsumo =
+                    cantidad * 30.48;
+
+            }
+
+            else if (
+                abreviaturaCompra === "yd" &&
+                abreviaturaConsumo === "cm"
+            ) {
+
+                cantidadConsumo =
+                    cantidad * 91.44;
+
+            }
+
+            else if (
+                abreviaturaCompra === "m" &&
+                abreviaturaConsumo === "cm"
+            ) {
+
+                cantidadConsumo =
+                    cantidad * 100;
+
+            }
+
+            else if (
+                abreviaturaCompra === "paq" &&
+                abreviaturaConsumo === "hoja"
+            ) {
+
+                cantidadConsumo =
+                    cantidad
+                    * cantidadPorCompra;
+
+            }
+
+            else {
+
+                cantidadConsumo = 0;
+
+            }
+
+
+            /* ========================================================
+               MOSTRAR CONVERSIÓN
+            ======================================================== */
+
+            if (
+                cantidad > 0 &&
+                cantidadConsumo > 0
+            ) {
+
+                cantidadConversion.textContent =
+                    formatearCantidad(cantidad)
+                    + " "
+                    + abreviaturaCompra
+                    + " = "
+                    + formatearCantidad(cantidadConsumo)
+                    + " "
+                    + abreviaturaConsumo;
+
+            } else {
+
+                cantidadConversion.textContent =
+                    "Ingresa una cantidad para ver la conversión.";
+
+            }
+
+
+            /* ========================================================
+               RESUMEN
+            ======================================================== */
+
+            const costoTotal =
+                parseFloat(
+                    costoInput.value
+                ) || 0;
+
+
+            if (
+                cantidad > 0 &&
+                cantidadConsumo > 0 &&
+                costoTotal >= 0
+            ) {
+
+                const costoUnidad =
+                    costoTotal
+                    / cantidadConsumo;
+
+
+                resumenCantidadCompra.textContent =
+                    formatearCantidad(cantidad)
+                    + " "
+                    + abreviaturaCompra;
+
+
+                resumenStock.textContent =
+                    formatearCantidad(cantidadConsumo)
+                    + " "
+                    + abreviaturaConsumo;
+
+
+                resumenCostoTotal.textContent =
+                    "Q "
+                    + costoTotal.toFixed(2);
+
+
+                resumenCostoUnidad.textContent =
+                    "Q "
+                    + costoUnidad.toFixed(4)
+                    + " / "
+                    + abreviaturaConsumo;
+
+
+                resumenCompra.style.display =
+                    "block";
+
+            } else {
+
+                resumenCompra.style.display =
+                    "none";
+
+            }
+
+        }
+
+
+        materialSelect.addEventListener(
+            "change",
+            actualizarVista
+        );
+
+
+        cantidadInput.addEventListener(
+            "input",
+            actualizarVista
+        );
+
+
+        costoInput.addEventListener(
+            "input",
+            actualizarVista
+        );
+
+
+        actualizarVista();
+
+    }
+);
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,1108 @@
+{% extends "base.html" %}
+
+{% block title %}
+Editar producto - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Editar producto</h1>
+        <p>Pedido #{{ pedido_id }}</p>
+    </div>
+
+    <a
+        href="{{ url_for(
+            'pedidos.detalle',
+            pedido_id=pedido_id
+        ) }}"
+        class="btn-secondary"
+    >
+        ← Volver al pedido
+    </a>
+
+</div>
+
+
+<div class="card pedido-producto-form-card">
+
+    <form
+        method="POST"
+        id="producto-pedido-form"
+    >
+
+        <div class="pedido-producto-section">
+
+            <div class="pedido-producto-section-header">
+
+                <div>
+                    <h2>📦 Producto y precio</h2>
+                    <p>
+                        El sistema propone el precio según la configuración
+                        del producto, pero siempre puedes modificarlo.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="pedido-producto-grid">
+
+                <div class="form-group pedido-producto-full">
+
+                    <label for="producto_id">
+                        Producto *
+                    </label>
+
+                    <select
+                        name="producto_id"
+                        id="producto_id"
+                        required
+                    >
+
+                        <option value="">
+                            Selecciona un producto
+                        </option>
+
+                        {% for producto in productos %}
+
+                            <option
+                                value="{{ producto.id }}"
+                                data-precio="{{ producto.precio_base }}"
+                                data-tipo-calculo="{{ producto.tipo_calculo_precio or 'FIJO' }}"
+                                {% if producto.id == detalle.producto_id %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ producto.nombre }}
+
+                                {% if producto.tipo == "SERVICIO" %}
+                                    — Servicio
+                                {% endif %}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div
+                    id="contenedor-variante"
+                    class="form-group pedido-producto-full"
+                    style="display: none;"
+                >
+
+                    <label for="variante_id">
+                        Variante
+                    </label>
+
+                    <select
+                        name="variante_id"
+                        id="variante_id"
+                    >
+                        <option value="">
+                            Selecciona una variante
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="cantidad">
+                        Cantidad *
+                    </label>
+
+                    <input
+                        type="number"
+                        name="cantidad"
+                        id="cantidad"
+                        value="{{ detalle.cantidad }}"
+                        min="0.01"
+                        step="0.01"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="precio_unitario">
+                        Precio final por unidad *
+                    </label>
+
+                    <div class="pedido-money-input">
+
+                        <span>Q</span>
+
+                        <input
+                            type="number"
+                            name="precio_unitario"
+                            id="precio_unitario"
+                            value="{{ detalle.precio_unitario }}"
+                            min="0"
+                            step="0.01"
+                            required
+                        >
+
+                    </div>
+
+                    <small class="form-help">
+                        Editable. Este será el precio que realmente
+                        se cobrará por cada unidad.
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div
+                id="precio-calculado-box"
+                class="pedido-precio-calculado"
+                style="display: none;"
+            >
+
+                <div>
+
+                    <span>
+                        Cálculo automático
+                    </span>
+
+                    <strong id="calculo-detalle">
+                        —
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Precio sugerido
+                    </span>
+
+                    <strong id="precio-sugerido-texto">
+                        Q 0.00
+                    </strong>
+
+                </div>
+
+
+                <button
+                    type="button"
+                    id="usar-precio-sugerido"
+                    class="btn-secondary"
+                >
+                    Usar precio sugerido
+                </button>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="pedido-producto-section"
+            id="seccion-medidas"
+            style="display: none;"
+        >
+
+            <div class="pedido-producto-section-header">
+
+                <div>
+                    <h2>📐 Medidas</h2>
+                    <p id="medidas-ayuda">
+                        Ingresa las medidas del trabajo.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="pedido-producto-grid">
+
+                <div
+                    class="form-group"
+                    id="grupo-ancho"
+                >
+
+                    <label for="ancho">
+                        Ancho (cm)
+                    </label>
+
+                    <input
+                        type="number"
+                        name="ancho"
+                        id="ancho"
+                        step="0.01"
+                        min="0"
+                        placeholder="Ej. 25"
+                        value="{{ detalle.ancho or '' }}"
+                    >
+
+                </div>
+
+
+                <div
+                    class="form-group"
+                    id="grupo-alto"
+                >
+
+                    <label for="alto">
+                        Alto (cm)
+                    </label>
+
+                    <input
+                        type="number"
+                        name="alto"
+                        id="alto"
+                        step="0.01"
+                        min="0"
+                        placeholder="Ej. 50"
+                        value="{{ detalle.alto or '' }}"
+                    >
+
+                </div>
+
+
+                <div
+                    class="form-group"
+                    id="grupo-largo"
+                >
+
+                    <label for="largo">
+                        Largo (cm)
+                    </label>
+
+                    <input
+                        type="number"
+                        name="largo"
+                        id="largo"
+                        step="0.01"
+                        min="0"
+                        placeholder="Ej. 100"
+                        value="{{ detalle.largo or '' }}"
+                    >
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="pedido-producto-section">
+
+            <div class="pedido-producto-section-header">
+
+                <div>
+                    <h2>✨ Personalización</h2>
+                    <p>
+                        Información adicional para este producto.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="texto_personalizado">
+                    Texto personalizado
+                </label>
+
+                <textarea
+                    name="texto_personalizado"
+                    id="texto_personalizado"
+                    rows="3"
+                    placeholder="Nombre, frase, número, etc."
+                >{{ detalle.texto_personalizado or '' }}</textarea>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="notas">
+                    Notas
+                </label>
+
+                <textarea
+                    name="notas"
+                    id="notas"
+                    rows="4"
+                    placeholder="Detalles de este producto..."
+                >{{ detalle.notas or '' }}</textarea>
+
+            </div>
+
+        </div>
+
+
+        <div class="pedido-producto-total-box">
+
+            <span>
+                Subtotal estimado
+            </span>
+
+            <strong id="subtotal-preview">
+                Q 0.00
+            </strong>
+
+        </div>
+
+
+        <div class="form-actions">
+
+            <a
+                href="{{ url_for(
+                    'pedidos.detalle',
+                    pedido_id=pedido_id
+                ) }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Guardar cambios
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<style>
+
+.pedido-producto-form-card {
+    padding: 26px 30px;
+}
+
+.pedido-producto-section {
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.pedido-producto-section-header {
+    margin-bottom: 18px;
+}
+
+.pedido-producto-section-header h2 {
+    margin: 0;
+    color: #0b1f5c;
+}
+
+.pedido-producto-section-header p {
+    margin: 5px 0 0;
+    color: #62697a;
+    font-size: 13px;
+}
+
+.pedido-producto-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+    gap: 18px 24px;
+}
+
+.pedido-producto-full {
+    grid-column: 1 / -1;
+}
+
+.pedido-money-input {
+    position: relative;
+}
+
+.pedido-money-input span {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-weight: 700;
+    color: #62697a;
+}
+
+.pedido-money-input input {
+    padding-left: 38px !important;
+}
+
+.pedido-precio-calculado {
+    display: grid;
+    grid-template-columns:
+        minmax(0, 1fr)
+        minmax(160px, auto)
+        auto;
+    align-items: center;
+    gap: 16px;
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 1px solid #dbe4f0;
+    border-radius: 10px;
+}
+
+.pedido-precio-calculado span {
+    display: block;
+    color: #62697a;
+    font-size: 11px;
+    margin-bottom: 4px;
+}
+
+.pedido-precio-calculado strong {
+    color: #0b1f5c;
+}
+
+.pedido-producto-total-box {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 20px;
+    margin-bottom: 22px;
+}
+
+.pedido-producto-total-box span {
+    color: #62697a;
+}
+
+.pedido-producto-total-box strong {
+    color: #0b1f5c;
+    font-size: 25px;
+}
+
+@media (max-width: 750px) {
+
+    .pedido-producto-grid,
+    .pedido-precio-calculado {
+        grid-template-columns: 1fr;
+    }
+
+    .pedido-producto-form-card {
+        padding: 20px;
+    }
+
+}
+
+</style>
+
+
+<script>
+
+const variantes =
+    {{ variantes | tojson | safe }};
+
+const productoSelect =
+    document.getElementById("producto_id");
+
+const varianteSelect =
+    document.getElementById("variante_id");
+
+const contenedorVariante =
+    document.getElementById(
+        "contenedor-variante"
+    );
+
+const cantidadInput =
+    document.getElementById("cantidad");
+
+const precioInput =
+    document.getElementById(
+        "precio_unitario"
+    );
+
+const anchoInput =
+    document.getElementById("ancho");
+
+const altoInput =
+    document.getElementById("alto");
+
+const largoInput =
+    document.getElementById("largo");
+
+const seccionMedidas =
+    document.getElementById(
+        "seccion-medidas"
+    );
+
+const grupoAncho =
+    document.getElementById("grupo-ancho");
+
+const grupoAlto =
+    document.getElementById("grupo-alto");
+
+const grupoLargo =
+    document.getElementById("grupo-largo");
+
+const medidasAyuda =
+    document.getElementById(
+        "medidas-ayuda"
+    );
+
+const precioCalculadoBox =
+    document.getElementById(
+        "precio-calculado-box"
+    );
+
+const calculoDetalle =
+    document.getElementById(
+        "calculo-detalle"
+    );
+
+const precioSugeridoTexto =
+    document.getElementById(
+        "precio-sugerido-texto"
+    );
+
+const usarPrecioSugerido =
+    document.getElementById(
+        "usar-precio-sugerido"
+    );
+
+const subtotalPreview =
+    document.getElementById(
+        "subtotal-preview"
+    );
+
+
+let precioModificadoManualmente = false;
+let precioSugeridoActual = 0;
+
+
+function numero(valor) {
+
+    const n = parseFloat(valor);
+
+    return Number.isFinite(n)
+        ? n
+        : 0;
+
+}
+
+
+function productoSeleccionado() {
+
+    return productoSelect.options[
+        productoSelect.selectedIndex
+    ];
+
+}
+
+
+function obtenerTarifaBase() {
+
+    const variante =
+        varianteSelect.options[
+            varianteSelect.selectedIndex
+        ];
+
+    if (
+        varianteSelect.value
+        && variante
+        && variante.dataset.precio !== undefined
+        && variante.dataset.precio !== ""
+    ) {
+
+        return numero(
+            variante.dataset.precio
+        );
+
+    }
+
+    const producto =
+        productoSeleccionado();
+
+    return producto
+        ? numero(producto.dataset.precio)
+        : 0;
+
+}
+
+
+function obtenerTipoCalculo() {
+
+    const producto =
+        productoSeleccionado();
+
+    return producto
+        ? (
+            producto.dataset.tipoCalculo
+            || "FIJO"
+        )
+        : "FIJO";
+
+}
+
+
+function configurarMedidas() {
+
+    const tipo =
+        obtenerTipoCalculo();
+
+    } else if (
+        tipo === "METRO_LINEAL"
+    ) {
+
+        grupoAncho.style.display = "none";
+        grupoAlto.style.display = "none";
+        grupoLargo.style.display = "";
+
+        anchoInput.required = false;
+        altoInput.required = false;
+        largoInput.required = true;
+
+        medidasAyuda.textContent =
+            "Ingresa el largo en centímetros. " +
+            "El sistema lo convertirá automáticamente a metros.";
+
+    } else if (
+        tipo === "MANUAL"
+    ) {
+
+        /*
+         * En productos manuales las medidas NO cambian el precio.
+         * Solo se guardan como información del trabajo y pueden
+         * usarse después para sugerir el consumo de materiales.
+         */
+        grupoAncho.style.display = "";
+        grupoAlto.style.display = "";
+        grupoLargo.style.display = "";
+
+        anchoInput.required = false;
+        altoInput.required = false;
+        largoInput.required = false;
+
+        medidasAyuda.textContent =
+            "Opcional. Estas medidas no cambian el precio. " +
+            "Sirven para guardar el tamaño del trabajo y ayudar " +
+            "a calcular el material utilizado en Producción.";
+
+    } else {
+
+        anchoInput.required = false;
+        altoInput.required = false;
+        largoInput.required = false;
+
+    }
+
+
+    if (tipo === "M2") {
+
+        grupoAncho.style.display = "";
+        grupoAlto.style.display = "";
+        grupoLargo.style.display = "none";
+
+        anchoInput.required = true;
+        altoInput.required = true;
+        largoInput.required = false;
+
+        medidasAyuda.textContent =
+            "Ingresa ancho y alto en centímetros. " +
+            "El sistema los convertirá automáticamente a m².";
+
+    } else if (
+        tipo === "METRO_LINEAL"
+    ) {
+
+        grupoAncho.style.display = "none";
+        grupoAlto.style.display = "none";
+        grupoLargo.style.display = "";
+
+        anchoInput.required = false;
+        altoInput.required = false;
+        largoInput.required = true;
+
+        medidasAyuda.textContent =
+            "Ingresa el largo en centímetros. " +
+            "El sistema lo convertirá automáticamente a metros.";
+
+    } else if (
+        tipo === "MANUAL"
+    ) {
+
+        grupoAncho.style.display = "";
+        grupoAlto.style.display = "";
+        grupoLargo.style.display = "";
+
+        anchoInput.required = false;
+        altoInput.required = false;
+        largoInput.required = false;
+
+        medidasAyuda.textContent =
+            "Opcional. Estas medidas no cambian el precio. " +
+            "Sirven para guardar el tamaño del trabajo y ayudar " +
+            "a calcular el material utilizado en Producción.";
+
+    } else {
+
+        anchoInput.required = false;
+        altoInput.required = false;
+        largoInput.required = false;
+
+    }
+
+}
+
+
+function calcularPrecioSugerido() {
+
+    const tipo =
+        obtenerTipoCalculo();
+
+    const tarifa =
+        obtenerTarifaBase();
+
+    let sugerido = 0;
+    let detalle = "";
+
+
+    if (tipo === "M2") {
+
+        const ancho = numero(
+            anchoInput.value
+        );
+
+        const alto = numero(
+            altoInput.value
+        );
+
+        const areaM2 =
+            (ancho / 100)
+            * (alto / 100);
+
+        sugerido =
+            areaM2 * tarifa;
+
+        detalle =
+            ancho.toFixed(2)
+            + " cm × "
+            + alto.toFixed(2)
+            + " cm = "
+            + areaM2.toFixed(4)
+            + " m² × Q "
+            + tarifa.toFixed(2)
+            + "/m²";
+
+
+    } else if (
+        tipo === "METRO_LINEAL"
+    ) {
+
+        const largo = numero(
+            largoInput.value
+        );
+
+        const metros =
+            largo / 100;
+
+        sugerido =
+            metros * tarifa;
+
+        detalle =
+            largo.toFixed(2)
+            + " cm = "
+            + metros.toFixed(4)
+            + " m × Q "
+            + tarifa.toFixed(2)
+            + "/m";
+
+
+    } else if (
+        tipo === "MANUAL"
+    ) {
+
+        sugerido = tarifa;
+
+        detalle =
+            tarifa > 0
+            ? "Precio de referencia configurado"
+            : "Escribe el precio final manualmente";
+
+
+    } else {
+
+        sugerido = tarifa;
+
+        detalle =
+            "Precio base por unidad";
+
+    }
+
+
+    precioSugeridoActual = sugerido;
+
+    precioSugeridoTexto.textContent =
+        "Q " + sugerido.toFixed(2);
+
+    calculoDetalle.textContent =
+        detalle;
+
+    precioCalculadoBox.style.display =
+        productoSelect.value
+        ? "grid"
+        : "none";
+
+
+    if (!precioModificadoManualmente) {
+
+        precioInput.value =
+            sugerido.toFixed(2);
+
+    }
+
+
+    actualizarSubtotal();
+
+}
+
+
+function actualizarSubtotal() {
+
+    const cantidad =
+        numero(cantidadInput.value);
+
+    const precio =
+        numero(precioInput.value);
+
+    subtotalPreview.textContent =
+        "Q "
+        + (cantidad * precio).toFixed(2);
+
+}
+
+
+function cargarVariantes() {
+
+    const productoId =
+        parseInt(
+            productoSelect.value
+        );
+
+    varianteSelect.innerHTML = `
+        <option value="">
+            Selecciona una variante
+        </option>
+    `;
+
+    contenedorVariante.style.display =
+        "none";
+
+
+    if (!productoId) {
+
+        precioInput.value = "0.00";
+
+        precioCalculadoBox.style.display =
+            "none";
+
+        seccionMedidas.style.display =
+            "none";
+
+        actualizarSubtotal();
+
+        return;
+
+    }
+
+
+    const productoVariantes =
+        variantes.filter(
+            variante =>
+                Number(
+                    variante.producto_id
+                ) === productoId
+        );
+
+
+    if (productoVariantes.length > 0) {
+
+        contenedorVariante.style.display =
+            "block";
+
+
+        productoVariantes.forEach(
+            variante => {
+
+                const opcion =
+                    document.createElement(
+                        "option"
+                    );
+
+                opcion.value =
+                    variante.id;
+
+                let texto =
+                    variante.nombre;
+
+                if (variante.talla) {
+
+                    texto +=
+                        " — Talla "
+                        + variante.talla;
+
+                }
+
+                if (variante.color) {
+
+                    texto +=
+                        " — "
+                        + variante.color;
+
+                }
+
+                if (
+                    variante.precio !== null
+                    && variante.precio !== undefined
+                ) {
+
+                    texto +=
+                        " — Q "
+                        + parseFloat(
+                            variante.precio
+                        ).toFixed(2);
+
+                }
+
+                opcion.textContent =
+                    texto;
+
+                opcion.dataset.precio =
+                    variante.precio ?? "";
+
+                varianteSelect.appendChild(
+                    opcion
+                );
+
+            }
+        );
+
+    }
+
+}
+
+
+productoSelect.addEventListener(
+    "change",
+    function () {
+
+        precioModificadoManualmente =
+            false;
+
+        cargarVariantes();
+        configurarMedidas();
+        calcularPrecioSugerido();
+
+    }
+);
+
+
+varianteSelect.addEventListener(
+    "change",
+    function () {
+
+        precioModificadoManualmente =
+            false;
+
+        calcularPrecioSugerido();
+
+    }
+);
+
+
+[
+    anchoInput,
+    altoInput,
+    largoInput
+].forEach(
+    input => {
+
+        input.addEventListener(
+            "input",
+            function () {
+
+                calcularPrecioSugerido();
+
+            }
+        );
+
+    }
+);
+
+
+precioInput.addEventListener(
+    "input",
+    function () {
+
+        precioModificadoManualmente =
+            true;
+
+        actualizarSubtotal();
+
+    }
+);
+
+
+cantidadInput.addEventListener(
+    "input",
+    actualizarSubtotal
+);
+
+
+usarPrecioSugerido.addEventListener(
+    "click",
+    function () {
+
+        precioModificadoManualmente =
+            false;
+
+        precioInput.value =
+            precioSugeridoActual.toFixed(2);
+
+        actualizarSubtotal();
+
+    }
+);
+
+
+cargarVariantes();
+
+const varianteInicial =
+    {{ detalle.variante_id | tojson }};
+
+if (varianteInicial) {
+    varianteSelect.value =
+        String(varianteInicial);
+}
+
+configurarMedidas();
+
+precioModificadoManualmente = true;
+
+actualizarSubtotal();
+
+calcularPrecioSugerido();
+
+precioInput.value =
+    Number(
+        {{ detalle.precio_unitario | tojson }}
+    ).toFixed(2);
+
+precioModificadoManualmente = true;
+
+actualizarSubtotal();
+
+</script>
+
+{% endblock %}

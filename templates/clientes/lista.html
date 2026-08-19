@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+
+{% block title %}
+Clientes - ABC Business Manager
+{% endblock %}
+
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>
+            Clientes
+        </h1>
+
+        <p>
+            Administra los clientes de ABC.
+        </p>
+
+    </div>
+
+
+    <a
+        href="{{ url_for('clientes.nuevo') }}"
+        class="btn-primary"
+    >
+        + Nuevo cliente
+    </a>
+
+</div>
+
+
+<!-- ============================================================
+     BUSCADOR Y FILTROS
+============================================================ -->
+
+<div class="card clientes-toolbar-card">
+
+    <form
+        method="GET"
+        action="{{ url_for('clientes.listar') }}"
+        class="clientes-toolbar"
+    >
+
+        <div class="clientes-search">
+
+            <span class="clientes-search-icon">
+                🔎
+            </span>
+
+            <input
+                type="search"
+                name="q"
+                value="{{ busqueda }}"
+                placeholder="Buscar por nombre, teléfono o correo..."
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <div class="clientes-filtros">
+
+            <button
+                type="submit"
+                name="estado"
+                value="todos"
+                class="
+                    cliente-filter-btn
+                    {% if estado_filtro == 'todos' %}
+                        active
+                    {% endif %}
+                "
+            >
+                Todos
+
+                <span>
+                    {{ contadores.todos or 0 }}
+                </span>
+            </button>
+
+
+            <button
+                type="submit"
+                name="estado"
+                value="activos"
+                class="
+                    cliente-filter-btn
+                    {% if estado_filtro == 'activos' %}
+                        active
+                    {% endif %}
+                "
+            >
+                🟢 Activos
+
+                <span>
+                    {{ contadores.activos or 0 }}
+                </span>
+            </button>
+
+
+            <button
+                type="submit"
+                name="estado"
+                value="inactivos"
+                class="
+                    cliente-filter-btn
+                    {% if estado_filtro == 'inactivos' %}
+                        active
+                    {% endif %}
+                "
+            >
+                Inactivos
+
+                <span>
+                    {{ contadores.inactivos or 0 }}
+                </span>
+            </button>
+
+        </div>
+
+
+        {% if busqueda or estado_filtro != "todos" %}
+
+            <a
+                href="{{ url_for('clientes.listar') }}"
+                class="btn-secondary clientes-limpiar"
+            >
+                Limpiar
+            </a>
+
+        {% endif %}
+
+    </form>
+
+</div>
+
+
+<!-- ============================================================
+     LISTADO
+============================================================ -->
+
+<div class="card">
+
+    {% if clientes %}
+
+        <div class="table-container">
+
+            <table class="clientes-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Teléfono</th>
+                        <th>Correo</th>
+                        <th class="clientes-center">Pedidos</th>
+                        <th class="clientes-money">Saldo</th>
+                        <th>Estado</th>
+                        <th class="clientes-actions-col">Acciones</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for cliente in clientes %}
+
+                        <tr
+                            {% if not cliente.activo %}
+                                class="cliente-row-inactive"
+                            {% endif %}
+                        >
+
+                            <!-- CLIENTE -->
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'clientes.detalle',
+                                        cliente_id=cliente.id
+                                    ) }}"
+                                    class="cliente-lista-nombre"
+                                >
+                                    {{ cliente.nombre }}
+                                </a>
+
+                            </td>
+
+
+                            <!-- TELÉFONO -->
+
+                            <td>
+
+                                {% if cliente.telefono %}
+
+                                    {{ cliente.telefono }}
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- CORREO -->
+
+                            <td>
+
+                                {% if cliente.email %}
+
+                                    <span class="cliente-email">
+                                        {{ cliente.email }}
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="text-muted">
+                                        —
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- PEDIDOS -->
+
+                            <td class="clientes-center">
+
+                                <strong class="cliente-total-pedidos">
+                                    {{ cliente.total_pedidos }}
+                                </strong>
+
+                            </td>
+
+
+                            <!-- SALDO -->
+
+                            <td class="clientes-money">
+
+                                {% if cliente.saldo_pendiente > 0 %}
+
+                                    <strong class="cliente-saldo-pendiente">
+
+                                        Q {{
+                                            "%.2f"|format(
+                                                cliente.saldo_pendiente
+                                            )
+                                        }}
+
+                                    </strong>
+
+                                {% else %}
+
+                                    <span class="cliente-sin-saldo">
+                                        Q 0.00
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- ESTADO -->
+
+                            <td>
+
+                                {% if cliente.activo %}
+
+                                    <span class="estado estado-entregado">
+                                        🟢 Activo
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="estado estado-cancelado">
+                                        Inactivo
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <!-- ACCIONES -->
+
+                            <td>
+
+                                <div class="cliente-lista-actions">
+
+                                    <a
+                                        href="{{ url_for(
+                                            'clientes.detalle',
+                                            cliente_id=cliente.id
+                                        ) }}"
+                                        class="btn-secondary btn-sm cliente-action-btn"
+                                    >
+                                        👁️ Ver
+                                    </a>
+
+
+                                    <a
+                                        href="{{ url_for(
+                                            'clientes.editar',
+                                            cliente_id=cliente.id
+                                        ) }}"
+                                        class="btn-secondary btn-sm cliente-action-btn"
+                                    >
+                                        ✏️ Editar
+                                    </a>
+
+                                </div>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state">
+
+            {% if busqueda or estado_filtro != "todos" %}
+
+                <div class="empty-state-icon">
+                    🔎
+                </div>
+
+                <h3>
+                    No encontramos clientes
+                </h3>
+
+                <p>
+                    Prueba con otra búsqueda
+                    o cambia el filtro seleccionado.
+                </p>
+
+                <a
+                    href="{{ url_for('clientes.listar') }}"
+                    class="btn-secondary"
+                >
+                    Limpiar búsqueda
+                </a>
+
+
+            {% else %}
+
+                <div class="empty-state-icon">
+                    👥
+                </div>
+
+                <h3>
+                    No hay clientes registrados
+                </h3>
+
+                <p>
+                    Registra tu primer cliente
+                    para comenzar a crear pedidos.
+                </p>
+
+                <a
+                    href="{{ url_for('clientes.nuevo') }}"
+                    class="btn-primary"
+                >
+                    + Nuevo cliente
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+{% endblock %}

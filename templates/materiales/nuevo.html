@@ -1,0 +1,811 @@
+{% extends "base.html" %}
+
+{% block title %}
+Nuevo material - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Nuevo material</h1>
+        <p>Registra un material y define cómo se compra y cómo se consume.</p>
+    </div>
+
+    <a
+        href="{{ url_for('materiales.lista') }}"
+        class="btn-secondary"
+    >
+        ← Volver a materiales
+    </a>
+
+</div>
+
+
+<div class="card material-editor-card">
+
+    <form
+        method="POST"
+        class="material-editor-form"
+    >
+
+        <div class="material-form-section">
+
+            <div class="material-section-header">
+                <h2>🧱 Información general</h2>
+                <p>Identifica el material dentro de tu inventario.</p>
+            </div>
+
+            <div class="material-form-grid">
+
+                <div class="form-group">
+
+                    <label for="nombre">
+                        Nombre *
+                    </label>
+
+                    <input
+                        type="text"
+                        id="nombre"
+                        name="nombre"
+                        value=""
+                        placeholder="Ej. Vinil textil blanco"
+                        required
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="color">
+                        Color
+                    </label>
+
+                    <input
+                        type="text"
+                        id="color"
+                        name="color"
+                        value=""
+                        placeholder="Ej. Blanco"
+                    >
+
+                </div>
+
+
+                <div class="form-group material-full">
+
+                    <label for="categoria_id">
+                        Categoría
+                    </label>
+
+                    <select
+                        id="categoria_id"
+                        name="categoria_id"
+                    >
+
+                        <option value="">
+                            Sin categoría
+                        </option>
+
+                        {% for categoria in categorias %}
+
+                            <option
+                                value="{{ categoria.id }}"
+                                
+                            >
+                                {{ categoria.nombre }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="material-form-section">
+
+            <div class="material-section-header">
+                <h2>🧩 Familia de material</h2>
+                <p>
+                    Agrupa materiales equivalentes para poder elegir el
+                    color o variante real al momento de producir.
+                </p>
+            </div>
+
+            <div class="material-form-grid">
+
+                <div class="form-group material-full">
+
+                    <label for="familia_id">
+                        Familia
+                    </label>
+
+                    <select
+                        id="familia_id"
+                        name="familia_id"
+                    >
+
+                        <option value="">
+                            Sin familia
+                        </option>
+
+                        {% for familia in familias %}
+
+                            <option
+                                value="{{ familia.id }}"
+                                
+                            >
+                                {{ familia.nombre }}
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                    <small class="form-help">
+                        Ejemplo: todos los colores de vinil textil deben
+                        pertenecer a la familia "Vinil textil".
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="material-form-section">
+
+            <div class="material-section-header">
+
+                <h2>📦 Compra y consumo</h2>
+
+                <p>
+                    Define cómo recibes el material y en qué unidad
+                    quieres descontarlo del inventario.
+                </p>
+
+            </div>
+
+
+            <div class="material-form-grid">
+
+                <div class="form-group">
+
+                    <label for="modo_control">
+                        Forma de control *
+                    </label>
+
+                    <select
+                        id="modo_control"
+                        name="modo_control"
+                        required
+                    >
+
+                        <option
+                            value="NORMAL"
+                            selected
+                        >
+                            Normal
+                        </option>
+
+                        <option
+                            value="ROLLO_AREA"
+                            
+                        >
+                            Rollo / lámina controlada por área
+                        </option>
+
+                    </select>
+
+                    <small class="form-help">
+                        Usa "Rollo" para vinil, DTF, manta, tela,
+                        papel en rollo y materiales similares.
+                    </small>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="unidad_compra_id">
+                        Unidad de compra *
+                    </label>
+
+                    <select
+                        id="unidad_compra_id"
+                        name="unidad_compra_id"
+                        required
+                    >
+
+                        <option value="">
+                            Selecciona una unidad
+                        </option>
+
+                        {% for unidad in unidades %}
+
+                            <option
+                                value="{{ unidad.id }}"
+                                data-tipo="{{ unidad.tipo }}"
+                                data-factor="{{ unidad.factor_conversion }}"
+                                data-abreviatura="{{ unidad.abreviatura }}"
+                                
+                            >
+                                {{ unidad.nombre }}
+                                ({{ unidad.abreviatura }})
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="unidad_consumo_id">
+                        Unidad de consumo *
+                    </label>
+
+                    <select
+                        id="unidad_consumo_id"
+                        name="unidad_consumo_id"
+                        required
+                    >
+
+                        <option value="">
+                            Selecciona una unidad
+                        </option>
+
+                        {% for unidad in unidades %}
+
+                            <option
+                                value="{{ unidad.id }}"
+                                data-tipo="{{ unidad.tipo }}"
+                                data-factor="{{ unidad.factor_conversion }}"
+                                data-abreviatura="{{ unidad.abreviatura }}"
+                                
+                            >
+                                {{ unidad.nombre }}
+                                ({{ unidad.abreviatura }})
+                            </option>
+
+                        {% endfor %}
+
+                    </select>
+
+                    <small class="form-help">
+                        Es la unidad en la que quedará tu stock
+                        y se descontará durante la producción.
+                    </small>
+
+                </div>
+
+
+                <div
+                    class="form-group"
+                    id="grupo_ancho_referencia"
+                    style="display: none;"
+                >
+
+                    <label for="ancho_referencia_cm">
+                        Ancho habitual del rollo *
+                    </label>
+
+                    <div class="material-unit-input">
+
+                        <input
+                            type="number"
+                            id="ancho_referencia_cm"
+                            name="ancho_referencia_cm"
+                            min="0.0001"
+                            step="0.0001"
+                            value=""
+                            placeholder="Ej. 35"
+                        >
+
+                        <span>cm</span>
+
+                    </div>
+
+                    <small class="form-help">
+                        Este ancho solo es una referencia.
+                        En cada compra podrás cambiarlo.
+                    </small>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="cantidad_por_compra">
+                        Cantidad por compra *
+                    </label>
+
+                    <input
+                        type="number"
+                        id="cantidad_por_compra"
+                        name="cantidad_por_compra"
+                        min="0.0001"
+                        step="0.0001"
+                        value="1"
+                        required
+                    >
+
+                    <small
+                        class="form-help"
+                        id="ayuda_cantidad"
+                    >
+                        Cuántas unidades de consumo obtienes por
+                        cada unidad de compra.
+                    </small>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="costo_compra_referencia">
+                        Costo de compra de referencia *
+                    </label>
+
+                    <div class="material-money-input">
+
+                        <span>Q</span>
+
+                        <input
+                            type="number"
+                            id="costo_compra_referencia"
+                            name="costo_compra_referencia"
+                            min="0"
+                            step="0.01"
+                            value="0"
+                            required
+                        >
+
+                    </div>
+
+                    <small class="form-help">
+                        Precio aproximado que normalmente pagas
+                        por UNA unidad de compra.
+                    </small>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="stock_minimo">
+                        Stock mínimo *
+                    </label>
+
+                    <input
+                        type="number"
+                        id="stock_minimo"
+                        name="stock_minimo"
+                        min="0"
+                        step="0.0001"
+                        value="0"
+                        required
+                    >
+
+                    <small class="form-help">
+                        Se expresa en la unidad de consumo.
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <div
+                class="material-conversion-preview"
+                id="conversion_preview"
+            >
+
+                <span>💡</span>
+
+                <div>
+                    <strong>Conversión del material</strong>
+                    <p id="conversion_texto">
+                        Selecciona las unidades para ver la conversión.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+
+
+        
+
+
+        <div class="form-actions material-form-actions">
+
+            <a
+                href="{{ url_for('materiales.lista') }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Guardar material
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<style>
+
+.material-editor-card {
+    padding: 26px 30px;
+}
+
+.material-form-section {
+    padding-bottom: 24px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.material-section-header {
+    margin-bottom: 18px;
+}
+
+.material-section-header h2 {
+    margin: 0;
+    color: #0b1f5c;
+}
+
+.material-section-header p {
+    margin: 5px 0 0;
+    color: #62697a;
+    font-size: 13px;
+}
+
+.material-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 24px;
+}
+
+.material-full {
+    grid-column: 1 / -1;
+}
+
+.material-unit-input,
+.material-money-input {
+    position: relative;
+}
+
+.material-unit-input span {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #62697a;
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.material-unit-input input {
+    padding-right: 48px !important;
+}
+
+.material-money-input span {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #62697a;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+.material-money-input input {
+    padding-left: 38px !important;
+}
+
+.material-conversion-preview {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 18px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 1px solid #dbe4f0;
+    border-radius: 9px;
+}
+
+.material-conversion-preview strong {
+    color: #0b1f5c;
+}
+
+.material-conversion-preview p {
+    margin: 4px 0 0;
+    color: #62697a;
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+.material-form-actions {
+    margin-top: 4px;
+}
+
+@media (max-width: 760px) {
+
+    .material-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .material-full {
+        grid-column: auto;
+    }
+
+    .material-editor-card {
+        padding: 20px;
+    }
+
+}
+
+</style>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const modo =
+            document.getElementById(
+                "modo_control"
+            );
+
+        const compra =
+            document.getElementById(
+                "unidad_compra_id"
+            );
+
+        const consumo =
+            document.getElementById(
+                "unidad_consumo_id"
+            );
+
+        const grupoAncho =
+            document.getElementById(
+                "grupo_ancho_referencia"
+            );
+
+        const ancho =
+            document.getElementById(
+                "ancho_referencia_cm"
+            );
+
+        const cantidad =
+            document.getElementById(
+                "cantidad_por_compra"
+            );
+
+        const ayudaCantidad =
+            document.getElementById(
+                "ayuda_cantidad"
+            );
+
+        const preview =
+            document.getElementById(
+                "conversion_texto"
+            );
+
+
+        function opcion(select) {
+
+            return select.options[
+                select.selectedIndex
+            ];
+
+        }
+
+
+        function numero(valor) {
+
+            const n = parseFloat(valor);
+
+            return Number.isFinite(n)
+                ? n
+                : 0;
+
+        }
+
+
+        function actualizar() {
+
+            const esRollo =
+                modo.value === "ROLLO_AREA";
+
+            grupoAncho.style.display =
+                esRollo
+                ? ""
+                : "none";
+
+            ancho.required = esRollo;
+
+            const opCompra = opcion(compra);
+            const opConsumo = opcion(consumo);
+
+            if (
+                !opCompra
+                || !opCompra.value
+                || !opConsumo
+                || !opConsumo.value
+            ) {
+
+                preview.textContent =
+                    "Selecciona la unidad de compra y "
+                    + "la unidad de consumo.";
+
+                return;
+
+            }
+
+            const tipoCompra =
+                opCompra.dataset.tipo;
+
+            const tipoConsumo =
+                opConsumo.dataset.tipo;
+
+            const factorCompra =
+                numero(
+                    opCompra.dataset.factor
+                );
+
+            const factorConsumo =
+                numero(
+                    opConsumo.dataset.factor
+                );
+
+            if (esRollo) {
+
+                cantidad.readOnly = true;
+
+                ayudaCantidad.textContent =
+                    "Se calcula automáticamente con "
+                    + "la unidad de compra y el ancho habitual.";
+
+                const anchoCm =
+                    numero(ancho.value);
+
+                if (
+                    tipoCompra !== "LONGITUD"
+                    || tipoConsumo !== "AREA"
+                ) {
+
+                    cantidad.value = "";
+
+                    preview.textContent =
+                        "Para un rollo, compra con una "
+                        + "unidad de LONGITUD y consume "
+                        + "con una unidad de ÁREA.";
+
+                    return;
+
+                }
+
+                if (anchoCm <= 0) {
+
+                    cantidad.value = "";
+
+                    preview.textContent =
+                        "Indica el ancho habitual del rollo.";
+
+                    return;
+
+                }
+
+                const conversion =
+                    (
+                        factorCompra
+                        * anchoCm
+                        / factorConsumo
+                    );
+
+                cantidad.value =
+                    conversion.toFixed(4);
+
+                preview.textContent =
+                    "1 "
+                    + (opCompra.dataset.abreviatura || "")
+                    + " × "
+                    + anchoCm.toFixed(2)
+                    + " cm de ancho = "
+                    + conversion.toFixed(4)
+                    + " "
+                    + (opConsumo.dataset.abreviatura || "")
+                    + ".";
+
+            } else {
+
+                cantidad.readOnly = false;
+
+                ayudaCantidad.textContent =
+                    "Cuántas unidades de consumo obtienes "
+                    + "por cada unidad de compra.";
+
+                if (
+                    tipoCompra === tipoConsumo
+                    && factorConsumo > 0
+                ) {
+
+                    const conversion =
+                        factorCompra
+                        / factorConsumo;
+
+                    cantidad.value =
+                        conversion.toFixed(4);
+
+                    preview.textContent =
+                        "1 "
+                        + (opCompra.dataset.abreviatura || "")
+                        + " = "
+                        + conversion.toFixed(4)
+                        + " "
+                        + (opConsumo.dataset.abreviatura || "")
+                        + ".";
+
+                } else {
+
+                    preview.textContent =
+                        "Las unidades son de tipos distintos. "
+                        + "La cantidad por compra queda editable.";
+
+                }
+
+            }
+
+        }
+
+
+        modo.addEventListener(
+            "change",
+            actualizar
+        );
+
+        compra.addEventListener(
+            "change",
+            actualizar
+        );
+
+        consumo.addEventListener(
+            "change",
+            actualizar
+        );
+
+        ancho.addEventListener(
+            "input",
+            actualizar
+        );
+
+
+        actualizar();
+
+    }
+);
+
+</script>
+
+{% endblock %}

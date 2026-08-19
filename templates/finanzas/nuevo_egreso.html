@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}
+Nuevo egreso - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Nuevo egreso</h1>
+
+        <p>
+            Registra un gasto que no provenga directamente
+            del pago de una compra.
+        </p>
+
+    </div>
+
+    <a
+        href="{{ url_for('finanzas.index') }}"
+        class="btn-secondary"
+    >
+        ← Volver a Finanzas
+    </a>
+
+</div>
+
+
+<div class="card finanza-egreso-card">
+
+    <form
+        method="POST"
+        class="finanza-egreso-form"
+    >
+
+        <!-- ============================================================
+             INFORMACIÓN DEL EGRESO
+        ============================================================ -->
+
+        <div class="finanza-egreso-section-header">
+
+            <div>
+
+                <h2>
+                    💸 Información del egreso
+                </h2>
+
+                <p>
+                    Indica el monto, categoría y fecha del gasto.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="finanza-egreso-grid">
+
+
+            <!-- MONTO -->
+
+            <div class="form-group">
+
+                <label for="monto">
+                    Monto *
+                </label>
+
+                <div class="finanza-egreso-money-input">
+
+                    <span>
+                        Q
+                    </span>
+
+                    <input
+                        type="number"
+                        name="monto"
+                        id="monto"
+                        min="0.01"
+                        step="0.01"
+                        placeholder="0.00"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- CATEGORÍA -->
+
+            <div class="form-group">
+
+                <label for="categoria">
+                    Categoría *
+                </label>
+
+                <input
+                    type="text"
+                    name="categoria"
+                    id="categoria"
+                    placeholder="Ej. Transporte, publicidad, servicio"
+                    required
+                >
+
+            </div>
+
+
+            <!-- FECHA -->
+
+            <div class="form-group">
+
+                <label for="fecha">
+                    Fecha
+                    <span class="finanza-opcional">
+                        (opcional)
+                    </span>
+                </label>
+
+                <input
+                    type="datetime-local"
+                    name="fecha"
+                    id="fecha"
+                >
+
+                <small class="form-help">
+                    Si la dejas vacía, puede utilizarse la fecha actual.
+                </small>
+
+            </div>
+
+
+            <!-- DESCRIPCIÓN -->
+
+            <div class="form-group">
+
+                <label for="descripcion">
+
+                    Descripción
+
+                    <span class="finanza-opcional">
+                        (opcional)
+                    </span>
+
+                </label>
+
+                <textarea
+                    name="descripcion"
+                    id="descripcion"
+                    rows="3"
+                    placeholder="Ej. Pago de transporte para entregar un pedido"
+                ></textarea>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             RESUMEN
+        ============================================================ -->
+
+        <div
+            class="finanza-egreso-preview"
+            id="egresoPreview"
+        >
+
+            <div class="finanza-egreso-preview-icon">
+                📌
+            </div>
+
+            <div>
+
+                <strong>
+                    Resumen del egreso
+                </strong>
+
+                <p id="egresoPreviewTexto">
+                    Ingresa el monto y la categoría para ver el resumen.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             ACCIONES
+        ============================================================ -->
+
+        <div class="form-actions finanza-egreso-actions">
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Registrar egreso
+            </button>
+
+            <a
+                href="{{ url_for('finanzas.index') }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const monto =
+            document.getElementById(
+                "monto"
+            );
+
+        const categoria =
+            document.getElementById(
+                "categoria"
+            );
+
+        const fecha =
+            document.getElementById(
+                "fecha"
+            );
+
+        const texto =
+            document.getElementById(
+                "egresoPreviewTexto"
+            );
+
+
+        function actualizarPreview() {
+
+            const montoValor =
+                parseFloat(monto.value);
+
+            const categoriaValor =
+                categoria.value.trim();
+
+            const fechaValor =
+                fecha.value;
+
+
+            if (
+                !montoValor ||
+                montoValor <= 0 ||
+                !categoriaValor
+            ) {
+
+                texto.textContent =
+                    "Ingresa el monto y la categoría para ver el resumen.";
+
+                return;
+
+            }
+
+
+            let mensaje =
+                "Se registrará un egreso de Q "
+                + montoValor.toFixed(2)
+                + " en la categoría “"
+                + categoriaValor
+                + "”";
+
+
+            if (fechaValor) {
+
+                const fechaObjeto =
+                    new Date(fechaValor);
+
+                const fechaFormateada =
+                    fechaObjeto.toLocaleString(
+                        "es-GT"
+                    );
+
+                mensaje +=
+                    " con fecha "
+                    + fechaFormateada;
+
+            }
+
+
+            mensaje += ".";
+
+
+            texto.textContent =
+                mensaje;
+
+        }
+
+
+        monto.addEventListener(
+            "input",
+            actualizarPreview
+        );
+
+        categoria.addEventListener(
+            "input",
+            actualizarPreview
+        );
+
+        fecha.addEventListener(
+            "change",
+            actualizarPreview
+        );
+
+
+        actualizarPreview();
+
+    }
+);
+
+</script>
+
+{% endblock %}

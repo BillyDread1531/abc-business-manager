@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{% block title %}
+Proveedores - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Proveedores</h1>
+
+        <p>
+            Consulta proveedores, compras realizadas
+            y saldos pendientes.
+        </p>
+
+    </div>
+
+
+    <div class="proveedores-header-actions">
+
+        <a
+            href="{{ url_for('compras.lista') }}"
+            class="btn-secondary"
+        >
+            ← Volver a compras
+        </a>
+
+        <a
+            href="{{ url_for('compras.nuevo_proveedor') }}"
+            class="btn-primary"
+        >
+            + Nuevo proveedor
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- ============================================================
+     BUSCADOR Y FILTROS
+============================================================ -->
+
+<div class="card proveedores-toolbar-card">
+
+    <form
+        method="GET"
+        action="{{ url_for('compras.proveedores') }}"
+        class="proveedores-toolbar"
+    >
+
+        <div class="proveedores-search">
+
+            <span>
+                🔎
+            </span>
+
+            <input
+                type="search"
+                name="q"
+                value="{{ busqueda }}"
+                placeholder="Buscar por nombre, teléfono o correo..."
+                autocomplete="off"
+            >
+
+        </div>
+
+
+        <div class="proveedores-filtros">
+
+            <button
+                type="submit"
+                name="filtro"
+                value="todos"
+                class="inventario-filter-btn {% if filtro == 'todos' %}active{% endif %}"
+            >
+                Todos
+                <span>{{ contadores.todos or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="activos"
+                class="inventario-filter-btn {% if filtro == 'activos' %}active{% endif %}"
+            >
+                ✓ Activos
+                <span>{{ contadores.activos or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="saldo"
+                class="inventario-filter-btn {% if filtro == 'saldo' %}active{% endif %}"
+            >
+                💳 Con saldo
+                <span>{{ contadores.con_saldo or 0 }}</span>
+            </button>
+
+            <button
+                type="submit"
+                name="filtro"
+                value="inactivos"
+                class="inventario-filter-btn {% if filtro == 'inactivos' %}active{% endif %}"
+            >
+                ● Inactivos
+                <span>{{ contadores.inactivos or 0 }}</span>
+            </button>
+
+        </div>
+
+
+        {% if busqueda or filtro != "todos" %}
+
+            <a
+                href="{{ url_for('compras.proveedores') }}"
+                class="btn-secondary"
+            >
+                Limpiar
+            </a>
+
+        {% endif %}
+
+    </form>
+
+</div>
+
+
+<!-- ============================================================
+     LISTADO
+============================================================ -->
+
+<div class="card">
+
+    {% if proveedores %}
+
+        <div class="table-container">
+
+            <table class="proveedores-table">
+
+                <thead>
+
+                    <tr>
+                        <th>Proveedor</th>
+                        <th>Contacto</th>
+                        <th>Compras</th>
+                        <th>Total comprado</th>
+                        <th>Total pagado</th>
+                        <th>Saldo pendiente</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                    {% for proveedor in proveedores %}
+
+                        <tr>
+
+                            <td>
+
+                                <div class="proveedor-nombre-cell">
+
+                                    <a
+                                        href="{{ url_for(
+                                            'compras.proveedor_detalle',
+                                            proveedor_id=proveedor.id
+                                        ) }}"
+                                        class="proveedor-link"
+                                    >
+                                        {{ proveedor.nombre }}
+                                    </a>
+
+                                    {% if proveedor.direccion %}
+
+                                        <small>
+                                            {{ proveedor.direccion }}
+                                        </small>
+
+                                    {% endif %}
+
+                                </div>
+
+                            </td>
+
+
+                            <td>
+
+                                <div class="proveedor-contacto">
+
+                                    {% if proveedor.telefono %}
+                                        <span>📞 {{ proveedor.telefono }}</span>
+                                    {% endif %}
+
+                                    {% if proveedor.email %}
+                                        <span>✉️ {{ proveedor.email }}</span>
+                                    {% endif %}
+
+                                    {% if not proveedor.telefono and not proveedor.email %}
+                                        <span class="text-muted">—</span>
+                                    {% endif %}
+
+                                </div>
+
+                            </td>
+
+
+                            <td>
+
+                                <strong>
+                                    {{ proveedor.total_compras }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                Q {{
+                                    "%.2f"|format(
+                                        proveedor.total_comprado
+                                    )
+                                }}
+
+                            </td>
+
+
+                            <td>
+
+                                <strong class="margen-positivo">
+                                    Q {{
+                                        "%.2f"|format(
+                                            proveedor.total_pagado
+                                        )
+                                    }}
+                                </strong>
+
+                            </td>
+
+
+                            <td>
+
+                                {% if proveedor.saldo_pendiente > 0 %}
+
+                                    <strong class="dashboard-saldo-pendiente">
+                                        Q {{
+                                            "%.2f"|format(
+                                                proveedor.saldo_pendiente
+                                            )
+                                        }}
+                                    </strong>
+
+                                {% else %}
+
+                                    <span class="proveedor-sin-saldo">
+                                        ✓ Sin saldo
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                {% if proveedor.activo %}
+
+                                    <span class="inventario-status inventario-status-ok">
+                                        ✓ Activo
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="inventario-status inventario-status-empty">
+                                        ● Inactivo
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+
+                            <td>
+
+                                <a
+                                    href="{{ url_for(
+                                        'compras.proveedor_detalle',
+                                        proveedor_id=proveedor.id
+                                    ) }}"
+                                    class="btn-secondary btn-sm"
+                                >
+                                    Ver proveedor
+                                </a>
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+    {% else %}
+
+        <div class="empty-state">
+
+            <div class="empty-state-icon">
+                🚚
+            </div>
+
+            <h3>
+                No encontramos proveedores
+            </h3>
+
+            <p>
+                Prueba con otra búsqueda o registra
+                un nuevo proveedor.
+            </p>
+
+            <a
+                href="{{ url_for('compras.nuevo_proveedor') }}"
+                class="btn-primary"
+            >
+                + Nuevo proveedor
+            </a>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
+<style>
+
+/* ============================================================
+   PROVEEDORES
+============================================================ */
+
+.proveedores-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.proveedores-toolbar-card {
+    margin-bottom: 20px;
+    padding: 14px 18px;
+}
+
+.proveedores-toolbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.proveedores-search {
+    flex: 1;
+    min-width: 280px;
+    position: relative;
+}
+
+.proveedores-search > span {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+}
+
+.proveedores-search input {
+    width: 100%;
+    padding-left: 40px;
+}
+
+.proveedores-filtros {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.proveedor-nombre-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.proveedor-nombre-cell small {
+    color: var(--text-soft);
+}
+
+.proveedor-link {
+    color: var(--navy);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.proveedor-link:hover {
+    text-decoration: underline;
+}
+
+.proveedor-contacto {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 12px;
+}
+
+.proveedor-sin-saldo {
+    color: #15803d;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+@media (max-width: 800px) {
+
+    .proveedores-toolbar {
+        align-items: stretch;
+    }
+
+    .proveedores-search {
+        flex-basis: 100%;
+        min-width: 0;
+    }
+
+}
+
+</style>
+
+{% endblock %}

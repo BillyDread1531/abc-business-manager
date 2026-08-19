@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}
+Editar {{ pedido.numero }} - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>✏️ Editar pedido</h1>
+
+        <p>
+            Pedido
+            <strong>{{ pedido.numero }}</strong>
+        </p>
+    </div>
+
+</div>
+
+
+<div class="card">
+
+    <form method="POST">
+
+        <label for="cliente">
+            👤 Cliente
+        </label>
+
+        <select
+            name="cliente_id"
+            id="cliente"
+            required
+        >
+
+            {% for cliente in clientes %}
+
+                <option
+                    value="{{ cliente.id }}"
+                    {% if cliente.id == pedido.cliente_id %}
+                        selected
+                    {% endif %}
+                >
+                    {{ cliente.nombre }}
+                </option>
+
+            {% endfor %}
+
+        </select>
+
+
+        <label for="fecha_entrega">
+            📅 Fecha de entrega
+        </label>
+
+        <input
+            type="datetime-local"
+            name="fecha_entrega"
+            id="fecha_entrega"
+            value="{% if pedido.fecha_entrega %}{{ pedido.fecha_entrega.strftime('%Y-%m-%dT%H:%M') }}{% endif %}"
+        >
+
+
+        <label for="estado">
+            📌 Estado
+        </label>
+
+        <select
+            name="estado"
+            id="estado"
+            required
+        >
+
+            <option
+                value="COTIZACION"
+                {% if pedido.estado == 'COTIZACION' %}selected{% endif %}
+            >
+                📝 Cotización
+            </option>
+
+            <option
+                value="CONFIRMADO"
+                {% if pedido.estado == 'CONFIRMADO' %}selected{% endif %}
+            >
+                ✅ Confirmado
+            </option>
+
+            <option
+                value="EN PRODUCCION"
+                {% if pedido.estado == 'EN PRODUCCION' %}selected{% endif %}
+            >
+                🛠️ En producción
+            </option>
+
+            <option
+                value="LISTO"
+                {% if pedido.estado == 'LISTO' %}selected{% endif %}
+            >
+                📦 Listo
+            </option>
+
+            <option
+                value="ENTREGADO"
+                {% if pedido.estado == 'ENTREGADO' %}selected{% endif %}
+            >
+                🚚 Entregado
+            </option>
+
+            <option
+                value="CANCELADO"
+                {% if pedido.estado == 'CANCELADO' %}selected{% endif %}
+            >
+                ❌ Cancelado
+            </option>
+
+        </select>
+
+
+        <label for="descuento">
+            💰 Descuento
+        </label>
+
+        <input
+            type="number"
+            name="descuento"
+            id="descuento"
+            step="0.01"
+            min="0"
+            value="{{ pedido.descuento or 0 }}"
+        >
+
+
+        <label for="notas">
+            📝 Notas del pedido
+        </label>
+
+        <textarea
+            name="notas"
+            id="notas"
+            rows="4"
+        >{{ pedido.notas or "" }}</textarea>
+
+
+        <div class="form-actions">
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Guardar cambios
+            </button>
+
+            <a
+                href="{{ url_for(
+                    'pedidos.detalle',
+                    pedido_id=pedido.id
+                ) }}"
+                class="btn-secondary"
+            >
+                ↩️ Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+{% endblock %}

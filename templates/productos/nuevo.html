@@ -1,0 +1,570 @@
+{% extends "base.html" %}
+
+{% block title %}
+Nuevo producto - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+        <h1>Nuevo producto</h1>
+        <p>Agrega un producto o servicio a ABC.</p>
+    </div>
+
+    <a
+        href="{{ url_for('productos.listar') }}"
+        class="btn-secondary"
+    >
+        ← Volver a productos
+    </a>
+
+</div>
+
+
+<div class="card producto-nuevo-card">
+
+    <form
+        method="POST"
+        class="producto-nuevo-form"
+    >
+
+        <div class="producto-nuevo-section-header">
+
+            <div>
+                <h2>📦 Información del producto</h2>
+                <p>
+                    Define los datos generales, precio y forma de producción.
+                </p>
+            </div>
+
+        </div>
+
+
+        <div class="producto-nuevo-grid">
+
+            <div class="form-group">
+
+                <label for="nombre">
+                    Nombre del producto *
+                </label>
+
+                <input
+                    type="text"
+                    id="nombre"
+                    name="nombre"
+                    required
+                    placeholder="Ej. Manta vinílica"
+                    autocomplete="off"
+                >
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="categoria_id">
+                    Categoría *
+                </label>
+
+                <select
+                    id="categoria_id"
+                    name="categoria_id"
+                    required
+                >
+
+                    <option value="">
+                        Selecciona una categoría
+                    </option>
+
+                    {% for categoria in categorias %}
+
+                        <option value="{{ categoria.id }}">
+                            {{ categoria.nombre }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="tipo">
+                    Tipo
+                </label>
+
+                <select
+                    id="tipo"
+                    name="tipo"
+                >
+                    <option value="PRODUCTO">
+                        Producto
+                    </option>
+
+                    <option value="SERVICIO">
+                        Servicio
+                    </option>
+                </select>
+
+            </div>
+
+
+            <div
+                class="form-group"
+                id="grupo_metodo_produccion"
+            >
+
+                <label for="metodo_produccion">
+                    Método de producción
+                </label>
+
+                <select
+                    id="metodo_produccion"
+                    name="metodo_produccion"
+                >
+                    <option value="INTERNA">
+                        Producción interna
+                    </option>
+
+                    <option value="EXTERNA">
+                        Producción externa
+                    </option>
+
+                    <option value="REVENTA">
+                        Reventa
+                    </option>
+                </select>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="tipo_calculo_precio">
+                    Forma de calcular el precio
+                </label>
+
+                <select
+                    id="tipo_calculo_precio"
+                    name="tipo_calculo_precio"
+                >
+                    <option value="FIJO">
+                        Precio fijo / por unidad
+                    </option>
+
+                    <option value="M2">
+                        Por área
+                    </option>
+
+                    <option value="METRO_LINEAL">
+                        Por metro lineal
+                    </option>
+
+                    <option value="MANUAL">
+                        Precio manual
+                    </option>
+                </select>
+
+                <small class="form-help" id="ayuda_tipo_precio">
+                    El precio base se utilizará por cada unidad.
+                </small>
+
+            </div>
+
+
+            <div
+                class="form-group"
+                id="grupo_unidad_area"
+                style="display: none;"
+            >
+
+                <label for="unidad_calculo_area">
+                    Unidad para cobrar el área
+                </label>
+
+                <select
+                    id="unidad_calculo_area"
+                    name="unidad_calculo_area"
+                >
+                    <option value="CM2">
+                        Centímetro cuadrado (cm²)
+                    </option>
+
+                    <option value="M2" selected>
+                        Metro cuadrado (m²)
+                    </option>
+                </select>
+
+                <small class="form-help">
+                    Para vinil, DTF y cortes pequeños normalmente conviene cm².
+                    Para mantas normalmente conviene m².
+                </small>
+
+            </div>
+
+
+            <div class="form-group">
+
+                <label for="precio_base" id="label_precio_base">
+                    Precio base
+                </label>
+
+                <div class="producto-precio-input">
+
+                    <span>Q</span>
+
+                    <input
+                        type="number"
+                        id="precio_base"
+                        name="precio_base"
+                        step="0.01"
+                        min="0"
+                        value="0.00"
+                    >
+
+                </div>
+
+                <small
+                    class="form-help"
+                    id="ayuda_precio_base"
+                >
+                    Precio sugerido por unidad.
+                </small>
+
+            </div>
+
+
+            <div class="form-group producto-nuevo-full">
+
+                <label for="descripcion">
+                    Descripción
+                    <span class="producto-opcional">
+                        (opcional)
+                    </span>
+                </label>
+
+                <textarea
+                    id="descripcion"
+                    name="descripcion"
+                    rows="3"
+                    placeholder="Descripción del producto..."
+                ></textarea>
+
+            </div>
+
+        </div>
+
+
+        <div
+            class="producto-stock-section"
+            id="producto_stock_section"
+        >
+
+            <div class="switch-option producto-stock-switch">
+
+                <div class="switch-option-text">
+
+                    <strong>
+                        Controlar stock de este producto
+                    </strong>
+
+                    <small>
+                        Permite llevar el inventario de unidades terminadas.
+                    </small>
+
+                </div>
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        id="controla_stock"
+                        name="controla_stock"
+                        value="1"
+                    >
+
+                    <span class="slider"></span>
+
+                </label>
+
+            </div>
+
+
+            <div
+                id="producto_stock_campos"
+                class="producto-stock-grid"
+                style="display: none;"
+            >
+
+                <div class="form-group">
+
+                    <label for="stock_inicial">
+                        Stock inicial
+                    </label>
+
+                    <input
+                        type="number"
+                        id="stock_inicial"
+                        name="stock_inicial"
+                        min="0"
+                        step="1"
+                        value="0"
+                    >
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="stock_minimo">
+                        Stock mínimo
+                    </label>
+
+                    <input
+                        type="number"
+                        id="stock_minimo"
+                        name="stock_minimo"
+                        min="0"
+                        step="1"
+                        value="0"
+                    >
+
+                    <small class="form-help">
+                        Se utilizará para avisarte cuando queden pocas unidades.
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="form-actions producto-nuevo-actions">
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Guardar producto
+            </button>
+
+            <a
+                href="{{ url_for('productos.listar') }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const tipo =
+            document.getElementById("tipo");
+
+        const grupoMetodo =
+            document.getElementById(
+                "grupo_metodo_produccion"
+            );
+
+        const metodo =
+            document.getElementById(
+                "metodo_produccion"
+            );
+
+        const stockSection =
+            document.getElementById(
+                "producto_stock_section"
+            );
+
+        const controlaStock =
+            document.getElementById(
+                "controla_stock"
+            );
+
+        const stockCampos =
+            document.getElementById(
+                "producto_stock_campos"
+            );
+
+        const tipoCalculo =
+            document.getElementById(
+                "tipo_calculo_precio"
+            );
+
+        const labelPrecio =
+            document.getElementById(
+                "label_precio_base"
+            );
+
+        const grupoUnidadArea =
+            document.getElementById(
+                "grupo_unidad_area"
+            );
+
+        const unidadArea =
+            document.getElementById(
+                "unidad_calculo_area"
+            );
+
+        const ayudaTipo =
+            document.getElementById(
+                "ayuda_tipo_precio"
+            );
+
+        const ayudaPrecio =
+            document.getElementById(
+                "ayuda_precio_base"
+            );
+
+
+        function actualizarTipo() {
+
+            if (tipo.value === "SERVICIO") {
+
+                grupoMetodo.style.display = "none";
+                stockSection.style.display = "none";
+
+                controlaStock.checked = false;
+                stockCampos.style.display = "none";
+
+                metodo.value = "INTERNA";
+
+            } else {
+
+                grupoMetodo.style.display = "";
+                stockSection.style.display = "";
+
+            }
+
+        }
+
+
+        function actualizarStock() {
+
+            stockCampos.style.display =
+                controlaStock.checked
+                ? "grid"
+                : "none";
+
+        }
+
+
+        function actualizarTipoPrecio() {
+
+            const valor = tipoCalculo.value;
+
+            if (valor === "M2") {
+
+                grupoUnidadArea.style.display = "";
+
+                const unidad =
+                    unidadArea.value === "CM2"
+                    ? "cm²"
+                    : "m²";
+
+                labelPrecio.textContent =
+                    "Precio por " + unidad;
+
+                ayudaTipo.textContent =
+                    "El sistema calculará ancho × alto en centímetros y usará "
+                    + "la unidad de área que elijas.";
+
+                ayudaPrecio.textContent =
+                    unidad === "cm²"
+                    ? "Ej. Q0.25 significa Q0.25 por cada cm²."
+                    : "Ej. Q80 significa Q80 por cada m².";
+
+            } else if (
+                valor === "METRO_LINEAL"
+            ) {
+
+                grupoUnidadArea.style.display = "none";
+
+                labelPrecio.textContent =
+                    "Precio por metro";
+
+                ayudaTipo.textContent =
+                    "El sistema utilizará el largo en centímetros y lo convertirá a metros.";
+
+                ayudaPrecio.textContent =
+                    "Ej. Q15 significa Q15 por cada metro lineal.";
+
+            } else if (
+                valor === "MANUAL"
+            ) {
+
+                grupoUnidadArea.style.display = "none";
+
+                labelPrecio.textContent =
+                    "Precio de referencia";
+
+                ayudaTipo.textContent =
+                    "El sistema no calculará el precio automáticamente.";
+
+                ayudaPrecio.textContent =
+                    "Puedes dejar Q0.00 o guardar un precio sugerido de referencia.";
+
+            } else {
+
+                grupoUnidadArea.style.display = "none";
+
+                labelPrecio.textContent =
+                    "Precio base";
+
+                ayudaTipo.textContent =
+                    "El precio base se utilizará por cada unidad.";
+
+                ayudaPrecio.textContent =
+                    "Precio sugerido por unidad.";
+
+            }
+
+        }
+
+
+        tipo.addEventListener(
+            "change",
+            actualizarTipo
+        );
+
+        controlaStock.addEventListener(
+            "change",
+            actualizarStock
+        );
+
+        tipoCalculo.addEventListener(
+            "change",
+            actualizarTipoPrecio
+        );
+
+        unidadArea.addEventListener(
+            "change",
+            actualizarTipoPrecio
+        );
+
+
+        actualizarTipo();
+        actualizarStock();
+        actualizarTipoPrecio();
+
+    }
+);
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,331 @@
+{% extends "base.html" %}
+
+{% block title %}
+Editar ingreso - ABC Business Manager
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+
+    <div>
+
+        <h1>Editar ingreso</h1>
+
+        <p>
+            Modifica la información de este movimiento financiero.
+        </p>
+
+    </div>
+
+    <a
+        href="{{ url_for('finanzas.index') }}"
+        class="btn-secondary"
+    >
+        ← Volver a Finanzas
+    </a>
+
+</div>
+
+
+<div class="card finanza-ingreso-card">
+
+    <form
+        method="POST"
+        class="finanza-ingreso-form"
+    >
+
+        <!-- ============================================================
+             INFORMACIÓN DEL INGRESO
+        ============================================================ -->
+
+        <div class="finanza-ingreso-section-header">
+
+            <div>
+
+                <h2>
+                    💰 Información del ingreso
+                </h2>
+
+                <p>
+                    Actualiza el monto, categoría, fecha o descripción
+                    del ingreso.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="finanza-ingreso-grid">
+
+
+            <!-- MONTO -->
+
+            <div class="form-group">
+
+                <label for="monto">
+                    Monto *
+                </label>
+
+                <div class="finanza-ingreso-money-input">
+
+                    <span>
+                        Q
+                    </span>
+
+                    <input
+                        type="number"
+                        name="monto"
+                        id="monto"
+                        min="0.01"
+                        step="0.01"
+                        value="{{ ingreso.monto }}"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+
+            <!-- CATEGORÍA -->
+
+            <div class="form-group">
+
+                <label for="categoria">
+                    Categoría *
+                </label>
+
+                <input
+                    type="text"
+                    name="categoria"
+                    id="categoria"
+                    value="{{ ingreso.categoria }}"
+                    placeholder="Ej. Venta directa, reembolso, otro"
+                    required
+                >
+
+            </div>
+
+
+            <!-- FECHA -->
+
+            <div class="form-group">
+
+                <label for="fecha">
+
+                    Fecha
+
+                    <span class="finanza-opcional">
+                        (opcional)
+                    </span>
+
+                </label>
+
+                <input
+                    type="datetime-local"
+                    name="fecha"
+                    id="fecha"
+                    value="{{ ingreso.fecha.strftime('%Y-%m-%dT%H:%M') if ingreso.fecha else '' }}"
+                >
+
+                <small class="form-help">
+                    Puedes cambiar la fecha y hora asociadas al movimiento.
+                </small>
+
+            </div>
+
+
+            <!-- DESCRIPCIÓN -->
+
+            <div class="form-group">
+
+                <label for="descripcion">
+
+                    Descripción
+
+                    <span class="finanza-opcional">
+                        (opcional)
+                    </span>
+
+                </label>
+
+                <textarea
+                    name="descripcion"
+                    id="descripcion"
+                    rows="3"
+                    placeholder="Ej. Venta directa de producto personalizado"
+                >{{ ingreso.descripcion or '' }}</textarea>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             RESUMEN
+        ============================================================ -->
+
+        <div
+            class="finanza-ingreso-preview"
+            id="ingresoPreview"
+        >
+
+            <div class="finanza-ingreso-preview-icon">
+                📈
+            </div>
+
+            <div>
+
+                <strong>
+                    Resumen del ingreso
+                </strong>
+
+                <p id="ingresoPreviewTexto">
+                    -
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- ============================================================
+             ACCIONES
+        ============================================================ -->
+
+        <div class="form-actions finanza-ingreso-actions">
+
+            <button
+                type="submit"
+                class="btn-primary"
+            >
+                💾 Guardar cambios
+            </button>
+
+            <a
+                href="{{ url_for('finanzas.index') }}"
+                class="btn-secondary"
+            >
+                Cancelar
+            </a>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<script>
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function () {
+
+        const monto =
+            document.getElementById(
+                "monto"
+            );
+
+        const categoria =
+            document.getElementById(
+                "categoria"
+            );
+
+        const fecha =
+            document.getElementById(
+                "fecha"
+            );
+
+        const texto =
+            document.getElementById(
+                "ingresoPreviewTexto"
+            );
+
+
+        function actualizarPreview() {
+
+            const montoValor =
+                parseFloat(monto.value);
+
+            const categoriaValor =
+                categoria.value.trim();
+
+            const fechaValor =
+                fecha.value;
+
+
+            if (
+                !montoValor ||
+                montoValor <= 0 ||
+                !categoriaValor
+            ) {
+
+                texto.textContent =
+                    "Completa el monto y la categoría para visualizar el resumen.";
+
+                return;
+
+            }
+
+
+            let mensaje =
+                "El ingreso quedará registrado por Q "
+                + montoValor.toFixed(2)
+                + " en la categoría “"
+                + categoriaValor
+                + "”";
+
+
+            if (fechaValor) {
+
+                const fechaObjeto =
+                    new Date(fechaValor);
+
+                const fechaFormateada =
+                    fechaObjeto.toLocaleString(
+                        "es-GT"
+                    );
+
+                mensaje +=
+                    " con fecha "
+                    + fechaFormateada;
+
+            }
+
+
+            mensaje += ".";
+
+
+            texto.textContent =
+                mensaje;
+
+        }
+
+
+        monto.addEventListener(
+            "input",
+            actualizarPreview
+        );
+
+        categoria.addEventListener(
+            "input",
+            actualizarPreview
+        );
+
+        fecha.addEventListener(
+            "change",
+            actualizarPreview
+        );
+
+
+        actualizarPreview();
+
+    }
+);
+
+</script>
+
+{% endblock %}

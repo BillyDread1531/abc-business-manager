@@ -1270,12 +1270,42 @@ document.addEventListener(
 
 <script>
     if ("serviceWorker" in navigator) {
-        window.addEventListener("load", function () {
-            navigator.serviceWorker.register("/static/service-worker.js")
-                .catch(function (error) {
-                    console.error("No se pudo registrar el Service Worker:", error);
-                });
-        });
+
+        window.addEventListener(
+            "load",
+            function () {
+
+                navigator.serviceWorker
+                    .register(
+                        "/service-worker.js",
+                        {
+                            scope: "/"
+                        }
+                    )
+                    .then(
+                        function (registration) {
+
+                            console.log(
+                                "Service Worker registrado correctamente.",
+                                registration.scope
+                            );
+
+                        }
+                    )
+                    .catch(
+                        function (error) {
+
+                            console.error(
+                                "No se pudo registrar el Service Worker:",
+                                error
+                            );
+
+                        }
+                    );
+
+            }
+        );
+
     }
 </script>
 

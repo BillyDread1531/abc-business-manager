@@ -214,7 +214,8 @@ def proteger_aplicacion():
 
     rutas_publicas = {
         "login",
-        "static"
+        "static",
+        "service_worker"
     }
 
 
@@ -442,6 +443,26 @@ def logout():
         )
     )
 
+# ============================================================
+# SERVICE WORKER
+# ============================================================
+#
+# Se sirve desde la raíz del sitio para que pueda controlar
+# toda la aplicación:
+#
+# /
+# /dashboard/
+# /catalogo/
+# /static/
+# etc.
+# ============================================================
+
+@app.route("/service-worker.js")
+def service_worker():
+
+    return app.send_static_file(
+        "service-worker.js"
+    )
 
 # ============================================================
 # PÁGINA PRINCIPAL

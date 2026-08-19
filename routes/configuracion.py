@@ -1,8 +1,4 @@
-import os
-
 from decimal import Decimal, InvalidOperation
-
-from werkzeug.utils import secure_filename
 
 from flask import (
     Blueprint,
@@ -10,8 +6,7 @@ from flask import (
     request,
     redirect,
     url_for,
-    flash,
-    current_app
+    flash
 )
 
 from database import obtener_conexion
@@ -25,32 +20,15 @@ configuracion_bp = Blueprint(
 
 
 # ============================================================
-# CONFIGURACIÓN DE LOGO
+# LOGO FIJO DEL NEGOCIO
+# ============================================================
+#
+# El logo forma parte del proyecto y se despliega desde GitHub.
+# No se permite reemplazarlo desde la interfaz web porque el
+# almacenamiento local de Render no es persistente.
 # ============================================================
 
-EXTENSIONES_LOGO = {
-    "png",
-    "jpg",
-    "jpeg",
-    "webp"
-}
-
-
-def extension_logo_permitida(nombre_archivo):
-
-    if not nombre_archivo:
-        return False
-
-    if "." not in nombre_archivo:
-        return False
-
-    extension = (
-        nombre_archivo
-        .rsplit(".", 1)[1]
-        .lower()
-    )
-
-    return extension in EXTENSIONES_LOGO
+LOGO_FIJO = "uploads/logo_abc.png"
 
 
 # ============================================================
@@ -169,10 +147,6 @@ def index():
                 "porcentaje_reserva",
                 "20"
             ).strip()
-
-            logo_archivo = request.files.get(
-                "logo"
-            )
 
 
             # =================================================
@@ -327,114 +301,10 @@ def index():
                 )
 
             # =================================================
-            # LOGO ACTUAL
+            # LOGO FIJO
             # =================================================
 
-            nuevo_logo = (
-                configuracion["logo"]
-                if configuracion
-                else None
-            )
-
-
-            # =================================================
-            # SUBIR NUEVO LOGO
-            # =================================================
-
-            if (
-                logo_archivo
-                and
-                logo_archivo.filename
-            ):
-
-                if not extension_logo_permitida(
-                    logo_archivo.filename
-                ):
-
-                    raise ValueError(
-                        "El logo debe ser PNG, JPG, JPEG o WEBP."
-                    )
-
-
-                nombre_original = secure_filename(
-                    logo_archivo.filename
-                )
-
-
-                extension = (
-                    nombre_original
-                    .rsplit(".", 1)[1]
-                    .lower()
-                )
-
-
-                nombre_logo = (
-                    f"logo_negocio.{extension}"
-                )
-
-
-                carpeta_uploads = os.path.join(
-                    current_app.root_path,
-                    "static",
-                    "uploads"
-                )
-
-
-                os.makedirs(
-                    carpeta_uploads,
-                    exist_ok=True
-                )
-
-
-                # ------------------------------------------------
-                # Eliminar logo anterior si tenía otra extensión
-                # ------------------------------------------------
-
-                if nuevo_logo:
-
-                    ruta_logo_anterior = os.path.join(
-                        current_app.root_path,
-                        "static",
-                        nuevo_logo
-                    )
-
-
-                    if (
-                        os.path.isfile(
-                            ruta_logo_anterior
-                        )
-                        and
-                        os.path.basename(
-                            ruta_logo_anterior
-                        )
-                        != nombre_logo
-                    ):
-
-                        try:
-
-                            os.remove(
-                                ruta_logo_anterior
-                            )
-
-                        except OSError:
-
-                            pass
-
-
-                ruta_logo = os.path.join(
-                    carpeta_uploads,
-                    nombre_logo
-                )
-
-
-                logo_archivo.save(
-                    ruta_logo
-                )
-
-
-                nuevo_logo = (
-                    f"uploads/{nombre_logo}"
-                )
+            nuevo_logo = LOGO_FIJO
 
 
             # =================================================

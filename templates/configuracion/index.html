@@ -24,7 +24,6 @@ Configuración - ABC Business Manager
 
 <form
     method="POST"
-    enctype="multipart/form-data"
     class="configuracion-form"
 >
 
@@ -54,49 +53,21 @@ Configuración - ABC Business Manager
 
 
     <!-- ========================================================
-         LOGO
+         LOGO FIJO
     ======================================================== -->
 
     <div class="configuracion-logo-box configuracion-logo-box-compacta">
 
         <div class="configuracion-logo-preview">
 
-            {% if configuracion and configuracion.logo %}
-
-                <img
-                    src="{{ url_for(
-                        'static',
-                        filename=configuracion.logo
-                    ) }}"
-                    alt="Logo del negocio"
-                    id="logo-preview"
-                >
-
-                <div
-                    class="configuracion-logo-placeholder"
-                    id="logo-placeholder"
-                    style="display: none;"
-                >
-                    🖼️
-                </div>
-
-            {% else %}
-
-                <div
-                    class="configuracion-logo-placeholder"
-                    id="logo-placeholder"
-                >
-                    🖼️
-                </div>
-
-                <img
-                    src=""
-                    alt="Vista previa del logo"
-                    id="logo-preview"
-                    style="display: none;"
-                >
-
-            {% endif %}
+            <img
+                src="{{ url_for(
+                    'static',
+                    filename='uploads/logo_abc.png'
+                ) }}"
+                alt="Logo de ABC"
+                id="logo-preview"
+            >
 
         </div>
 
@@ -108,33 +79,15 @@ Configuración - ABC Business Manager
             </h3>
 
             <p>
-                Se utilizará en cotizaciones,
-                comprobantes y otros documentos del negocio.
+                Este es el logo oficial de ABC.
+                Se utiliza en el sistema, cotizaciones,
+                comprobantes y demás documentos.
             </p>
 
-
-            <label
-                for="logo"
-                class="btn-secondary configuracion-logo-button"
-            >
-                📁 Seleccionar logo
-            </label>
-
-
-            <input
-                type="file"
-                id="logo"
-                name="logo"
-                accept=".png,.jpg,.jpeg,.webp"
-                class="configuracion-logo-input"
-            >
-
-
-            <small
-                class="form-help"
-                id="logo-file-name"
-            >
-                Formatos permitidos: PNG, JPG, JPEG y WEBP.
+            <small class="form-help">
+                🔒 Logo fijo protegido. Para cambiarlo,
+                reemplaza <strong>static/uploads/logo_abc.png</strong>
+                en el proyecto y realiza un nuevo despliegue.
             </small>
 
         </div>
@@ -701,131 +654,7 @@ Configuración - ABC Business Manager
 </form>
 
 
-<!-- ============================================================
-     VISTA PREVIA DEL LOGO
-============================================================ -->
-
 <script>
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        const inputLogo =
-            document.getElementById(
-                "logo"
-            );
-
-        const preview =
-            document.getElementById(
-                "logo-preview"
-            );
-
-        const placeholder =
-            document.getElementById(
-                "logo-placeholder"
-            );
-
-        const nombreArchivo =
-            document.getElementById(
-                "logo-file-name"
-            );
-
-
-        if (
-            !inputLogo
-            ||
-            !preview
-        ) {
-
-            return;
-
-        }
-
-
-        inputLogo.addEventListener(
-            "change",
-            function () {
-
-                const archivo =
-                    this.files[0];
-
-
-                if (!archivo) {
-
-                    return;
-
-                }
-
-
-                const tiposPermitidos = [
-                    "image/png",
-                    "image/jpeg",
-                    "image/webp"
-                ];
-
-
-                if (
-                    !tiposPermitidos.includes(
-                        archivo.type
-                    )
-                ) {
-
-                    alert(
-                        "Selecciona una imagen PNG, JPG, JPEG o WEBP."
-                    );
-
-                    this.value = "";
-
-                    return;
-
-                }
-
-
-                const urlTemporal =
-                    URL.createObjectURL(
-                        archivo
-                    );
-
-
-                preview.src =
-                    urlTemporal;
-
-                preview.style.display =
-                    "block";
-
-
-                if (placeholder) {
-
-                    placeholder.style.display =
-                        "none";
-
-                }
-
-
-                if (nombreArchivo) {
-
-                    nombreArchivo.textContent =
-                        archivo.name;
-
-                }
-
-
-                preview.onload =
-                    function () {
-
-                        URL.revokeObjectURL(
-                            urlTemporal
-                        );
-
-                    };
-
-            }
-        );
-
-    }
-);
-
 
 /* ============================================================
    AVISO DE CAMBIOS SIN GUARDAR

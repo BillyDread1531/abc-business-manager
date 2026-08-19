@@ -17,6 +17,14 @@ Catálogo de precios - ABC Business Manager
 
 </div>
 
+<div
+    id="catalogo-offline-aviso"
+    class="catalogo-offline-aviso"
+    hidden
+>
+    🟠 Sin conexión. Estás viendo la última versión guardada del catálogo.
+</div>
+
 
 <div class="card catalogo-toolbar-card">
 
@@ -1087,327 +1095,16 @@ Catálogo de precios - ABC Business Manager
 
 }
 
-/* ============================================================
-   AJUSTE FINAL - CALCULADORAS DEL CATÁLOGO
-   ============================================================ */
 
-/*
-   Evita que cualquier elemento interno pueda
-   ensanchar la tarjeta.
-*/
-.catalogo-card,
-.catalogo-card * {
-    box-sizing: border-box;
-}
-
-.catalogo-card {
-    min-width: 0;
-    max-width: 100%;
-    overflow: hidden;
-}
-
-
-/* ============================================================
-   CAMPOS DE LAS CALCULADORAS
-   ============================================================ */
-
-.catalogo-mini-fields {
-    width: 100%;
-    min-width: 0;
-}
-
-.catalogo-mini-fields > label,
-.catalogo-mini-calc-fijo > label {
-    width: 100%;
-    min-width: 0;
-}
-
-
-/*
-   Estilo visual de TODOS los inputs del catálogo.
-   Esto es necesario porque estos inputs no están
-   dentro de un <form>.
-*/
-.catalogo-mini-fields input,
-.catalogo-mini-calc-fijo input {
-    display: block;
-
-    width: 100% !important;
-    min-width: 0 !important;
-    max-width: 100% !important;
-
-    height: 42px;
-    min-height: 42px !important;
-
-    padding: 9px 11px !important;
-
-    color: #202331;
-    background: #ffffff;
-
-    border: 1px solid #d6dae5 !important;
-    border-radius: 8px !important;
-
-    font-family: inherit;
-    font-size: 13px !important;
-
-    outline: none;
-
-    transition:
-        border-color 0.18s ease,
-        box-shadow 0.18s ease,
-        background-color 0.18s ease;
-}
-
-
-/* Hover */
-
-.catalogo-mini-fields input:hover,
-.catalogo-mini-calc-fijo input:hover {
-    border-color: #b8c2d5 !important;
-}
-
-
-/* Focus */
-
-.catalogo-mini-fields input:focus,
-.catalogo-mini-calc-fijo input:focus {
-    border-color: #3549a0 !important;
-
-    box-shadow:
-        0 0 0 3px
-        rgba(53, 73, 160, 0.10) !important;
-
-    background: #ffffff;
-}
-
-
-/* Placeholder */
-
-.catalogo-mini-fields input::placeholder,
-.catalogo-mini-calc-fijo input::placeholder {
-    color: #a0a7b4;
-}
-
-
-/* ============================================================
-   INPUT CON UNIDAD: cm
-   ============================================================ */
-
-.catalogo-unit-input {
-    position: relative;
-
-    width: 100%;
-    min-width: 0;
-}
-
-.catalogo-unit-input input {
-    width: 100% !important;
-    min-width: 0 !important;
-
-    padding-right: 38px !important;
-}
-
-.catalogo-unit-input small {
-    position: absolute;
-
-    top: 50%;
-    right: 11px;
-
-    transform: translateY(-50%);
-
-    color: #7c8799;
-
-    font-size: 10px;
+.catalogo-offline-aviso {
+    margin-bottom: 14px;
+    padding: 10px 13px;
+    border: 1px solid #f0cf86;
+    border-radius: 9px;
+    background: #fff8e8;
+    color: #7a5510;
+    font-size: 12px;
     font-weight: 700;
-
-    pointer-events: none;
-}
-
-
-/* ============================================================
-   CALCULADORA POR ÁREA
-   ============================================================ */
-
-.catalogo-mini-fields {
-    display: grid;
-
-    grid-template-columns:
-        minmax(0, 1fr)
-        minmax(0, 1fr)
-        minmax(64px, 0.65fr);
-
-    gap: 9px;
-
-    align-items: end;
-}
-
-
-/* ============================================================
-   CALCULADORA METRO LINEAL
-   ============================================================ */
-
-.catalogo-mini-fields-lineal {
-    grid-template-columns:
-        minmax(0, 1fr)
-        minmax(70px, 0.65fr);
-}
-
-
-/* ============================================================
-   CALCULADORA PRECIO FIJO
-   ============================================================ */
-
-.catalogo-mini-calc-fijo {
-    display: grid;
-
-    grid-template-columns:
-        minmax(90px, 0.8fr)
-        minmax(0, 1.2fr);
-
-    gap: 12px;
-
-    align-items: end;
-}
-
-
-/* ============================================================
-   RESULTADO
-   ============================================================ */
-
-.catalogo-calc-result {
-    width: 100%;
-    min-width: 0;
-
-    display: flex;
-
-    align-items: flex-end;
-    justify-content: space-between;
-
-    gap: 12px;
-
-    margin-top: 11px;
-    padding-top: 10px;
-
-    border-top: 1px solid #edf0f5;
-}
-
-.catalogo-calc-result > div {
-    min-width: 0;
-}
-
-.catalogo-result-total {
-    flex-shrink: 0;
-
-    text-align: right;
-}
-
-.catalogo-result-total strong {
-    white-space: nowrap;
-}
-
-
-/* ============================================================
-   QUITAR EL ASPECTO FEO NATIVO DEL INPUT NUMBER
-   ============================================================ */
-
-.catalogo-mini-fields input[type="number"],
-.catalogo-mini-calc-fijo input[type="number"] {
-    appearance: textfield;
-    -moz-appearance: textfield;
-}
-
-.catalogo-mini-fields input[type="number"]::-webkit-inner-spin-button,
-.catalogo-mini-fields input[type="number"]::-webkit-outer-spin-button,
-.catalogo-mini-calc-fijo input[type="number"]::-webkit-inner-spin-button,
-.catalogo-mini-calc-fijo input[type="number"]::-webkit-outer-spin-button {
-    margin: 0;
-}
-
-
-/* ============================================================
-   TABLET / TARJETAS MÁS ESTRECHAS
-   ============================================================ */
-
-@media (max-width: 1250px) {
-
-    .catalogo-mini-fields {
-        grid-template-columns:
-            minmax(0, 1fr)
-            minmax(0, 1fr)
-            minmax(60px, 0.65fr);
-    }
-
-}
-
-
-/* ============================================================
-   MÓVIL
-   ============================================================ */
-
-@media (max-width: 700px) {
-
-    .catalogo-mini-fields {
-        grid-template-columns:
-            minmax(0, 1fr)
-            minmax(0, 1fr);
-    }
-
-    .catalogo-cantidad-field {
-        grid-column: 1 / -1;
-    }
-
-
-    .catalogo-mini-fields-lineal {
-        grid-template-columns:
-            minmax(0, 1fr)
-            minmax(80px, 0.65fr);
-    }
-
-    .catalogo-mini-fields-lineal
-    .catalogo-cantidad-field {
-        grid-column: auto;
-    }
-
-
-    .catalogo-mini-calc-fijo {
-        grid-template-columns:
-            minmax(100px, 0.8fr)
-            minmax(0, 1.2fr);
-    }
-
-}
-
-
-/* ============================================================
-   TELÉFONOS PEQUEÑOS
-   ============================================================ */
-
-@media (max-width: 420px) {
-
-    .catalogo-mini-fields,
-    .catalogo-mini-fields-lineal {
-        grid-template-columns: 1fr;
-    }
-
-    .catalogo-cantidad-field,
-    .catalogo-mini-fields-lineal
-    .catalogo-cantidad-field {
-        grid-column: 1;
-    }
-
-    .catalogo-mini-calc-fijo {
-        grid-template-columns: 1fr;
-    }
-
-    .catalogo-calc-result-simple {
-        justify-content: flex-start;
-    }
-
-    .catalogo-calc-result-simple
-    .catalogo-result-total {
-        text-align: left;
-    }
-
 }
 
 </style>
@@ -1418,6 +1115,35 @@ Catálogo de precios - ABC Business Manager
 document.addEventListener(
     "DOMContentLoaded",
     function () {
+
+        const avisoOffline =
+            document.getElementById(
+                "catalogo-offline-aviso"
+            );
+
+        function actualizarEstadoConexion() {
+
+            if (!avisoOffline) {
+                return;
+            }
+
+            avisoOffline.hidden =
+                navigator.onLine;
+
+        }
+
+        actualizarEstadoConexion();
+
+        window.addEventListener(
+            "online",
+            actualizarEstadoConexion
+        );
+
+        window.addEventListener(
+            "offline",
+            actualizarEstadoConexion
+        );
+
 
         const cards = Array.from(
             document.querySelectorAll(

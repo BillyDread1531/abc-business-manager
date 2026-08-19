@@ -1267,5 +1267,17 @@ document.addEventListener(
 </script>
 
 
+
+<script>
+    if ("serviceWorker" in navigator) {
+        window.addEventListener("load", function () {
+            navigator.serviceWorker.register("/static/service-worker.js")
+                .catch(function (error) {
+                    console.error("No se pudo registrar el Service Worker:", error);
+                });
+        });
+    }
+</script>
+
 </body>
 </html>

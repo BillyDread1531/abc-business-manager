@@ -227,13 +227,16 @@ def entrada():
     if request.method == "POST":
 
         material_id = request.form.get("material_id")
-        cantidad = request.form.get("cantidad")
-        costo_unitario = request.form.get("costo_unitario")
+        modo_entrada = request.form.get("modo_entrada", "normal").strip().lower()
+        cantidad_texto = request.form.get("cantidad", "").strip()
+        ancho_texto = request.form.get("ancho", "").strip()
+        largo_texto = request.form.get("largo", "").strip()
+        costo_total_texto = request.form.get("costo_unitario", "0").strip()
         notas = request.form.get("notas", "").strip()
 
-        if not material_id or not cantidad:
+        if not material_id:
             flash(
-                "Debes seleccionar un material e indicar la cantidad.",
+                "Debes seleccionar un material.",
                 "danger"
             )
 
@@ -241,15 +244,14 @@ def entrada():
 
             try:
 
-                cantidad = float(cantidad)
-                costo_unitario = float(costo_unitario or 0)
-
-                if cantidad <= 0:
+                if modo_entrada not in ("normal", "medidas"):
                     raise ValueError(
-                        "La cantidad debe ser mayor que cero."
+                        "El tipo de entrada no es válido."
                     )
 
-                if costo_unitario < 0:
+                costo_total_compra = float(costo_total_texto or 0)
+
+                if costo_total_compra < 0:
                     raise ValueError(
                         "El costo no puede ser negativo."
                     )
@@ -301,84 +303,111 @@ def entrada():
                 unidad_compra = material["unidad_compra_id"]
                 unidad_consumo = material["unidad_consumo_id"]
 
-                tipo_compra = material["tipo_compra"]
-                tipo_consumo = material["tipo_consumo"]
-
                 cantidad_por_compra = float(
-                    material["cantidad_por_compra"]
+                    material["cantidad_por_compra"] or 1
                 )
 
-                # ==========================================
-                # CALCULAR COSTO TOTAL DE LA COMPRA
-                #
-                # Ejemplo:
-                # 10 pies × Q8 = Q80
-                # ==========================================
-
-                costo_total_compra = (
-                    cantidad * costo_unitario
-                )
+                ancho_lote = None
+                largo_lote = None
+                area_total = None
+                area_disponible = None
 
                 # ==========================================
-                # CONVERSIÓN DE UNIDADES
+                # RETAZO / EXISTENCIA POR MEDIDAS
                 # ==========================================
 
-                # ------------------------------------------
-                # MISMA UNIDAD
-                # ------------------------------------------
+                if modo_entrada == "medidas":
 
-                if unidad_compra == unidad_consumo:
+                    abreviatura_consumo = (
+                        material["abreviatura_consumo"] or ""
+                    ).lower()
 
-                    cantidad_consumo = cantidad
+                    tipo_consumo = (
+                        material["tipo_consumo"] or ""
+                    ).upper()
 
-                # ------------------------------------------
-                # PIE -> CENTÍMETRO
-                # ------------------------------------------
-
-                elif unidad_compra == 4 and unidad_consumo == 2:
-
-                    cantidad_consumo = cantidad * 30.48
-
-                # ------------------------------------------
-                # YARDA -> CENTÍMETRO
-                # ------------------------------------------
-
-                elif unidad_compra == 5 and unidad_consumo == 2:
-
-                    cantidad_consumo = cantidad * 91.44
-
-                # ------------------------------------------
-                # METRO -> CENTÍMETRO
-                # ------------------------------------------
-
-                elif unidad_compra == 3 and unidad_consumo == 2:
-
-                    cantidad_consumo = cantidad * 100
-
-                # ------------------------------------------
-                # PAQUETE -> HOJA
-                #
-                # Ejemplo:
-                # 1 paquete × 100 = 100 hojas
-                # ------------------------------------------
-
-                elif unidad_compra == 9 and unidad_consumo == 8:
-
-                    cantidad_consumo = (
-                        cantidad * cantidad_por_compra
+                    es_area = (
+                        tipo_consumo == "AREA"
+                        or "cm²" in abreviatura_consumo
+                        or "cm2" in abreviatura_consumo
                     )
 
-                # ------------------------------------------
-                # CONVERSIÓN NO CONFIGURADA
-                # ------------------------------------------
+                    if not es_area:
+                        raise ValueError(
+                            "La entrada por medidas solo aplica "
+                            "a materiales controlados por área."
+                        )
+
+                    if not ancho_texto or not largo_texto:
+                        raise ValueError(
+                            "Debes indicar ancho y largo."
+                        )
+
+                    ancho_lote = float(ancho_texto)
+                    largo_lote = float(largo_texto)
+
+                    if ancho_lote <= 0 or largo_lote <= 0:
+                        raise ValueError(
+                            "Ancho y largo deben ser mayores que cero."
+                        )
+
+                    cantidad_consumo = (
+                        ancho_lote * largo_lote
+                    )
+
+                    area_total = cantidad_consumo
+                    area_disponible = cantidad_consumo
+
+                    cantidad = None
+                    tipo_movimiento = "AJUSTE_ENTRADA"
+                    referencia_tipo = "ENTRADA_MEDIDAS"
+
+                    if not notas:
+                        notas = (
+                            f"Retazo {ancho_lote:g} x "
+                            f"{largo_lote:g} cm."
+                        )
+
+                # ==========================================
+                # ENTRADA NORMAL
+                # ==========================================
 
                 else:
 
-                    raise ValueError(
-                        f"No existe una conversión configurada entre "
-                        f"{material['unidad_compra']} y "
-                        f"{material['unidad_consumo']}."
-                    )
+                    if not cantidad_texto:
+                        raise ValueError(
+                            "Debes indicar la cantidad comprada."
+                        )
+
+                    cantidad = float(cantidad_texto)
+
+                    if cantidad <= 0:
+                        raise ValueError(
+                            "La cantidad debe ser mayor que cero."
+                        )
+
+                    if unidad_compra == unidad_consumo:
+                        cantidad_consumo = cantidad
+
+                    elif unidad_compra == 4 and unidad_consumo == 2:
+                        cantidad_consumo = cantidad * 30.48
+
+                    elif unidad_compra == 5 and unidad_consumo == 2:
+                        cantidad_consumo = cantidad * 91.44
+
+                    elif unidad_compra == 3 and unidad_consumo == 2:
+                        cantidad_consumo = cantidad * 100
+
+                    else:
+                        # Usa la conversión configurada en el material.
+                        # Ejemplo vinil:
+                        # 1 ft x 60 cm = 1828.8 cm².
+                        cantidad_consumo = (
+                            cantidad * cantidad_por_compra
+                        )
+
+                    tipo_movimiento = "COMPRA"
+                    referencia_tipo = "ENTRADA_MANUAL"
 
                 # ==========================================
                 # VALIDAR CANTIDAD CONVERTIDA
@@ -441,20 +470,22 @@ def entrada():
                     VALUES (
                         %s,
                         NULL,
-                        'COMPRA',
                         %s,
                         %s,
                         %s,
-                        'ENTRADA_MANUAL',
+                        %s,
+                        %s,
                         NULL,
                         %s,
                         %s
                     )
                 """, (
                     material_id,
+                    tipo_movimiento,
                     cantidad_consumo,
                     unidad_consumo,
                     costo_por_unidad_consumo,
+                    referencia_tipo,
                     8,
                     notas
                 ))
@@ -488,10 +519,10 @@ def entrada():
                         %s,
                         %s,
                         %s,
-                        NULL,
-                        NULL,
-                        NULL,
-                        NULL,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
                         %s,
                         %s,
                         1
@@ -501,6 +532,10 @@ def entrada():
                     cantidad_consumo,
                     cantidad_consumo,
                     unidad_consumo,
+                    ancho_lote,
+                    largo_lote,
+                    area_total,
+                    area_disponible,
                     costo_total_compra,
                     costo_por_unidad_consumo
                 ))
@@ -515,18 +550,27 @@ def entrada():
                 # MENSAJE DE CONFIRMACIÓN
                 # ==========================================
 
-                flash(
-                    f"Entrada registrada: "
-                    f"{cantidad:g} "
-                    f"{material['abreviatura_compra']} → "
-                    f"{cantidad_consumo:.4f} "
-                    f"{material['abreviatura_consumo']}. "
-                    f"Costo total: Q{costo_total_compra:.2f}. "
-                    f"Costo por "
-                    f"{material['abreviatura_consumo']}: "
-                    f"Q{costo_por_unidad_consumo:.4f}.",
-                    "success"
-                )
+                if modo_entrada == "medidas":
+
+                    flash(
+                        f"Retazo registrado: "
+                        f"{ancho_lote:g} x {largo_lote:g} cm = "
+                        f"{cantidad_consumo:g} "
+                        f"{material['abreviatura_consumo']}.",
+                        "success"
+                    )
+
+                else:
+
+                    flash(
+                        f"Entrada registrada: "
+                        f"{cantidad:g} "
+                        f"{material['abreviatura_compra']} → "
+                        f"{cantidad_consumo:.4f} "
+                        f"{material['abreviatura_consumo']}. "
+                        f"Costo total: Q{costo_total_compra:.2f}.",
+                        "success"
+                    )
 
                 cursor.close()
                 conn.close()
@@ -561,7 +605,8 @@ def entrada():
             uc.abreviatura AS abreviatura_compra,
 
             ucons.nombre AS unidad_consumo,
-            ucons.abreviatura AS abreviatura_consumo
+            ucons.abreviatura AS abreviatura_consumo,
+            ucons.tipo AS tipo_consumo
 
         FROM materiales m
 

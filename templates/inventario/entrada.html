@@ -83,6 +83,7 @@ Entrada de inventario - ABC Business Manager
                         data-abreviatura-compra="{{ material.abreviatura_compra }}"
                         data-unidad-consumo="{{ material.unidad_consumo }}"
                         data-abreviatura-consumo="{{ material.abreviatura_consumo }}"
+                        data-tipo-consumo="{{ material.tipo_consumo }}"
                         data-cantidad-por-compra="{{ material.cantidad_por_compra }}"
                     >
 
@@ -100,6 +101,71 @@ Entrada de inventario - ABC Business Manager
 
         </div>
 
+
+        <!-- ============================================================
+             TIPO DE ENTRADA
+        ============================================================ -->
+
+        <div
+            class="inventario-modo-entrada"
+            id="modoEntradaBox"
+        >
+
+            <div class="inventario-modo-titulo">
+                Tipo de entrada
+            </div>
+
+            <label class="inventario-modo-opcion">
+
+                <input
+                    type="radio"
+                    name="modo_entrada"
+                    value="normal"
+                    id="modoNormal"
+                    checked
+                >
+
+                <span>
+                    <strong>
+                        📦 Compra normal
+                    </strong>
+
+                    <small>
+                        Usa la unidad de compra configurada para el material.
+                    </small>
+                </span>
+
+            </label>
+
+            <label
+                class="inventario-modo-opcion"
+                id="opcionMedidas"
+                style="display: none;"
+            >
+
+                <input
+                    type="radio"
+                    name="modo_entrada"
+                    value="medidas"
+                    id="modoMedidas"
+                >
+
+                <span>
+                    <strong>
+                        ✂️ Retazo / existencia por medidas
+                    </strong>
+
+                    <small>
+                        Para sobrantes o inventario inicial medido en centímetros.
+                    </small>
+                </span>
+
+            </label>
+
+        </div>
+
+
+        <div id="camposNormal">
 
         <!-- ============================================================
              INFORMACIÓN DE CONVERSIÓN
@@ -189,7 +255,6 @@ Entrada de inventario - ABC Business Manager
                         min="0.0001"
                         step="0.0001"
                         placeholder="Ej. 10"
-                        required
                     >
 
                     <span
@@ -213,7 +278,7 @@ Entrada de inventario - ABC Business Manager
             <div class="form-group">
 
                 <label for="costo_unitario">
-                    Costo total pagado *
+                    Costo total asignado *
                 </label>
 
                 <div class="inventario-money-input">
@@ -229,14 +294,125 @@ Entrada de inventario - ABC Business Manager
                         min="0"
                         step="0.01"
                         placeholder="80.00"
+                        value="0"
                         required
                     >
 
                 </div>
 
-                <small class="form-help">
-                    Ingresa cuánto pagaste en total por esta compra.
+                <small
+                    class="form-help"
+                    id="ayudaCosto"
+                >
+                    Ingresa cuánto pagaste en total por esta entrada.
                 </small>
+
+            </div>
+
+        </div>
+
+
+
+        </div>
+
+
+        <!-- ============================================================
+             RETAZO / EXISTENCIA POR MEDIDAS
+        ============================================================ -->
+
+        <div
+            id="camposMedidas"
+            class="inventario-medidas-box"
+            style="display: none;"
+        >
+
+            <div class="inventario-medidas-intro">
+
+                <div class="inventario-medidas-icon">
+                    ✂️
+                </div>
+
+                <div>
+
+                    <strong>
+                        Medidas reales del retazo
+                    </strong>
+
+                    <p>
+                        Ingresa el ancho y el largo del pedazo.
+                        ABC calculará automáticamente el área que se agregará.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="inventario-entrada-grid">
+
+                <div class="form-group">
+
+                    <label for="ancho">
+                        Ancho *
+                    </label>
+
+                    <div class="inventario-unidad-input">
+
+                        <input
+                            type="number"
+                            name="ancho"
+                            id="ancho"
+                            min="0.01"
+                            step="0.01"
+                            placeholder="Ej. 16"
+                        >
+
+                        <span class="inventario-unidad-addon">
+                            cm
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="largo">
+                        Largo *
+                    </label>
+
+                    <div class="inventario-unidad-input">
+
+                        <input
+                            type="number"
+                            name="largo"
+                            id="largo"
+                            min="0.01"
+                            step="0.01"
+                            placeholder="Ej. 25"
+                        >
+
+                        <span class="inventario-unidad-addon">
+                            cm
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="inventario-area-preview">
+
+                <span>
+                    Área que se agregará
+                </span>
+
+                <strong id="areaCalculada">
+                    0 cm²
+                </strong>
 
             </div>
 
@@ -275,7 +451,7 @@ Entrada de inventario - ABC Business Manager
 
                 <div class="inventario-resumen-item">
 
-                    <span>
+                    <span id="resumenEtiquetaCantidad">
                         Cantidad comprada
                     </span>
 
@@ -755,6 +931,170 @@ Entrada de inventario - ABC Business Manager
 
 
 /* ============================================================
+   TIPO DE ENTRADA
+============================================================ */
+
+.inventario-modo-entrada {
+    display: grid;
+    gap: 10px;
+
+    margin-top: 18px;
+    padding: 16px 18px;
+
+    background: #f8fafc;
+
+    border: 1px solid #dce3ee;
+    border-radius: 10px;
+}
+
+
+.inventario-modo-titulo {
+    margin-bottom: 2px;
+
+    color: var(--navy);
+
+    font-size: 12px;
+    font-weight: 800;
+
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+
+
+.inventario-modo-opcion {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 10px;
+
+    margin: 0;
+    padding: 12px 14px;
+
+    background: #ffffff;
+
+    border: 1px solid #dce3ee;
+    border-radius: 9px;
+
+    cursor: pointer;
+}
+
+
+.inventario-modo-opcion input {
+    margin-top: 3px;
+}
+
+
+.inventario-modo-opcion span {
+    display: grid;
+    gap: 3px;
+}
+
+
+.inventario-modo-opcion strong {
+    color: var(--navy);
+
+    font-size: 13px;
+}
+
+
+.inventario-modo-opcion small {
+    color: var(--text-soft);
+
+    font-size: 12px;
+    line-height: 1.45;
+}
+
+
+/* ============================================================
+   MEDIDAS DEL RETAZO
+============================================================ */
+
+.inventario-medidas-box {
+    margin-top: 18px;
+    padding: 18px;
+
+    background: #f7f9ff;
+
+    border: 1px solid #dce5fa;
+    border-radius: 10px;
+}
+
+
+.inventario-medidas-intro {
+    display: flex;
+    align-items: flex-start;
+
+    gap: 12px;
+
+    margin-bottom: 4px;
+}
+
+
+.inventario-medidas-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex-shrink: 0;
+
+    width: 40px;
+    height: 40px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e7eb;
+    border-radius: 9px;
+
+    font-size: 20px;
+}
+
+
+.inventario-medidas-intro strong {
+    color: var(--navy);
+
+    font-size: 14px;
+}
+
+
+.inventario-medidas-intro p {
+    margin: 4px 0 0;
+
+    color: var(--text-soft);
+
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+
+.inventario-area-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 20px;
+
+    margin-top: 16px;
+    padding-top: 14px;
+
+    border-top: 1px solid #dce5fa;
+}
+
+
+.inventario-area-preview span {
+    color: var(--text-soft);
+
+    font-size: 12px;
+}
+
+
+.inventario-area-preview strong {
+    color: var(--navy);
+
+    font-size: 20px;
+}
+
+
+/* ============================================================
    RESPONSIVE
 ============================================================ */
 
@@ -816,14 +1156,54 @@ document.addEventListener(
                 "material_id"
             );
 
+        const modoNormal =
+            document.getElementById(
+                "modoNormal"
+            );
+
+        const modoMedidas =
+            document.getElementById(
+                "modoMedidas"
+            );
+
+        const opcionMedidas =
+            document.getElementById(
+                "opcionMedidas"
+            );
+
+        const camposNormal =
+            document.getElementById(
+                "camposNormal"
+            );
+
+        const camposMedidas =
+            document.getElementById(
+                "camposMedidas"
+            );
+
         const cantidadInput =
             document.getElementById(
                 "cantidad"
             );
 
+        const anchoInput =
+            document.getElementById(
+                "ancho"
+            );
+
+        const largoInput =
+            document.getElementById(
+                "largo"
+            );
+
         const costoInput =
             document.getElementById(
                 "costo_unitario"
+            );
+
+        const ayudaCosto =
+            document.getElementById(
+                "ayudaCosto"
             );
 
         const infoConversion =
@@ -851,9 +1231,19 @@ document.addEventListener(
                 "cantidadUnidad"
             );
 
+        const areaCalculada =
+            document.getElementById(
+                "areaCalculada"
+            );
+
         const resumenCompra =
             document.getElementById(
                 "resumenCompra"
+            );
+
+        const resumenEtiquetaCantidad =
+            document.getElementById(
+                "resumenEtiquetaCantidad"
             );
 
         const resumenCantidadCompra =
@@ -890,20 +1280,71 @@ document.addEventListener(
         }
 
 
+        function obtenerOpcion() {
+
+            return materialSelect.options[
+                materialSelect.selectedIndex
+            ];
+
+        }
+
+
+        function permiteEntradaPorMedidas(
+            opcion
+        ) {
+
+            if (
+                !opcion ||
+                !opcion.value
+            ) {
+
+                return false;
+
+            }
+
+            const tipoConsumo =
+                (
+                    opcion.dataset.tipoConsumo
+                    || ""
+                ).toUpperCase();
+
+            const abreviaturaConsumo =
+                (
+                    opcion.dataset.abreviaturaConsumo
+                    || ""
+                ).toLowerCase();
+
+            return (
+                tipoConsumo === "AREA" ||
+                abreviaturaConsumo.includes(
+                    "cm²"
+                ) ||
+                abreviaturaConsumo.includes(
+                    "cm2"
+                )
+            );
+
+        }
+
+
         function actualizarVista() {
 
             const opcion =
-                materialSelect.options[
-                    materialSelect.selectedIndex
-                ];
+                obtenerOpcion();
 
 
-            if (!opcion || !opcion.value) {
+            if (
+                !opcion ||
+                !opcion.value
+            ) {
 
                 infoConversion.style.display =
                     "none";
 
                 resumenCompra.style.display =
+                    "none";
+
+                opcionMedidas.style.display =
                     "none";
 
                 cantidadUnidad.textContent =
@@ -912,6 +1353,70 @@ document.addEventListener(
                 return;
 
             }
+
+
+            const puedeMedidas =
+                permiteEntradaPorMedidas(
+                    opcion
+                );
+
+
+            opcionMedidas.style.display =
+                puedeMedidas
+                    ? "flex"
+                    : "none";
+
+
+            if (
+                !puedeMedidas &&
+                modoMedidas.checked
+            ) {
+
+                modoNormal.checked =
+                    true;
+
+            }
+
+
+            const usandoMedidas =
+                modoMedidas.checked;
+
+
+            camposNormal.style.display =
+                usandoMedidas
+                    ? "none"
+                    : "block";
+
+
+            camposMedidas.style.display =
+                usandoMedidas
+                    ? "block"
+                    : "none";
+
+
+            cantidadInput.required =
+                !usandoMedidas;
+
+
+            anchoInput.required =
+                usandoMedidas;
+
+
+            largoInput.required =
+                usandoMedidas;
+
+
+            ayudaCosto.textContent =
+                usandoMedidas
+                    ? (
+                        "Para inventario inicial puedes dejar "
+                        + "Q0.00. Si conoces el costo del "
+                        + "retazo, puedes asignarlo."
+                    )
+                    : (
+                        "Ingresa cuánto pagaste en total "
+                        + "por esta entrada."
+                    );
 
 
             const unidadCompraTexto =
@@ -950,6 +1455,114 @@ document.addEventListener(
                 abreviaturaCompra || "—";
 
 
+            const costoTotal =
+                parseFloat(
+                    costoInput.value
+                ) || 0;
+
+
+            /* ========================================================
+               RETAZO / MEDIDAS
+            ======================================================== */
+
+            if (usandoMedidas) {
+
+                infoConversion.style.display =
+                    "none";
+
+
+                const ancho =
+                    parseFloat(
+                        anchoInput.value
+                    ) || 0;
+
+
+                const largo =
+                    parseFloat(
+                        largoInput.value
+                    ) || 0;
+
+
+                const area =
+                    ancho * largo;
+
+
+                areaCalculada.textContent =
+                    area > 0
+                        ? (
+                            formatearCantidad(
+                                area
+                            )
+                            + " cm²"
+                        )
+                        : "0 cm²";
+
+
+                if (
+                    ancho > 0 &&
+                    largo > 0 &&
+                    area > 0
+                ) {
+
+                    const costoUnidad =
+                        costoTotal / area;
+
+
+                    resumenEtiquetaCantidad.textContent =
+                        "Medidas";
+
+
+                    resumenCantidadCompra.textContent =
+                        formatearCantidad(
+                            ancho
+                        )
+                        + " × "
+                        + formatearCantidad(
+                            largo
+                        )
+                        + " cm";
+
+
+                    resumenStock.textContent =
+                        formatearCantidad(
+                            area
+                        )
+                        + " "
+                        + abreviaturaConsumo;
+
+
+                    resumenCostoTotal.textContent =
+                        "Q "
+                        + costoTotal.toFixed(2);
+
+
+                    resumenCostoUnidad.textContent =
+                        "Q "
+                        + costoUnidad.toFixed(6)
+                        + " / "
+                        + abreviaturaConsumo;
+
+
+                    resumenCompra.style.display =
+                        "block";
+
+                } else {
+
+                    resumenCompra.style.display =
+                        "none";
+
+                }
+
+
+                return;
+
+            }
+
+
+            /* ========================================================
+               COMPRA NORMAL
+            ======================================================== */
+
             infoConversion.style.display =
                 "flex";
 
@@ -962,10 +1575,6 @@ document.addEventListener(
 
             let cantidadConsumo = 0;
 
-
-            /* ========================================================
-               CONVERSIÓN DE UNIDADES
-            ======================================================== */
 
             if (
                 abreviaturaCompra ===
@@ -1007,10 +1616,15 @@ document.addEventListener(
 
             }
 
-            else if (
-                abreviaturaCompra === "paq" &&
-                abreviaturaConsumo === "hoja"
-            ) {
+            else {
+
+                /*
+                 * Material configurado mediante
+                 * "cantidad por compra".
+                 *
+                 * Ejemplo:
+                 * 1 ft × 60 cm = 1828.8 cm².
+                 */
 
                 cantidadConsumo =
                     cantidad
@@ -1018,16 +1632,6 @@ document.addEventListener(
 
             }
 
-            else {
-
-                cantidadConsumo = 0;
-
-            }
-
-
-            /* ========================================================
-               MOSTRAR CONVERSIÓN
-            ======================================================== */
 
             if (
                 cantidad > 0 &&
@@ -1035,51 +1639,40 @@ document.addEventListener(
             ) {
 
                 cantidadConversion.textContent =
-                    formatearCantidad(cantidad)
+                    formatearCantidad(
+                        cantidad
+                    )
                     + " "
                     + abreviaturaCompra
                     + " = "
-                    + formatearCantidad(cantidadConsumo)
+                    + formatearCantidad(
+                        cantidadConsumo
+                    )
                     + " "
                     + abreviaturaConsumo;
 
-            } else {
-
-                cantidadConversion.textContent =
-                    "Ingresa una cantidad para ver la conversión.";
-
-            }
-
-
-            /* ========================================================
-               RESUMEN
-            ======================================================== */
-
-            const costoTotal =
-                parseFloat(
-                    costoInput.value
-                ) || 0;
-
-
-            if (
-                cantidad > 0 &&
-                cantidadConsumo > 0 &&
-                costoTotal >= 0
-            ) {
 
                 const costoUnidad =
                     costoTotal
                     / cantidadConsumo;
 
 
+                resumenEtiquetaCantidad.textContent =
+                    "Cantidad comprada";
+
+
                 resumenCantidadCompra.textContent =
-                    formatearCantidad(cantidad)
+                    formatearCantidad(
+                        cantidad
+                    )
                     + " "
                     + abreviaturaCompra;
 
 
                 resumenStock.textContent =
-                    formatearCantidad(cantidadConsumo)
+                    formatearCantidad(
+                        cantidadConsumo
+                    )
                     + " "
                     + abreviaturaConsumo;
 
@@ -1091,7 +1684,7 @@ document.addEventListener(
 
                 resumenCostoUnidad.textContent =
                     "Q "
-                    + costoUnidad.toFixed(4)
+                    + costoUnidad.toFixed(6)
                     + " / "
                     + abreviaturaConsumo;
 
@@ -1100,6 +1693,10 @@ document.addEventListener(
                     "block";
 
             } else {
+
+                cantidadConversion.textContent =
+                    "Ingresa una cantidad para ver la conversión.";
+
 
                 resumenCompra.style.display =
                     "none";
@@ -1115,7 +1712,31 @@ document.addEventListener(
         );
 
 
+        modoNormal.addEventListener(
+            "change",
+            actualizarVista
+        );
+
+
+        modoMedidas.addEventListener(
+            "change",
+            actualizarVista
+        );
+
+
         cantidadInput.addEventListener(
+            "input",
+            actualizarVista
+        );
+
+
+        anchoInput.addEventListener(
+            "input",
+            actualizarVista
+        );
+
+
+        largoInput.addEventListener(
             "input",
             actualizarVista
         );

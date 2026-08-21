@@ -453,6 +453,53 @@ def nuevo():
 
         try:
 
+            # ============================================================
+            # EVITAR MATERIALES DUPLICADOS
+            # ============================================================
+
+            cursor.execute("""
+                SELECT
+                    id,
+                    nombre,
+                    color,
+                    activo
+                FROM materiales
+                WHERE LOWER(TRIM(nombre)) = LOWER(TRIM(%s))
+                  AND COALESCE(LOWER(TRIM(color)), '') =
+                      COALESCE(LOWER(TRIM(%s)), '')
+                LIMIT 1
+            """, (
+                nombre,
+                color
+            ))
+
+            material_existente = cursor.fetchone()
+
+            if material_existente:
+
+                estado_texto = (
+                    "activo"
+                    if material_existente["activo"]
+                    else "inactivo"
+                )
+
+                nombre_existente = material_existente["nombre"]
+
+                if material_existente["color"]:
+                    nombre_existente += (
+                        " - "
+                        + material_existente["color"]
+                    )
+
+                raise ValueError(
+                    f"Ya existe el material "
+                    f"'{nombre_existente}' "
+                    f"(ID {material_existente['id']}, "
+                    f"{estado_texto}). "
+                    f"Edítalo o reactívalo en lugar "
+                    f"de crear otro."
+                )
+
             cantidad_por_compra = (
                 calcular_conversion_material(
                     cursor,
@@ -831,6 +878,55 @@ def editar(material_id):
             )
 
         try:
+
+            # ============================================================
+            # EVITAR DUPLICADOS AL EDITAR
+            # ============================================================
+
+            cursor.execute("""
+                SELECT
+                    id,
+                    nombre,
+                    color,
+                    activo
+                FROM materiales
+                WHERE id <> %s
+                  AND LOWER(TRIM(nombre)) = LOWER(TRIM(%s))
+                  AND COALESCE(LOWER(TRIM(color)), '') =
+                      COALESCE(LOWER(TRIM(%s)), '')
+                LIMIT 1
+            """, (
+                material_id,
+                nombre,
+                color
+            ))
+
+            material_duplicado = cursor.fetchone()
+
+            if material_duplicado:
+
+                estado_texto = (
+                    "activo"
+                    if material_duplicado["activo"]
+                    else "inactivo"
+                )
+
+                nombre_duplicado = material_duplicado["nombre"]
+
+                if material_duplicado["color"]:
+                    nombre_duplicado += (
+                        " - "
+                        + material_duplicado["color"]
+                    )
+
+                raise ValueError(
+                    f"Ya existe otro material "
+                    f"'{nombre_duplicado}' "
+                    f"(ID {material_duplicado['id']}, "
+                    f"{estado_texto}). "
+                    f"No puedes convertir este registro "
+                    f"en un duplicado."
+                )
 
             cantidad_por_compra = (
                 calcular_conversion_material(

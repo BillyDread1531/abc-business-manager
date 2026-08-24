@@ -1153,34 +1153,116 @@ def materiales_producto(producto_id):
                 str(receta["cantidad"] or 0)
             )
 
-            cantidad_por_compra = Decimal(
-                str(receta["cantidad_por_compra"] or 0)
+            # ====================================================
+            # COSTO PROMEDIO REAL SEGÚN LOTES DE INVENTARIO
+            # ====================================================
+
+            cursor.execute("""
+                SELECT
+                    COALESCE(
+                        SUM(
+                            cantidad_actual
+                            * costo_unitario
+                        ),
+                        0
+                    ) AS valor_stock,
+
+                    COALESCE(
+                        SUM(cantidad_actual),
+                        0
+                    ) AS cantidad_stock
+
+                FROM lotes_inventario
+
+                WHERE material_id = %s
+                  AND activo = 1
+                  AND cantidad_actual > 0
+            """, (
+                receta["material_id"],
+            ))
+
+            inventario = cursor.fetchone()
+
+            cantidad_stock = Decimal(
+                str(
+                    inventario["cantidad_stock"]
+                    or 0
+                )
             )
 
-            costo_compra = Decimal(
-                str(receta["costo_compra_referencia"] or 0)
+            valor_stock = Decimal(
+                str(
+                    inventario["valor_stock"]
+                    or 0
+                )
             )
 
-            if cantidad_por_compra > 0:
+            # ====================================================
+            # SI HAY INVENTARIO: USAR EL COSTO REAL PROMEDIO
+            # ====================================================
+
+            if cantidad_stock > 0:
 
                 costo_unitario = (
-                    costo_compra
-                    / cantidad_por_compra
+                    valor_stock
+                    / cantidad_stock
                 )
 
-                costo_material = (
-                    cantidad
-                    * costo_unitario
+            else:
+
+                # ================================================
+                # SIN LOTES: USAR EL COSTO DE REFERENCIA
+                # ================================================
+
+                cantidad_por_compra = Decimal(
+                    str(
+                        receta["cantidad_por_compra"]
+                        or 0
+                    )
                 )
 
-                receta["costo_unitario"] = costo_unitario
-                receta["costo_total"] = costo_material
+                costo_compra = Decimal(
+                    str(
+                        receta["costo_compra_referencia"]
+                        or 0
+                    )
+                )
 
-                # En rollos por área el costo final depende de las
-                # medidas reales de cada pedido, así que esta cifra
-                # solo es referencia si hay cantidad fija.
-                if receta["modo_control"] != "ROLLO_AREA":
-                    costo_total += costo_material
+                if cantidad_por_compra > 0:
+
+                    costo_unitario = (
+                        costo_compra
+                        / cantidad_por_compra
+                    )
+
+                else:
+
+                    costo_unitario = Decimal("0.00")
+
+            costo_material = (
+                cantidad
+                * costo_unitario
+            )
+
+            receta["costo_unitario"] = (
+                costo_unitario
+            )
+
+            receta["costo_total"] = (
+                costo_material
+            )
+
+            # En rollos controlados por área el costo final depende
+            # de las medidas reales usadas durante la producción.
+            if (
+                receta["modo_control"]
+                != "ROLLO_AREA"
+            ):
+
+                costo_total += (
+                    costo_material
+                )
+
 
     margen = (
         Decimal(str(producto["precio_base"] or 0))

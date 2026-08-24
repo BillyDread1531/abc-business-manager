@@ -25,6 +25,8 @@ def listar():
                 p.tipo,
                 p.metodo_produccion,
                 p.precio_base,
+                p.costo_externo_referencia,
+                p.vendible,
                 p.tipo_calculo_precio,
                 p.unidad_calculo_area,
                 p.controla_stock,
@@ -51,6 +53,8 @@ def listar():
                 p.tipo,
                 p.metodo_produccion,
                 p.precio_base,
+                p.costo_externo_referencia,
+                p.vendible,
                 p.tipo_calculo_precio,
                 p.unidad_calculo_area,
                 p.controla_stock,
@@ -106,6 +110,16 @@ def nuevo():
         precio_base = request.form.get(
             "precio_base"
         ) or 0
+
+        costo_externo_referencia = request.form.get(
+            "costo_externo_referencia"
+        ) or 0
+
+        vendible = (
+            1
+            if request.form.get("vendible")
+            else 0
+        )
 
         tipo_calculo_precio = request.form.get(
             "tipo_calculo_precio",
@@ -193,6 +207,8 @@ def nuevo():
                 tipo,
                 metodo_produccion,
                 precio_base,
+                costo_externo_referencia,
+                vendible,
                 tipo_calculo_precio,
                 unidad_calculo_area,
                 controla_stock,
@@ -200,6 +216,8 @@ def nuevo():
                 stock_minimo
             )
             VALUES (
+                %s,
+                %s,
                 %s,
                 %s,
                 %s,
@@ -219,6 +237,8 @@ def nuevo():
             tipo,
             metodo_produccion,
             precio_base,
+            costo_externo_referencia,
+            vendible,
             tipo_calculo_precio,
             unidad_calculo_area,
             controla_stock,
@@ -436,6 +456,8 @@ def editar(producto_id):
             tipo,
             metodo_produccion,
             precio_base,
+            costo_externo_referencia,
+            vendible,
             tipo_calculo_precio,
             unidad_calculo_area,
             controla_stock,
@@ -479,6 +501,16 @@ def editar(producto_id):
         precio_base = request.form.get(
             "precio_base"
         ) or 0
+
+        costo_externo_referencia = request.form.get(
+            "costo_externo_referencia"
+        ) or 0
+
+        vendible = (
+            1
+            if request.form.get("vendible")
+            else 0
+        )
 
         tipo_calculo_precio = request.form.get(
             "tipo_calculo_precio",
@@ -533,6 +565,8 @@ def editar(producto_id):
                 tipo = %s,
                 metodo_produccion = %s,
                 precio_base = %s,
+                costo_externo_referencia = %s,
+                vendible = %s,
                 tipo_calculo_precio = %s,
                 unidad_calculo_area = %s,
                 controla_stock = %s,
@@ -545,6 +579,8 @@ def editar(producto_id):
             tipo,
             metodo_produccion,
             precio_base,
+            costo_externo_referencia,
+            vendible,
             tipo_calculo_precio,
             unidad_calculo_area,
             controla_stock,

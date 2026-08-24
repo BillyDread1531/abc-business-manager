@@ -44,7 +44,8 @@ def index():
     categorias = cursor.fetchall()
 
     condiciones = [
-        "p.activo = 1"
+        "p.activo = 1",
+        "p.vendible = 1"
     ]
 
     parametros = []
@@ -199,6 +200,7 @@ def index():
 
         FROM productos
         WHERE activo = 1
+          AND vendible = 1
     """)
 
     contadores = cursor.fetchone()

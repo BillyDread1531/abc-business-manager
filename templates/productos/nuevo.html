@@ -157,7 +157,7 @@ Nuevo producto - ABC Business Manager
                     </option>
 
                     <option value="M2">
-                        Por área
+                        Por metro cuadrado (m²)
                     </option>
 
                     <option value="METRO_LINEAL">
@@ -171,37 +171,6 @@ Nuevo producto - ABC Business Manager
 
                 <small class="form-help" id="ayuda_tipo_precio">
                     El precio base se utilizará por cada unidad.
-                </small>
-
-            </div>
-
-
-            <div
-                class="form-group"
-                id="grupo_unidad_area"
-                style="display: none;"
-            >
-
-                <label for="unidad_calculo_area">
-                    Unidad para cobrar el área
-                </label>
-
-                <select
-                    id="unidad_calculo_area"
-                    name="unidad_calculo_area"
-                >
-                    <option value="CM2">
-                        Centímetro cuadrado (cm²)
-                    </option>
-
-                    <option value="M2" selected>
-                        Metro cuadrado (m²)
-                    </option>
-                </select>
-
-                <small class="form-help">
-                    Para vinil, DTF y cortes pequeños normalmente conviene cm².
-                    Para mantas normalmente conviene m².
                 </small>
 
             </div>
@@ -238,6 +207,40 @@ Nuevo producto - ABC Business Manager
             </div>
 
 
+            <div class="form-group">
+
+                <label
+                    for="costo_externo_referencia"
+                    id="label_costo_externo"
+                >
+                    Costo externo de referencia
+                </label>
+
+                <div class="producto-precio-input">
+
+                    <span>Q</span>
+
+                    <input
+                        type="number"
+                        id="costo_externo_referencia"
+                        name="costo_externo_referencia"
+                        step="0.01"
+                        min="0"
+                        value="0.00"
+                    >
+
+                </div>
+
+                <small
+                    class="form-help"
+                    id="ayuda_costo_externo"
+                >
+                    Lo que normalmente te cobra el proveedor.
+                </small>
+
+            </div>
+
+
             <div class="form-group producto-nuevo-full">
 
                 <label for="descripcion">
@@ -253,6 +256,42 @@ Nuevo producto - ABC Business Manager
                     rows="3"
                     placeholder="Descripción del producto..."
                 ></textarea>
+
+            </div>
+
+        </div>
+
+
+        <div class="producto-stock-section">
+
+            <div class="switch-option producto-stock-switch">
+
+                <div class="switch-option-text">
+
+                    <strong>
+                        Disponible para venta
+                    </strong>
+
+                    <small>
+                        Desactívalo para insumos externos que solo compras,
+                        como DTF. No aparecerán en catálogo ni en pedidos.
+                    </small>
+
+                </div>
+
+                <label class="switch">
+
+                    <input
+                        type="checkbox"
+                        id="vendible"
+                        name="vendible"
+                        value="1"
+                        checked
+                    >
+
+                    <span class="slider"></span>
+
+                </label>
 
             </div>
 
@@ -411,16 +450,6 @@ document.addEventListener(
                 "label_precio_base"
             );
 
-        const grupoUnidadArea =
-            document.getElementById(
-                "grupo_unidad_area"
-            );
-
-        const unidadArea =
-            document.getElementById(
-                "unidad_calculo_area"
-            );
-
         const ayudaTipo =
             document.getElementById(
                 "ayuda_tipo_precio"
@@ -429,6 +458,16 @@ document.addEventListener(
         const ayudaPrecio =
             document.getElementById(
                 "ayuda_precio_base"
+            );
+
+        const labelCosto =
+            document.getElementById(
+                "label_costo_externo"
+            );
+
+        const ayudaCosto =
+            document.getElementById(
+                "ayuda_costo_externo"
             );
 
 
@@ -470,30 +509,24 @@ document.addEventListener(
 
             if (valor === "M2") {
 
-                grupoUnidadArea.style.display = "";
-
-                const unidad =
-                    unidadArea.value === "CM2"
-                    ? "cm²"
-                    : "m²";
-
                 labelPrecio.textContent =
-                    "Precio por " + unidad;
+                    "Precio por m²";
 
                 ayudaTipo.textContent =
-                    "El sistema calculará ancho × alto en centímetros y usará "
-                    + "la unidad de área que elijas.";
+                    "El sistema calculará ancho × alto y lo convertirá de cm² a m².";
 
                 ayudaPrecio.textContent =
-                    unidad === "cm²"
-                    ? "Ej. Q0.25 significa Q0.25 por cada cm²."
-                    : "Ej. Q80 significa Q80 por cada m².";
+                    "Tarifa de venta por metro cuadrado.";
+
+                labelCosto.textContent =
+                    "Costo externo por m²";
+
+                ayudaCosto.textContent =
+                    "Ej. Q50 si el proveedor te cobra Q50 por m².";
 
             } else if (
                 valor === "METRO_LINEAL"
             ) {
-
-                grupoUnidadArea.style.display = "none";
 
                 labelPrecio.textContent =
                     "Precio por metro";
@@ -502,13 +535,17 @@ document.addEventListener(
                     "El sistema utilizará el largo en centímetros y lo convertirá a metros.";
 
                 ayudaPrecio.textContent =
-                    "Ej. Q15 significa Q15 por cada metro lineal.";
+                    "Tarifa de venta por metro lineal.";
+
+                labelCosto.textContent =
+                    "Costo externo por metro";
+
+                ayudaCosto.textContent =
+                    "Ej. Q65 si el proveedor te cobra Q65 por metro lineal.";
 
             } else if (
                 valor === "MANUAL"
             ) {
-
-                grupoUnidadArea.style.display = "none";
 
                 labelPrecio.textContent =
                     "Precio de referencia";
@@ -519,9 +556,13 @@ document.addEventListener(
                 ayudaPrecio.textContent =
                     "Puedes dejar Q0.00 o guardar un precio sugerido de referencia.";
 
-            } else {
+                labelCosto.textContent =
+                    "Costo externo de referencia";
 
-                grupoUnidadArea.style.display = "none";
+                ayudaCosto.textContent =
+                    "Costo aproximado que normalmente pagas al proveedor.";
+
+            } else {
 
                 labelPrecio.textContent =
                     "Precio base";
@@ -531,6 +572,12 @@ document.addEventListener(
 
                 ayudaPrecio.textContent =
                     "Precio sugerido por unidad.";
+
+                labelCosto.textContent =
+                    "Costo externo por unidad";
+
+                ayudaCosto.textContent =
+                    "Lo que normalmente te cobra el proveedor por una unidad.";
 
             }
 
@@ -548,11 +595,6 @@ document.addEventListener(
         );
 
         tipoCalculo.addEventListener(
-            "change",
-            actualizarTipoPrecio
-        );
-
-        unidadArea.addEventListener(
             "change",
             actualizarTipoPrecio
         );

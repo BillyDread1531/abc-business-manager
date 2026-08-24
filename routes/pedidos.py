@@ -12,6 +12,90 @@ pedidos_bp = Blueprint(
 )
 
 
+# ============================================================
+# COSTO ESTIMADO DE PRODUCCIÓN EXTERNA
+# ============================================================
+
+def calcular_costo_externo_estimado(
+    producto,
+    cantidad,
+    ancho=None,
+    alto=None,
+    largo=None
+):
+
+    if not producto:
+        return Decimal("0.00")
+
+    if producto.get("metodo_produccion") != "EXTERNA":
+        return Decimal("0.00")
+
+    costo_ref = Decimal(
+        str(
+            producto.get(
+                "costo_externo_referencia",
+                0
+            )
+            or 0
+        )
+    )
+
+    cantidad_dec = Decimal(
+        str(cantidad or 0)
+    )
+
+    tipo_calculo = (
+        producto.get("tipo_calculo_precio")
+        or "FIJO"
+    ).strip().upper()
+
+    if costo_ref <= 0 or cantidad_dec <= 0:
+        return Decimal("0.00")
+
+    if tipo_calculo == "M2":
+
+        ancho_dec = Decimal(str(ancho or 0))
+        alto_dec = Decimal(str(alto or 0))
+
+        if ancho_dec <= 0 or alto_dec <= 0:
+            return Decimal("0.00")
+
+        area_m2 = (
+            ancho_dec
+            * alto_dec
+            / Decimal("10000")
+        )
+
+        return (
+            area_m2
+            * costo_ref
+            * cantidad_dec
+        )
+
+    if tipo_calculo == "METRO_LINEAL":
+
+        largo_dec = Decimal(str(largo or 0))
+
+        if largo_dec <= 0:
+            return Decimal("0.00")
+
+        metros = (
+            largo_dec
+            / Decimal("100")
+        )
+
+        return (
+            metros
+            * costo_ref
+            * cantidad_dec
+        )
+
+    return (
+        costo_ref
+        * cantidad_dec
+    )
+
+
 @pedidos_bp.route("/")
 def listar():
 
@@ -314,14 +398,7 @@ def detalle(pedido_id):
             prod.tipo AS produccion_tipo,
             prod.estado AS produccion_estado,
             prod.costo_estimado AS produccion_costo_estimado,
-            prod.costo_real AS produccion_costo_real,
-
-            EXISTS (
-                SELECT 1
-                FROM producto_materiales pm_var
-                WHERE pm_var.producto_id = d.producto_id
-                  AND pm_var.modo_seleccion = 'FAMILIA'
-            ) AS tiene_material_variable
+            prod.costo_real AS produccion_costo_real
 
         FROM detalle_pedido d
 
@@ -371,7 +448,6 @@ def detalle(pedido_id):
     costo_real_conocido = Decimal("0.00")
 
     detalles_con_costo_real = 0
-    costos_estimados_pendientes = 0
 
     for detalle_item in detalles:
 
@@ -382,69 +458,14 @@ def detalle(pedido_id):
             )
         )
 
-        # ----------------------------------------------------
-        # COSTO ESTIMADO ACTUAL
-        #
-        # detalle_pedido puede conservar el 0 calculado cuando
-        # se agregó el producto. Producción recalcula la receta
-        # con la información actual, por eso tiene prioridad.
-        # ----------------------------------------------------
-
-        produccion_estimado = (
-            detalle_item["produccion_costo_estimado"]
+        costo_estimado = Decimal(
+            str(
+                detalle_item["costo_estimado"]
+                or 0
+            )
         )
 
-        tiene_material_variable = bool(
-            detalle_item["tiene_material_variable"]
-        )
-
-        if produccion_estimado is not None:
-
-            costo_estimado = Decimal(
-                str(
-                    produccion_estimado
-                    or 0
-                )
-            )
-
-            # Una receta por familia puede no tener costo
-            # estimable hasta elegir el material real.
-            costo_estimado_disponible = not (
-                tiene_material_variable
-                and costo_estimado == 0
-            )
-
-        else:
-
-            costo_estimado = Decimal(
-                str(
-                    detalle_item["costo_estimado"]
-                    or 0
-                )
-            )
-
-            costo_estimado_disponible = not (
-                tiene_material_variable
-                and costo_estimado == 0
-            )
-
-        detalle_item["costo_estimado_actual"] = (
-            costo_estimado
-        )
-
-        detalle_item["costo_estimado_disponible"] = (
-            costo_estimado_disponible
-        )
-
-        if costo_estimado_disponible:
-
-            costo_estimado_total += (
-                costo_estimado
-            )
-
-        else:
-
-            costos_estimados_pendientes += 1
+        costo_estimado_total += costo_estimado
 
         # ----------------------------------------------------
         # Distribuir el descuento general proporcionalmente.
@@ -623,7 +644,6 @@ def detalle(pedido_id):
         saldo_pendiente=saldo_pendiente,
 
         costo_estimado_total=costo_estimado_total,
-        costos_estimados_pendientes=costos_estimados_pendientes,
         costo_real_conocido=costo_real_conocido,
         costos_completos=costos_completos,
         ganancia_real_pedido=ganancia_real_pedido,
@@ -1270,128 +1290,44 @@ def agregar_producto(pedido_id):
             else:
                 variante_id = None
 
-            cantidad = Decimal(
-                str(
-                    request.form.get(
-                        "cantidad",
-                        "1"
-                    )
-                )
+            cantidad = float(
+                request.form.get("cantidad", 1)
             )
 
-            if cantidad <= 0:
-                return "La cantidad debe ser mayor que 0", 400
-
-            precio_unitario = Decimal(
-                str(
-                    request.form.get(
-                        "precio_unitario",
-                        "0"
-                    )
+            precio_unitario = float(
+                request.form.get(
+                    "precio_unitario",
+                    0
                 )
             )
-
-            if precio_unitario < 0:
-                return "El precio no puede ser negativo", 400
 
             texto_personalizado = request.form.get(
                 "texto_personalizado",
                 ""
             ).strip()
 
-            ancho_texto = request.form.get("ancho") or None
-            alto_texto = request.form.get("alto") or None
-            largo_texto = request.form.get("largo") or None
-
-            ancho = (
-                Decimal(str(ancho_texto))
-                if ancho_texto
-                else None
-            )
-
-            alto = (
-                Decimal(str(alto_texto))
-                if alto_texto
-                else None
-            )
-
-            largo = (
-                Decimal(str(largo_texto))
-                if largo_texto
-                else None
-            )
+            ancho = request.form.get("ancho") or None
+            alto = request.form.get("alto") or None
+            largo = request.form.get("largo") or None
 
             notas = request.form.get(
                 "notas",
                 ""
             ).strip()
 
-            # ====================================================
-            # PRODUCTO Y TIPO DE CÁLCULO
-            # ====================================================
+            subtotal = cantidad * precio_unitario
 
-            cursor.execute("""
-                SELECT
-                    id,
-                    nombre,
-                    precio_base,
-                    tipo_calculo_precio,
-                    unidad_calculo_area
-                FROM productos
-                WHERE id = %s
-                AND activo = 1
-            """, (producto_id,))
-
-            producto = cursor.fetchone()
-
-            if not producto:
-                return "Producto no encontrado", 404
-
-            tipo_calculo = (
-                producto["tipo_calculo_precio"]
-                or "FIJO"
-            )
-
-            # Las medidas se guardan en centímetros.
-            if tipo_calculo == "M2":
-
-                if (
-                    ancho is None
-                    or alto is None
-                    or ancho <= 0
-                    or alto <= 0
-                ):
-                    return (
-                        "Para un producto calculado por área debes "
-                        "indicar ancho y alto mayores que 0.",
-                        400
-                    )
-
-            elif tipo_calculo == "METRO_LINEAL":
-
-                if largo is None or largo <= 0:
-                    return (
-                        "Para un producto por metro lineal "
-                        "debes indicar el largo.",
-                        400
-                    )
-
-            # ====================================================
-            # VARIANTE Y COSTO ESTIMADO
-            # ====================================================
-
-            costo_estimado = Decimal("0")
+            # Obtener costo de la variante o producto
+            costo_estimado = 0
 
             if variante_id:
 
                 cursor.execute("""
-                    SELECT
-                        precio,
-                        costo_base
+                    SELECT costo_base
                     FROM variantes_producto
                     WHERE id = %s
-                    AND producto_id = %s
-                    AND activo = 1
+                      AND producto_id = %s
+                      AND activo = 1
                 """, (
                     variante_id,
                     producto_id
@@ -1409,13 +1345,37 @@ def agregar_producto(pedido_id):
                             or 0
                         )
                     )
-                    * cantidad
+                    * Decimal(str(cantidad))
                 )
 
-            subtotal = (
-                cantidad
-                * precio_unitario
-            )
+            else:
+
+                cursor.execute("""
+                    SELECT
+                        precio_base,
+                        metodo_produccion,
+                        tipo_calculo_precio,
+                        costo_externo_referencia
+                    FROM productos
+                    WHERE id = %s
+                      AND activo = 1
+                      AND vendible = 1
+                """, (producto_id,))
+
+                producto = cursor.fetchone()
+
+                if not producto:
+                    return "Producto no encontrado", 404
+
+                costo_estimado = (
+                    calcular_costo_externo_estimado(
+                        producto,
+                        cantidad,
+                        ancho,
+                        alto,
+                        largo
+                    )
+                )
 
             cursor.execute("""
                 INSERT INTO detalle_pedido
@@ -1466,6 +1426,7 @@ def agregar_producto(pedido_id):
             """, (pedido_id,))
 
             resultado = cursor.fetchone()
+
             subtotal_pedido = resultado["subtotal"]
 
             cursor.execute("""
@@ -1533,22 +1494,24 @@ def agregar_producto(pedido_id):
 
             raise
 
+    # Obtener productos
     cursor.execute("""
         SELECT
             id,
             nombre,
             tipo,
             metodo_produccion,
-            precio_base,
-            tipo_calculo_precio,
-            unidad_calculo_area
+            precio_base
         FROM productos
         WHERE activo = 1
+          AND vendible = 1
         ORDER BY nombre ASC
     """)
 
     productos = cursor.fetchall()
 
+
+    # Obtener variantes
     cursor.execute("""
         SELECT
             id,
@@ -1576,7 +1539,6 @@ def agregar_producto(pedido_id):
         variantes=variantes
     )
 
-
 @pedidos_bp.route("/<int:pedido_id>/producto/<int:detalle_id>/editar", methods=["GET", "POST"])
 def editar_producto(pedido_id, detalle_id):
 
@@ -1586,84 +1548,33 @@ def editar_producto(pedido_id, detalle_id):
     if request.method == "POST":
 
         try:
-
-            producto_id = int(
-                request.form["producto_id"]
+            producto_id = int(request.form["producto_id"])
+            cantidad = float(request.form.get("cantidad", 1))
+            precio_unitario = float(
+                request.form.get("precio_unitario", 0)
             )
-
-            variante_id = request.form.get(
-                "variante_id"
-            )
-
-            if variante_id:
-                variante_id = int(variante_id)
-            else:
-                variante_id = None
-
-            cantidad = Decimal(
-                str(
-                    request.form.get(
-                        "cantidad",
-                        "1"
-                    )
-                )
-            )
-
-            if cantidad <= 0:
-                return "La cantidad debe ser mayor que 0", 400
-
-            precio_unitario = Decimal(
-                str(
-                    request.form.get(
-                        "precio_unitario",
-                        "0"
-                    )
-                )
-            )
-
-            if precio_unitario < 0:
-                return "El precio no puede ser negativo", 400
 
             texto_personalizado = request.form.get(
-                "texto_personalizado",
-                ""
+                "texto_personalizado", ""
             ).strip()
 
-            ancho_texto = request.form.get("ancho") or None
-            alto_texto = request.form.get("alto") or None
-            largo_texto = request.form.get("largo") or None
+            ancho = request.form.get("ancho") or None
+            alto = request.form.get("alto") or None
+            largo = request.form.get("largo") or None
 
-            ancho = (
-                Decimal(str(ancho_texto))
-                if ancho_texto
-                else None
-            )
+            notas = request.form.get("notas", "").strip()
 
-            alto = (
-                Decimal(str(alto_texto))
-                if alto_texto
-                else None
-            )
-
-            largo = (
-                Decimal(str(largo_texto))
-                if largo_texto
-                else None
-            )
-
-            notas = request.form.get(
-                "notas",
-                ""
-            ).strip()
+            subtotal = cantidad * precio_unitario
 
             cursor.execute("""
                 SELECT
-                    id,
+                    metodo_produccion,
                     tipo_calculo_precio,
-                    unidad_calculo_area
+                    costo_externo_referencia
                 FROM productos
                 WHERE id = %s
-                AND activo = 1
+                  AND activo = 1
+                  AND vendible = 1
             """, (producto_id,))
 
             producto = cursor.fetchone()
@@ -1671,76 +1582,37 @@ def editar_producto(pedido_id, detalle_id):
             if not producto:
                 return "Producto no encontrado", 404
 
-            tipo_calculo = (
-                producto["tipo_calculo_precio"]
-                or "FIJO"
-            )
-
-            if tipo_calculo == "M2":
-
-                if (
-                    ancho is None
-                    or alto is None
-                    or ancho <= 0
-                    or alto <= 0
-                ):
-                    return (
-                        "Para un producto calculado por área debes "
-                        "indicar ancho y alto mayores que 0.",
-                        400
-                    )
-
-            elif tipo_calculo == "METRO_LINEAL":
-
-                if largo is None or largo <= 0:
-                    return (
-                        "Para un producto por metro lineal "
-                        "debes indicar el largo.",
-                        400
-                    )
-
-            if variante_id:
-
-                cursor.execute("""
-                    SELECT id
-                    FROM variantes_producto
-                    WHERE id = %s
-                    AND producto_id = %s
-                    AND activo = 1
-                """, (
-                    variante_id,
-                    producto_id
-                ))
-
-                if not cursor.fetchone():
-                    return "Variante no válida", 400
-
-            subtotal = (
-                cantidad
-                * precio_unitario
+            costo_estimado = (
+                calcular_costo_externo_estimado(
+                    producto,
+                    cantidad,
+                    ancho,
+                    alto,
+                    largo
+                )
             )
 
             cursor.execute("""
                 UPDATE detalle_pedido
                 SET
                     producto_id = %s,
-                    variante_id = %s,
                     cantidad = %s,
                     precio_unitario = %s,
                     subtotal = %s,
+                    costo_estimado = %s,
                     texto_personalizado = %s,
                     ancho = %s,
                     alto = %s,
                     largo = %s,
                     notas = %s
                 WHERE id = %s
-                AND pedido_id = %s
+                  AND pedido_id = %s
             """, (
                 producto_id,
-                variante_id,
                 cantidad,
                 precio_unitario,
                 subtotal,
+                costo_estimado,
                 texto_personalizado,
                 ancho,
                 alto,
@@ -1751,11 +1623,7 @@ def editar_producto(pedido_id, detalle_id):
             ))
 
             cursor.execute("""
-                SELECT
-                    COALESCE(
-                        SUM(subtotal),
-                        0
-                    ) AS subtotal
+                SELECT COALESCE(SUM(subtotal), 0) AS subtotal
                 FROM detalle_pedido
                 WHERE pedido_id = %s
             """, (pedido_id,))
@@ -1821,30 +1689,23 @@ def editar_producto(pedido_id, detalle_id):
             )
 
         except Exception:
-
             conexion.rollback()
             cursor.close()
             conexion.close()
-
             raise
 
     cursor.execute("""
         SELECT *
         FROM detalle_pedido
         WHERE id = %s
-        AND pedido_id = %s
-    """, (
-        detalle_id,
-        pedido_id
-    ))
+          AND pedido_id = %s
+    """, (detalle_id, pedido_id))
 
     detalle = cursor.fetchone()
 
     if not detalle:
-
         cursor.close()
         conexion.close()
-
         return "Producto del pedido no encontrado", 404
 
     cursor.execute("""
@@ -1853,32 +1714,14 @@ def editar_producto(pedido_id, detalle_id):
             nombre,
             tipo,
             metodo_produccion,
-            precio_base,
-            tipo_calculo_precio,
-            unidad_calculo_area
+            precio_base
         FROM productos
         WHERE activo = 1
+          AND vendible = 1
         ORDER BY nombre ASC
     """)
 
     productos = cursor.fetchall()
-
-    cursor.execute("""
-        SELECT
-            id,
-            producto_id,
-            sku,
-            nombre,
-            talla,
-            color,
-            precio,
-            costo_base
-        FROM variantes_producto
-        WHERE activo = 1
-        ORDER BY nombre ASC
-    """)
-
-    variantes = cursor.fetchall()
 
     cursor.close()
     conexion.close()
@@ -1887,10 +1730,8 @@ def editar_producto(pedido_id, detalle_id):
         "pedidos/editar_producto.html",
         pedido_id=pedido_id,
         detalle=detalle,
-        productos=productos,
-        variantes=variantes
+        productos=productos
     )
-
 
 @pedidos_bp.route(
     "/<int:pedido_id>/producto/<int:detalle_id>/eliminar",

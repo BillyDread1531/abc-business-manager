@@ -74,7 +74,8 @@ Productos - ABC Business Manager
                     <th>Categoría</th>
                     <th>Tipo</th>
                     <th>Producción</th>
-                    <th>Precio</th>
+                    <th>Costo ref.</th>
+                    <th>Venta</th>
                     <th>Stock</th>
                     <th>Acciones</th>
                 </tr>
@@ -140,7 +141,48 @@ Productos - ABC Business Manager
 
                         <td>
 
-                            {% if producto.tipo_calculo_precio == "M2" %}
+                            {% if producto.costo_externo_referencia > 0 %}
+
+                                <strong>
+                                    Q {{ "%.2f"|format(producto.costo_externo_referencia) }}
+                                </strong>
+
+                                <small class="producto-precio-tipo">
+                                    {% if producto.tipo_calculo_precio == "M2" %}
+                                        / m²
+                                    {% elif producto.tipo_calculo_precio == "METRO_LINEAL" %}
+                                        / metro
+                                    {% elif producto.tipo_calculo_precio == "FIJO" %}
+                                        / unidad
+                                    {% else %}
+                                        referencia
+                                    {% endif %}
+                                </small>
+
+                            {% else %}
+
+                                <span class="producto-costo-vacio">
+                                    —
+                                </span>
+
+                            {% endif %}
+
+                        </td>
+
+
+                        <td>
+
+                            {% if not producto.vendible %}
+
+                                <strong class="producto-no-vendible">
+                                    No se vende
+                                </strong>
+
+                                <small class="producto-precio-tipo">
+                                    Uso interno
+                                </small>
+
+                            {% elif producto.tipo_calculo_precio == "M2" %}
 
                                 <strong>
                                     Q {{ "%.2f"|format(producto.precio_base) }}
@@ -253,7 +295,7 @@ Productos - ABC Business Manager
 
                     <tr>
 
-                        <td colspan="7">
+                        <td colspan="8">
                             No hay productos registrados.
                         </td>
 
@@ -277,6 +319,14 @@ Productos - ABC Business Manager
     margin-top: 3px;
     color: #62697a;
     font-size: 10px;
+}
+
+.producto-costo-vacio {
+    color: #9ca3af;
+}
+
+.producto-no-vendible {
+    color: #9a3412;
 }
 
 </style>

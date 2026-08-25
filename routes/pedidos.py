@@ -1568,7 +1568,11 @@ def agregar_producto(pedido_id):
         variantes=variantes
     )
 
-@pedidos_bp.route("/<int:pedido_id>/producto/<int:detalle_id>/editar", methods=["GET", "POST"])
+
+@pedidos_bp.route(
+    "/<int:pedido_id>/producto/<int:detalle_id>/editar",
+    methods=["GET", "POST"]
+)
 def editar_producto(pedido_id, detalle_id):
 
     conexion = obtener_conexion()
@@ -1577,54 +1581,164 @@ def editar_producto(pedido_id, detalle_id):
     if request.method == "POST":
 
         try:
-            producto_id = int(request.form["producto_id"])
-            cantidad = float(request.form.get("cantidad", 1))
+
+            producto_id = int(
+                request.form["producto_id"]
+            )
+
+            variante_id = request.form.get(
+                "variante_id"
+            )
+
+            if variante_id:
+                variante_id = int(variante_id)
+            else:
+                variante_id = None
+
+            cantidad = float(
+                request.form.get(
+                    "cantidad",
+                    1
+                )
+            )
+
             precio_unitario = float(
-                request.form.get("precio_unitario", 0)
+                request.form.get(
+                    "precio_unitario",
+                    0
+                )
             )
 
             texto_personalizado = request.form.get(
-                "texto_personalizado", ""
+                "texto_personalizado",
+                ""
             ).strip()
 
-            ancho = request.form.get("ancho") or None
-            alto = request.form.get("alto") or None
-            largo = request.form.get("largo") or None
-
-            notas = request.form.get("notas", "").strip()
-
-            subtotal = cantidad * precio_unitario
-
-            cursor.execute("""
-                SELECT
-                    metodo_produccion,
-                    tipo_calculo_precio,
-                    costo_externo_referencia
-                FROM productos
-                WHERE id = %s
-                  AND activo = 1
-                  AND vendible = 1
-            """, (producto_id,))
-
-            producto = cursor.fetchone()
-
-            if not producto:
-                return "Producto no encontrado", 404
-
-            costo_estimado = (
-                calcular_costo_externo_estimado(
-                    producto,
-                    cantidad,
-                    ancho,
-                    alto,
-                    largo
-                )
+            ancho = (
+                request.form.get("ancho")
+                or None
             )
+
+            alto = (
+                request.form.get("alto")
+                or None
+            )
+
+            largo = (
+                request.form.get("largo")
+                or None
+            )
+
+            notas = request.form.get(
+                "notas",
+                ""
+            ).strip()
+
+            subtotal = (
+                cantidad
+                * precio_unitario
+            )
+
+            # ====================================================
+            # CALCULAR COSTO ESTIMADO
+            # ====================================================
+
+            costo_estimado = Decimal("0.00")
+
+            # ----------------------------------------------------
+            # SI EL PRODUCTO TIENE VARIANTE
+            # ----------------------------------------------------
+
+            if variante_id:
+
+                cursor.execute("""
+                    SELECT
+                        id,
+                        costo_base
+                    FROM variantes_producto
+                    WHERE id = %s
+                      AND producto_id = %s
+                      AND activo = 1
+                """, (
+                    variante_id,
+                    producto_id
+                ))
+
+                variante = cursor.fetchone()
+
+                if not variante:
+
+                    cursor.close()
+                    conexion.close()
+
+                    return (
+                        "La variante seleccionada "
+                        "no es válida.",
+                        400
+                    )
+
+                costo_estimado = (
+                    Decimal(
+                        str(
+                            variante["costo_base"]
+                            or 0
+                        )
+                    )
+                    * Decimal(
+                        str(cantidad)
+                    )
+                )
+
+            # ----------------------------------------------------
+            # PRODUCTO SIN VARIANTE
+            # ----------------------------------------------------
+
+            else:
+
+                cursor.execute("""
+                    SELECT
+                        metodo_produccion,
+                        tipo_calculo_precio,
+                        costo_externo_referencia
+                    FROM productos
+                    WHERE id = %s
+                      AND activo = 1
+                      AND vendible = 1
+                """, (
+                    producto_id,
+                ))
+
+                producto = cursor.fetchone()
+
+                if not producto:
+
+                    cursor.close()
+                    conexion.close()
+
+                    return (
+                        "Producto no encontrado",
+                        404
+                    )
+
+                costo_estimado = (
+                    calcular_costo_externo_estimado(
+                        producto,
+                        cantidad,
+                        ancho,
+                        alto,
+                        largo
+                    )
+                )
+
+            # ====================================================
+            # ACTUALIZAR DETALLE DEL PEDIDO
+            # ====================================================
 
             cursor.execute("""
                 UPDATE detalle_pedido
                 SET
                     producto_id = %s,
+                    variante_id = %s,
                     cantidad = %s,
                     precio_unitario = %s,
                     subtotal = %s,
@@ -1638,6 +1752,7 @@ def editar_producto(pedido_id, detalle_id):
                   AND pedido_id = %s
             """, (
                 producto_id,
+                variante_id,
                 cantidad,
                 precio_unitario,
                 subtotal,
@@ -1651,14 +1766,32 @@ def editar_producto(pedido_id, detalle_id):
                 pedido_id
             ))
 
+            # ====================================================
+            # RECALCULAR SUBTOTAL DEL PEDIDO
+            # ====================================================
+
             cursor.execute("""
-                SELECT COALESCE(SUM(subtotal), 0) AS subtotal
+                SELECT
+                    COALESCE(
+                        SUM(subtotal),
+                        0
+                    ) AS subtotal
                 FROM detalle_pedido
                 WHERE pedido_id = %s
-            """, (pedido_id,))
+            """, (
+                pedido_id,
+            ))
 
             resultado = cursor.fetchone()
-            subtotal_pedido = resultado["subtotal"]
+
+            subtotal_pedido = (
+                resultado["subtotal"]
+                or Decimal("0.00")
+            )
+
+            # ====================================================
+            # CONSERVAR DESCUENTO DEL PEDIDO
+            # ====================================================
 
             cursor.execute("""
                 SELECT
@@ -1666,30 +1799,55 @@ def editar_producto(pedido_id, detalle_id):
                 FROM pedidos
                 WHERE id = %s
                 FOR UPDATE
-            """, (pedido_id,))
+            """, (
+                pedido_id,
+            ))
 
             pedido_actual = cursor.fetchone()
 
             descuento_actual = Decimal(
                 str(
                     pedido_actual["descuento"]
-                    if pedido_actual
-                    and pedido_actual["descuento"] is not None
+                    if (
+                        pedido_actual
+                        and pedido_actual["descuento"]
+                        is not None
+                    )
                     else 0
                 )
             )
 
             subtotal_decimal = Decimal(
-                str(subtotal_pedido or 0)
+                str(
+                    subtotal_pedido
+                    or 0
+                )
             )
 
-            if descuento_actual > subtotal_decimal:
-                descuento_actual = subtotal_decimal
+            # El descuento nunca puede ser negativo
+
+            if descuento_actual < 0:
+                descuento_actual = Decimal("0.00")
+
+            # Tampoco puede superar el subtotal
+
+            if (
+                descuento_actual
+                > subtotal_decimal
+            ):
+
+                descuento_actual = (
+                    subtotal_decimal
+                )
 
             total_actualizado = (
                 subtotal_decimal
                 - descuento_actual
             )
+
+            # ====================================================
+            # ACTUALIZAR TOTALES DEL PEDIDO
+            # ====================================================
 
             cursor.execute("""
                 UPDATE pedidos
@@ -1718,24 +1876,42 @@ def editar_producto(pedido_id, detalle_id):
             )
 
         except Exception:
+
             conexion.rollback()
             cursor.close()
             conexion.close()
+
             raise
+
+    # ============================================================
+    # GET - OBTENER DETALLE DEL PRODUCTO
+    # ============================================================
 
     cursor.execute("""
         SELECT *
         FROM detalle_pedido
         WHERE id = %s
           AND pedido_id = %s
-    """, (detalle_id, pedido_id))
+    """, (
+        detalle_id,
+        pedido_id
+    ))
 
     detalle = cursor.fetchone()
 
     if not detalle:
+
         cursor.close()
         conexion.close()
-        return "Producto del pedido no encontrado", 404
+
+        return (
+            "Producto del pedido no encontrado",
+            404
+        )
+
+    # ============================================================
+    # PRODUCTOS DISPONIBLES
+    # ============================================================
 
     cursor.execute("""
         SELECT
@@ -1752,14 +1928,42 @@ def editar_producto(pedido_id, detalle_id):
 
     productos = cursor.fetchall()
 
+    # ============================================================
+    # VARIANTES DISPONIBLES
+    # ============================================================
+
+    cursor.execute("""
+        SELECT
+            id,
+            producto_id,
+            sku,
+            nombre,
+            talla,
+            color,
+            precio,
+            costo_base
+        FROM variantes_producto
+        WHERE activo = 1
+        ORDER BY
+            producto_id ASC,
+            nombre ASC
+    """)
+
+    variantes = cursor.fetchall()
+
     cursor.close()
     conexion.close()
+
+    # ============================================================
+    # MOSTRAR PANTALLA DE EDICIÓN
+    # ============================================================
 
     return render_template(
         "pedidos/editar_producto.html",
         pedido_id=pedido_id,
         detalle=detalle,
-        productos=productos
+        productos=productos,
+        variantes=variantes
     )
 
 @pedidos_bp.route(

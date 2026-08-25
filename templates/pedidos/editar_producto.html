@@ -751,54 +751,32 @@ function configurarMedidas() {
     const tipo =
         obtenerTipoCalculo();
 
-    } else if (
-        tipo === "METRO_LINEAL"
-    ) {
+    if (!productoSelect.value) {
 
-        grupoAncho.style.display = "none";
-        grupoAlto.style.display = "none";
-        grupoLargo.style.display = "";
+        seccionMedidas.style.display =
+            "none";
 
-        anchoInput.required = false;
-        altoInput.required = false;
-        largoInput.required = true;
+        grupoAncho.style.display =
+            "none";
 
-        medidasAyuda.textContent =
-            "Ingresa el largo en centímetros. " +
-            "El sistema lo convertirá automáticamente a metros.";
+        grupoAlto.style.display =
+            "none";
 
-    } else if (
-        tipo === "MANUAL"
-    ) {
-
-        /*
-         * En productos manuales las medidas NO cambian el precio.
-         * Solo se guardan como información del trabajo y pueden
-         * usarse después para sugerir el consumo de materiales.
-         */
-        grupoAncho.style.display = "";
-        grupoAlto.style.display = "";
-        grupoLargo.style.display = "";
+        grupoLargo.style.display =
+            "none";
 
         anchoInput.required = false;
         altoInput.required = false;
         largoInput.required = false;
 
-        medidasAyuda.textContent =
-            "Opcional. Estas medidas no cambian el precio. " +
-            "Sirven para guardar el tamaño del trabajo y ayudar " +
-            "a calcular el material utilizado en Producción.";
-
-    } else {
-
-        anchoInput.required = false;
-        altoInput.required = false;
-        largoInput.required = false;
+        return;
 
     }
 
-
     if (tipo === "M2") {
+
+        seccionMedidas.style.display =
+            "block";
 
         grupoAncho.style.display = "";
         grupoAlto.style.display = "";
@@ -816,6 +794,9 @@ function configurarMedidas() {
         tipo === "METRO_LINEAL"
     ) {
 
+        seccionMedidas.style.display =
+            "block";
+
         grupoAncho.style.display = "none";
         grupoAlto.style.display = "none";
         grupoLargo.style.display = "";
@@ -832,6 +813,9 @@ function configurarMedidas() {
         tipo === "MANUAL"
     ) {
 
+        seccionMedidas.style.display =
+            "block";
+
         grupoAncho.style.display = "";
         grupoAlto.style.display = "";
         grupoLargo.style.display = "";
@@ -846,6 +830,18 @@ function configurarMedidas() {
             "a calcular el material utilizado en Producción.";
 
     } else {
+
+        seccionMedidas.style.display =
+            "none";
+
+        grupoAncho.style.display =
+            "none";
+
+        grupoAlto.style.display =
+            "none";
+
+        grupoLargo.style.display =
+            "none";
 
         anchoInput.required = false;
         altoInput.required = false;

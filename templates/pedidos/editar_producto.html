@@ -587,7 +587,7 @@ Editar producto - ABC Business Manager
 <script>
 
 const variantes =
-    {{ variantes | tojson | safe }};
+    {{ variantes | default([]) | tojson | safe }};
 
 const productoSelect =
     document.getElementById("producto_id");

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, send_from_directory, flash
+
 from database import obtener_conexion
 from decimal import Decimal
 import os
@@ -1810,7 +1810,8 @@ def editar_producto(pedido_id, detalle_id):
             nombre,
             tipo,
             metodo_produccion,
-            precio_base
+            precio_base,
+            tipo_calculo_precio
         FROM productos
         WHERE activo = 1
           AND vendible = 1
@@ -1819,6 +1820,27 @@ def editar_producto(pedido_id, detalle_id):
 
     productos = cursor.fetchall()
 
+    # ========================================================
+    # VARIANTES DEL PRODUCTO
+    # ========================================================
+
+    cursor.execute("""
+        SELECT
+            id,
+            producto_id,
+            sku,
+            nombre,
+            talla,
+            color,
+            precio,
+            costo_base
+        FROM variantes_producto
+        WHERE activo = 1
+        ORDER BY nombre ASC
+    """)
+
+    variantes = cursor.fetchall()
+
     cursor.close()
     conexion.close()
 
@@ -1826,7 +1848,8 @@ def editar_producto(pedido_id, detalle_id):
         "pedidos/editar_producto.html",
         pedido_id=pedido_id,
         detalle=detalle,
-        productos=productos
+        productos=productos,
+        variantes=variantes
     )
 
 

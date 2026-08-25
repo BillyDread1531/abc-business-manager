@@ -134,7 +134,7 @@ Editar producto - ABC Business Manager
                 <div class="form-group">
 
                     <label for="precio_unitario">
-                        Precio final por unidad *
+                        Precio normal por unidad *
                     </label>
 
                     <div class="pedido-money-input">
@@ -154,8 +154,36 @@ Editar producto - ABC Business Manager
                     </div>
 
                     <small class="form-help">
-                        Editable. Este será el precio que realmente
-                        se cobrará por cada unidad.
+                        Precio antes de aplicar cualquier descuento.
+                    </small>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label for="descuento">
+                        Descuento de este producto
+                    </label>
+
+                    <div class="pedido-money-input">
+
+                        <span>Q</span>
+
+                        <input
+                            type="number"
+                            name="descuento"
+                            id="descuento"
+                            value="{{ detalle.descuento or 0 }}"
+                            min="0"
+                            step="0.01"
+                        >
+
+                    </div>
+
+                    <small class="form-help">
+                        Escribe el descuento total de esta línea.
+                        Ej.: Q15 de descuento → escribe 15.
                     </small>
 
                 </div>
@@ -346,15 +374,37 @@ Editar producto - ABC Business Manager
         </div>
 
 
-        <div class="pedido-producto-total-box">
+        <div class="pedido-producto-total-box pedido-producto-total-box-descuento">
 
-            <span>
-                Subtotal estimado
-            </span>
+            <div>
+                <span>
+                    Subtotal antes de descuento
+                </span>
 
-            <strong id="subtotal-preview">
-                Q 0.00
-            </strong>
+                <strong id="subtotal-bruto-preview">
+                    Q 0.00
+                </strong>
+            </div>
+
+            <div>
+                <span>
+                    Descuento
+                </span>
+
+                <strong id="descuento-preview">
+                    - Q 0.00
+                </strong>
+            </div>
+
+            <div class="pedido-total-final">
+                <span>
+                    Total final
+                </span>
+
+                <strong id="subtotal-preview">
+                    Q 0.00
+                </strong>
+            </div>
 
         </div>
 
@@ -483,10 +533,45 @@ Editar producto - ABC Business Manager
     font-size: 25px;
 }
 
+.pedido-producto-total-box-descuento {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 14px;
+}
+
+.pedido-producto-total-box-descuento > div {
+    padding: 14px 16px;
+    background: #f8fafc;
+    border: 1px solid #dbe4f0;
+    border-radius: 10px;
+}
+
+.pedido-producto-total-box-descuento span {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 12px;
+}
+
+.pedido-producto-total-box-descuento strong {
+    display: block;
+    font-size: 21px;
+}
+
+.pedido-producto-total-box-descuento .pedido-total-final {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+}
+
+.pedido-producto-total-box-descuento .pedido-total-final strong {
+    color: #15803d;
+}
+
 @media (max-width: 750px) {
 
     .pedido-producto-grid,
-    .pedido-precio-calculado {
+    .pedido-precio-calculado,
+    .pedido-producto-total-box-descuento {
         grid-template-columns: 1fr;
     }
 
@@ -521,6 +606,11 @@ const cantidadInput =
 const precioInput =
     document.getElementById(
         "precio_unitario"
+    );
+
+const descuentoInput =
+    document.getElementById(
+        "descuento"
     );
 
 const anchoInput =
@@ -569,6 +659,16 @@ const precioSugeridoTexto =
 const usarPrecioSugerido =
     document.getElementById(
         "usar-precio-sugerido"
+    );
+
+const subtotalBrutoPreview =
+    document.getElementById(
+        "subtotal-bruto-preview"
+    );
+
+const descuentoPreview =
+    document.getElementById(
+        "descuento-preview"
     );
 
 const subtotalPreview =
@@ -871,14 +971,44 @@ function calcularPrecioSugerido() {
 function actualizarSubtotal() {
 
     const cantidad =
-        numero(cantidadInput.value);
+        Math.max(
+            numero(cantidadInput.value),
+            0
+        );
 
     const precio =
-        numero(precioInput.value);
+        Math.max(
+            numero(precioInput.value),
+            0
+        );
+
+    const subtotalBruto =
+        cantidad * precio;
+
+    let descuento =
+        Math.max(
+            numero(descuentoInput.value),
+            0
+        );
+
+    if (descuento > subtotalBruto) {
+        descuento = subtotalBruto;
+    }
+
+    const totalFinal =
+        subtotalBruto - descuento;
+
+    subtotalBrutoPreview.textContent =
+        "Q "
+        + subtotalBruto.toFixed(2);
+
+    descuentoPreview.textContent =
+        "- Q "
+        + descuento.toFixed(2);
 
     subtotalPreview.textContent =
         "Q "
-        + (cantidad * precio).toFixed(2);
+        + totalFinal.toFixed(2);
 
 }
 
@@ -1055,6 +1185,11 @@ precioInput.addEventListener(
 
 
 cantidadInput.addEventListener(
+    "input",
+    actualizarSubtotal
+);
+
+descuentoInput.addEventListener(
     "input",
     actualizarSubtotal
 );

@@ -96,6 +96,84 @@ def calcular_costo_externo_estimado(
     )
 
 
+# ============================================================
+# RECALCULAR TOTALES DEL PEDIDO
+# ============================================================
+
+def recalcular_totales_pedido(cursor, pedido_id):
+    """
+    Recalcula el resumen del pedido usando los detalles:
+
+    subtotal  = suma antes de descuentos
+    descuento = suma de descuentos de las líneas
+    total     = subtotal - descuento
+    """
+
+    cursor.execute("""
+        SELECT
+            COALESCE(
+                SUM(cantidad * precio_unitario),
+                0
+            ) AS subtotal_bruto,
+
+            COALESCE(
+                SUM(descuento),
+                0
+            ) AS descuento_total
+
+        FROM detalle_pedido
+
+        WHERE pedido_id = %s
+    """, (pedido_id,))
+
+    resumen = cursor.fetchone() or {}
+
+    subtotal_bruto = Decimal(
+        str(
+            resumen.get("subtotal_bruto", 0)
+            or 0
+        )
+    )
+
+    descuento_total = Decimal(
+        str(
+            resumen.get("descuento_total", 0)
+            or 0
+        )
+    )
+
+    if descuento_total < 0:
+        descuento_total = Decimal("0.00")
+
+    if descuento_total > subtotal_bruto:
+        descuento_total = subtotal_bruto
+
+    total = (
+        subtotal_bruto
+        - descuento_total
+    )
+
+    cursor.execute("""
+        UPDATE pedidos
+        SET
+            subtotal = %s,
+            descuento = %s,
+            total = %s
+        WHERE id = %s
+    """, (
+        subtotal_bruto,
+        descuento_total,
+        total,
+        pedido_id
+    ))
+
+    return (
+        subtotal_bruto,
+        descuento_total,
+        total
+    )
+
+
 @pedidos_bp.route("/")
 def listar():
 
@@ -468,34 +546,29 @@ def detalle(pedido_id):
         costo_estimado_total += costo_estimado
 
         # ----------------------------------------------------
-        # Distribuir el descuento general proporcionalmente.
-        # Esto permite calcular la rentabilidad real del
-        # producto sin ignorar el descuento total del pedido.
+        # Descuento real de ESTA línea del pedido.
         # ----------------------------------------------------
 
-        if subtotal_pedido > 0:
-
-            proporcion = (
-                subtotal_detalle
-                / subtotal_pedido
+        descuento_asignado = Decimal(
+            str(
+                detalle_item.get(
+                    "descuento",
+                    0
+                )
+                or 0
             )
+        )
 
-            descuento_asignado = (
-                descuento_pedido
-                * proporcion
-            )
-
-        else:
-
+        if descuento_asignado < 0:
             descuento_asignado = Decimal("0.00")
+
+        if descuento_asignado > subtotal_detalle:
+            descuento_asignado = subtotal_detalle
 
         venta_neta = (
             subtotal_detalle
             - descuento_asignado
         )
-
-        if venta_neta < 0:
-            venta_neta = Decimal("0.00")
 
         detalle_item["descuento_asignado"] = (
             descuento_asignado
@@ -1444,64 +1517,10 @@ def agregar_producto(pedido_id):
                 notas
             ))
 
-            cursor.execute("""
-                SELECT
-                    COALESCE(
-                        SUM(subtotal),
-                        0
-                    ) AS subtotal
-                FROM detalle_pedido
-                WHERE pedido_id = %s
-            """, (pedido_id,))
-
-            resultado = cursor.fetchone()
-
-            subtotal_pedido = resultado["subtotal"]
-
-            cursor.execute("""
-                SELECT
-                    descuento
-                FROM pedidos
-                WHERE id = %s
-                FOR UPDATE
-            """, (pedido_id,))
-
-            pedido_actual = cursor.fetchone()
-
-            descuento_actual = Decimal(
-                str(
-                    pedido_actual["descuento"]
-                    if pedido_actual
-                    and pedido_actual["descuento"] is not None
-                    else 0
-                )
-            )
-
-            subtotal_decimal = Decimal(
-                str(subtotal_pedido or 0)
-            )
-
-            if descuento_actual > subtotal_decimal:
-                descuento_actual = subtotal_decimal
-
-            total_actualizado = (
-                subtotal_decimal
-                - descuento_actual
-            )
-
-            cursor.execute("""
-                UPDATE pedidos
-                SET
-                    subtotal = %s,
-                    descuento = %s,
-                    total = %s
-                WHERE id = %s
-            """, (
-                subtotal_decimal,
-                descuento_actual,
-                total_actualizado,
+            recalcular_totales_pedido(
+                cursor,
                 pedido_id
-            ))
+            )
 
             conexion.commit()
 
@@ -1568,7 +1587,6 @@ def agregar_producto(pedido_id):
         variantes=variantes
     )
 
-
 @pedidos_bp.route(
     "/<int:pedido_id>/producto/<int:detalle_id>/editar",
     methods=["GET", "POST"]
@@ -1586,28 +1604,61 @@ def editar_producto(pedido_id, detalle_id):
                 request.form["producto_id"]
             )
 
-            variante_id = request.form.get(
-                "variante_id"
-            )
-
-            if variante_id:
-                variante_id = int(variante_id)
-            else:
-                variante_id = None
-
-            cantidad = float(
-                request.form.get(
-                    "cantidad",
-                    1
+            cantidad = Decimal(
+                str(
+                    request.form.get(
+                        "cantidad",
+                        "1"
+                    )
+                    or "1"
                 )
             )
 
-            precio_unitario = float(
-                request.form.get(
-                    "precio_unitario",
-                    0
+            precio_unitario = Decimal(
+                str(
+                    request.form.get(
+                        "precio_unitario",
+                        "0"
+                    )
+                    or "0"
                 )
             )
+
+            descuento = Decimal(
+                str(
+                    request.form.get(
+                        "descuento",
+                        "0"
+                    )
+                    or "0"
+                )
+            )
+
+            if cantidad <= 0:
+                raise ValueError(
+                    "La cantidad debe ser mayor que cero."
+                )
+
+            if precio_unitario < 0:
+                raise ValueError(
+                    "El precio no puede ser negativo."
+                )
+
+            if descuento < 0:
+                descuento = Decimal("0.00")
+
+            subtotal_bruto = (
+                cantidad
+                * precio_unitario
+            )
+
+            if descuento > subtotal_bruto:
+                descuento = subtotal_bruto
+
+            # detalle_pedido.subtotal conserva el valor ANTES
+            # del descuento. Así el resumen puede mostrar:
+            # subtotal, descuentos y total por separado.
+            subtotal = subtotal_bruto
 
             texto_personalizado = request.form.get(
                 "texto_personalizado",
@@ -1634,113 +1685,41 @@ def editar_producto(pedido_id, detalle_id):
                 ""
             ).strip()
 
-            subtotal = (
-                cantidad
-                * precio_unitario
+            cursor.execute("""
+                SELECT
+                    metodo_produccion,
+                    tipo_calculo_precio,
+                    costo_externo_referencia
+                FROM productos
+                WHERE id = %s
+                  AND activo = 1
+                  AND vendible = 1
+            """, (producto_id,))
+
+            producto = cursor.fetchone()
+
+            if not producto:
+                raise ValueError(
+                    "Producto no encontrado."
+                )
+
+            costo_estimado = (
+                calcular_costo_externo_estimado(
+                    producto,
+                    cantidad,
+                    ancho,
+                    alto,
+                    largo
+                )
             )
-
-            # ====================================================
-            # CALCULAR COSTO ESTIMADO
-            # ====================================================
-
-            costo_estimado = Decimal("0.00")
-
-            # ----------------------------------------------------
-            # SI EL PRODUCTO TIENE VARIANTE
-            # ----------------------------------------------------
-
-            if variante_id:
-
-                cursor.execute("""
-                    SELECT
-                        id,
-                        costo_base
-                    FROM variantes_producto
-                    WHERE id = %s
-                      AND producto_id = %s
-                      AND activo = 1
-                """, (
-                    variante_id,
-                    producto_id
-                ))
-
-                variante = cursor.fetchone()
-
-                if not variante:
-
-                    cursor.close()
-                    conexion.close()
-
-                    return (
-                        "La variante seleccionada "
-                        "no es válida.",
-                        400
-                    )
-
-                costo_estimado = (
-                    Decimal(
-                        str(
-                            variante["costo_base"]
-                            or 0
-                        )
-                    )
-                    * Decimal(
-                        str(cantidad)
-                    )
-                )
-
-            # ----------------------------------------------------
-            # PRODUCTO SIN VARIANTE
-            # ----------------------------------------------------
-
-            else:
-
-                cursor.execute("""
-                    SELECT
-                        metodo_produccion,
-                        tipo_calculo_precio,
-                        costo_externo_referencia
-                    FROM productos
-                    WHERE id = %s
-                      AND activo = 1
-                      AND vendible = 1
-                """, (
-                    producto_id,
-                ))
-
-                producto = cursor.fetchone()
-
-                if not producto:
-
-                    cursor.close()
-                    conexion.close()
-
-                    return (
-                        "Producto no encontrado",
-                        404
-                    )
-
-                costo_estimado = (
-                    calcular_costo_externo_estimado(
-                        producto,
-                        cantidad,
-                        ancho,
-                        alto,
-                        largo
-                    )
-                )
-
-            # ====================================================
-            # ACTUALIZAR DETALLE DEL PEDIDO
-            # ====================================================
 
             cursor.execute("""
                 UPDATE detalle_pedido
                 SET
                     producto_id = %s,
-                    variante_id = %s,
                     cantidad = %s,
                     precio_unitario = %s,
+                    descuento = %s,
                     subtotal = %s,
                     costo_estimado = %s,
                     texto_personalizado = %s,
@@ -1752,9 +1731,9 @@ def editar_producto(pedido_id, detalle_id):
                   AND pedido_id = %s
             """, (
                 producto_id,
-                variante_id,
                 cantidad,
                 precio_unitario,
+                descuento,
                 subtotal,
                 costo_estimado,
                 texto_personalizado,
@@ -1766,107 +1745,17 @@ def editar_producto(pedido_id, detalle_id):
                 pedido_id
             ))
 
-            # ====================================================
-            # RECALCULAR SUBTOTAL DEL PEDIDO
-            # ====================================================
-
-            cursor.execute("""
-                SELECT
-                    COALESCE(
-                        SUM(subtotal),
-                        0
-                    ) AS subtotal
-                FROM detalle_pedido
-                WHERE pedido_id = %s
-            """, (
-                pedido_id,
-            ))
-
-            resultado = cursor.fetchone()
-
-            subtotal_pedido = (
-                resultado["subtotal"]
-                or Decimal("0.00")
-            )
-
-            # ====================================================
-            # CONSERVAR DESCUENTO DEL PEDIDO
-            # ====================================================
-
-            cursor.execute("""
-                SELECT
-                    descuento
-                FROM pedidos
-                WHERE id = %s
-                FOR UPDATE
-            """, (
-                pedido_id,
-            ))
-
-            pedido_actual = cursor.fetchone()
-
-            descuento_actual = Decimal(
-                str(
-                    pedido_actual["descuento"]
-                    if (
-                        pedido_actual
-                        and pedido_actual["descuento"]
-                        is not None
-                    )
-                    else 0
-                )
-            )
-
-            subtotal_decimal = Decimal(
-                str(
-                    subtotal_pedido
-                    or 0
-                )
-            )
-
-            # El descuento nunca puede ser negativo
-
-            if descuento_actual < 0:
-                descuento_actual = Decimal("0.00")
-
-            # Tampoco puede superar el subtotal
-
-            if (
-                descuento_actual
-                > subtotal_decimal
-            ):
-
-                descuento_actual = (
-                    subtotal_decimal
-                )
-
-            total_actualizado = (
-                subtotal_decimal
-                - descuento_actual
-            )
-
-            # ====================================================
-            # ACTUALIZAR TOTALES DEL PEDIDO
-            # ====================================================
-
-            cursor.execute("""
-                UPDATE pedidos
-                SET
-                    subtotal = %s,
-                    descuento = %s,
-                    total = %s
-                WHERE id = %s
-            """, (
-                subtotal_decimal,
-                descuento_actual,
-                total_actualizado,
+            recalcular_totales_pedido(
+                cursor,
                 pedido_id
-            ))
+            )
 
             conexion.commit()
 
-            cursor.close()
-            conexion.close()
+            flash(
+                "Producto actualizado correctamente.",
+                "success"
+            )
 
             return redirect(
                 url_for(
@@ -1875,17 +1764,23 @@ def editar_producto(pedido_id, detalle_id):
                 )
             )
 
-        except Exception:
+        except Exception as e:
 
             conexion.rollback()
+
+            flash(
+                f"No se pudo actualizar el producto: {e}",
+                "danger"
+            )
+
+        finally:
+
             cursor.close()
             conexion.close()
 
-            raise
-
-    # ============================================================
-    # GET - OBTENER DETALLE DEL PRODUCTO
-    # ============================================================
+    # ========================================================
+    # GET
+    # ========================================================
 
     cursor.execute("""
         SELECT *
@@ -1909,10 +1804,6 @@ def editar_producto(pedido_id, detalle_id):
             404
         )
 
-    # ============================================================
-    # PRODUCTOS DISPONIBLES
-    # ============================================================
-
     cursor.execute("""
         SELECT
             id,
@@ -1928,43 +1819,16 @@ def editar_producto(pedido_id, detalle_id):
 
     productos = cursor.fetchall()
 
-    # ============================================================
-    # VARIANTES DISPONIBLES
-    # ============================================================
-
-    cursor.execute("""
-        SELECT
-            id,
-            producto_id,
-            sku,
-            nombre,
-            talla,
-            color,
-            precio,
-            costo_base
-        FROM variantes_producto
-        WHERE activo = 1
-        ORDER BY
-            producto_id ASC,
-            nombre ASC
-    """)
-
-    variantes = cursor.fetchall()
-
     cursor.close()
     conexion.close()
-
-    # ============================================================
-    # MOSTRAR PANTALLA DE EDICIÓN
-    # ============================================================
 
     return render_template(
         "pedidos/editar_producto.html",
         pedido_id=pedido_id,
         detalle=detalle,
-        productos=productos,
-        variantes=variantes
+        productos=productos
     )
+
 
 @pedidos_bp.route(
     "/<int:pedido_id>/producto/<int:detalle_id>/eliminar",
@@ -2063,31 +1927,13 @@ def eliminar_producto(pedido_id, detalle_id):
         ))
 
         # ----------------------------------------------------
-        # Recalcular subtotal y total
+        # Recalcular subtotal, descuentos y total
         # ----------------------------------------------------
 
-        cursor.execute("""
-            SELECT
-                COALESCE(SUM(subtotal), 0) AS subtotal
-            FROM detalle_pedido
-            WHERE pedido_id = %s
-        """, (pedido_id,))
-
-        resultado = cursor.fetchone()
-
-        subtotal_pedido = resultado["subtotal"]
-
-        cursor.execute("""
-            UPDATE pedidos
-            SET
-                subtotal = %s,
-                total = %s
-            WHERE id = %s
-        """, (
-            subtotal_pedido,
-            subtotal_pedido,
+        recalcular_totales_pedido(
+            cursor,
             pedido_id
-        ))
+        )
 
         conexion.commit()
 

@@ -3,6 +3,7 @@ from database import obtener_conexion
 from decimal import Decimal
 import os
 import uuid
+from flask import Blueprint, render_template, request, redirect, url_for, flash
 
 
 pedidos_bp = Blueprint(

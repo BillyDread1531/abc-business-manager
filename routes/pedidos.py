@@ -550,6 +550,34 @@ def detalle(pedido_id):
         == len(detalles)
     )
 
+    # ========================================================
+    # COSTOS ESTIMADOS PENDIENTES
+    # ========================================================
+    # Se usa en pedidos/detalle.html para mostrar una advertencia
+    # cuando todavía hay productos cuyo costo estimado no está
+    # disponible o sigue en cero.
+    #
+    # Un pedido sin productos debe quedar en 0 para que pueda
+    # abrirse normalmente y luego agregar sus productos.
+    # ========================================================
+
+    costos_estimados_pendientes = sum(
+        1
+        for detalle_item in detalles
+        if (
+            detalle_item.get("costo_estimado") is None
+            or Decimal(
+                str(
+                    detalle_item.get(
+                        "costo_estimado",
+                        0
+                    )
+                    or 0
+                )
+            ) <= Decimal("0.00")
+        )
+    )
+
     if costos_completos:
 
         ganancia_real_pedido = (
@@ -646,6 +674,7 @@ def detalle(pedido_id):
         costo_estimado_total=costo_estimado_total,
         costo_real_conocido=costo_real_conocido,
         costos_completos=costos_completos,
+        costos_estimados_pendientes=costos_estimados_pendientes,
         ganancia_real_pedido=ganancia_real_pedido,
         margen_real_pedido=margen_real_pedido
     )

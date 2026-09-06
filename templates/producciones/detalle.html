@@ -483,12 +483,13 @@ Producción #{{ produccion.id }} - ABC Business Manager
         <div>
 
             <h2>
-                🧱 Materiales de producción
+                🧱 Materiales necesarios
             </h2>
 
             <p>
-                Elige el material/color real cuando la receta
-                utilice una familia.
+                Receta necesaria para fabricar
+                {{ produccion.cantidad|numero_produccion }}
+                unidad(es).
             </p>
 
         </div>
@@ -498,398 +499,85 @@ Producción #{{ produccion.id }} - ABC Business Manager
 
     {% if materiales %}
 
-        <form
-            method="POST"
-            action="{{ url_for(
-                'producciones.consumir_materiales',
-                produccion_id=produccion.id
-            ) }}"
-            id="form-consumo-materiales"
-        >
+        <div class="table-container">
 
-            <div class="produccion-materiales-grid">
+            <table>
 
-                {% for receta in materiales %}
+                <thead>
 
-                    <div
-                        class="produccion-material-card"
-                        data-receta-id="{{ receta.receta_id }}"
-                        data-cantidad-producto="{{ produccion.cantidad }}"
-                    >
+                    <tr>
+                        <th>Material</th>
+                        <th>Por unidad</th>
+                        <th>Necesario</th>
+                        <th>Stock</th>
+                        <th>Costo ref.</th>
+                        <th>Costo estimado</th>
+                    </tr>
 
-                        <div class="produccion-material-card-header">
+                </thead>
 
-                            <div>
+                <tbody>
 
-                                <span class="produccion-material-tipo">
+                    {% for material in materiales %}
 
-                                    {% if receta.modo_seleccion == "FAMILIA" %}
-                                        🧩 Familia variable
-                                    {% else %}
-                                        🧱 Material exacto
-                                    {% endif %}
+                        <tr>
 
-                                </span>
+                            <td>
+                                <strong>{{ material.material }}</strong>
+                            </td>
 
-                                <h3>
+                            <td>
+                                {{ material.cantidad|numero_produccion }}
+                                {{ material.abreviatura }}
+                            </td>
 
-                                    {% if receta.modo_seleccion == "FAMILIA" %}
+                            <td>
+                                <strong>
+                                    {{ material.cantidad_necesaria|numero_produccion }}
+                                    {{ material.abreviatura }}
+                                </strong>
+                            </td>
 
-                                        {{ receta.familia }}
+                            <td>
 
-                                    {% else %}
+                                {% if material.stock_actual >= material.cantidad_necesaria %}
 
-                                        {{ receta.material }}
-
-                                        {% if receta.material_color %}
-                                            · {{ receta.material_color }}
-                                        {% endif %}
-
-                                    {% endif %}
-
-                                </h3>
-
-                                {% if receta.notas %}
-                                    <small class="produccion-receta-nota">
-                                        {{ receta.notas }}
-                                    </small>
-                                {% endif %}
-
-                            </div>
-
-                        </div>
-
-
-                        {% if receta.modo_seleccion == "FAMILIA" %}
-
-                            <div class="produccion-eleccion-material">
-
-                                <label>
-                                    Material real utilizado *
-                                </label>
-
-                                <select
-                                    name="material_real_{{ receta.receta_id }}"
-                                    class="material-real-select"
-                                    required
-                                >
-
-                                    <option value="">
-                                        Selecciona color/material
-                                    </option>
-
-                                    {% for opcion in receta.opciones_materiales %}
-
-                                        <option
-                                            value="{{ opcion.id }}"
-                                            data-modo="{{ opcion.modo_control }}"
-                                            data-stock="{{ opcion.stock_actual }}"
-                                            data-unidad="{{ opcion.abreviatura }}"
-                                            data-factor="{{ opcion.factor_conversion or 1 }}"
-                                        >
-                                            {{ opcion.nombre }}
-
-                                            {% if opcion.color %}
-                                                - {{ opcion.color }}
-                                            {% endif %}
-
-                                            — Stock:
-                                            {{ opcion.stock_actual|numero_produccion }}
-                                            {{ opcion.abreviatura }}
-                                        </option>
-
-                                    {% endfor %}
-
-                                </select>
-
-                                {% if not receta.opciones_materiales %}
-
-                                    <small class="margen-negativo">
-                                        Esta familia no tiene materiales activos.
-                                    </small>
+                                    <span class="margen-positivo">
+                                        ✓ {{ material.stock_actual|numero_produccion }}
+                                        {{ material.abreviatura }}
+                                    </span>
 
                                 {% else %}
 
-                                    <small class="form-help">
-                                        Solo aparecen materiales pertenecientes a
-                                        {{ receta.familia }}.
-                                    </small>
+                                    <span class="margen-negativo">
+                                        ⚠ {{ material.stock_actual|numero_produccion }}
+                                        {{ material.abreviatura }}
+                                    </span>
 
                                 {% endif %}
 
-                            </div>
+                            </td>
 
+                            <td>
+                                Q {{ "%.4f"|format(material.costo_unitario or 0) }}
+                                / {{ material.abreviatura }}
+                            </td>
 
-                        {% else %}
-
-                            <input
-                                type="hidden"
-                                name="material_real_{{ receta.receta_id }}"
-                                value="{{ receta.material_id }}"
-                            >
-
-                            <div class="produccion-material-fijo">
-
-                                <span>
-                                    Material que se descontará
-                                </span>
-
+                            <td>
                                 <strong>
-                                    {{ receta.material }}
-
-                                    {% if receta.material_color %}
-                                        - {{ receta.material_color }}
-                                    {% endif %}
+                                    Q {{ "%.2f"|format(material.costo_total or 0) }}
                                 </strong>
+                            </td>
 
-                                <small>
-                                    Stock:
-                                    {{ receta.stock_actual|numero_produccion }}
-                                    {{ receta.abreviatura }}
-                                </small>
+                        </tr>
 
-                            </div>
+                    {% endfor %}
 
-                        {% endif %}
+                </tbody>
 
+            </table>
 
-                        <!-- MEDIDAS DEL PEDIDO -->
-
-                        {% if produccion.ancho or produccion.alto %}
-
-                            <div class="produccion-medidas-referencia">
-
-                                <div>
-
-                                    <span>
-                                        Medidas del diseño
-                                    </span>
-
-                                    <strong>
-                                        {% if produccion.ancho %}
-                                            {{ produccion.ancho|numero_produccion }} cm
-                                        {% else %}
-                                            —
-                                        {% endif %}
-
-                                        ×
-
-                                        {% if produccion.alto %}
-                                            {{ produccion.alto|numero_produccion }} cm
-                                        {% else %}
-                                            —
-                                        {% endif %}
-                                    </strong>
-
-                                    {% if produccion.ancho and produccion.alto %}
-
-                                        <small>
-                                            Área teórica:
-                                            {{
-                                                (
-                                                    produccion.ancho
-                                                    * produccion.alto
-                                                )
-                                                |numero_produccion
-                                            }}
-                                            cm² por unidad
-                                        </small>
-
-                                    {% endif %}
-
-                                </div>
-
-
-                                <div>
-
-                                    <span>
-                                        Cantidad del pedido
-                                    </span>
-
-                                    <strong>
-                                        {{ produccion.cantidad|numero_produccion }}
-                                    </strong>
-
-                                </div>
-
-                            </div>
-
-                        {% endif %}
-
-
-                        <!-- CONSUMO POR ÁREA -->
-
-                        <div
-                            class="produccion-corte-real js-corte-real"
-                            {% if receta.modo_seleccion == "EXACTO"
-                                  and receta.modo_control != "ROLLO_AREA" %}
-                                style="display: none;"
-                            {% elif receta.modo_seleccion == "FAMILIA" %}
-                                style="display: none;"
-                            {% endif %}
-                        >
-
-                            <div class="produccion-corte-title">
-
-                                <strong>
-                                    ✂️ Pedazo realmente utilizado
-                                </strong>
-
-                                <p>
-                                    Medida del rectángulo de material que
-                                    realmente cortaste para UNA unidad.
-                                </p>
-
-                            </div>
-
-
-                            <div class="produccion-corte-grid">
-
-                                <label>
-
-                                    <span>Ancho real</span>
-
-                                    <div class="produccion-unit-input">
-
-                                        <input
-                                            type="number"
-                                            name="ancho_real_{{ receta.receta_id }}"
-                                            class="consumo-ancho-real"
-                                            min="0.0001"
-                                            step="0.0001"
-                                            value="{% if produccion.ancho %}{{ produccion.ancho }}{% endif %}"
-                                            placeholder="Ej. 27"
-                                        >
-
-                                        <small>cm</small>
-
-                                    </div>
-
-                                </label>
-
-
-                                <label>
-
-                                    <span>Alto real</span>
-
-                                    <div class="produccion-unit-input">
-
-                                        <input
-                                            type="number"
-                                            name="alto_real_{{ receta.receta_id }}"
-                                            class="consumo-alto-real"
-                                            min="0.0001"
-                                            step="0.0001"
-                                            value="{% if produccion.alto %}{{ produccion.alto }}{% endif %}"
-                                            placeholder="Ej. 7"
-                                        >
-
-                                        <small>cm</small>
-
-                                    </div>
-
-                                </label>
-
-
-                                <div class="produccion-consumo-calculado">
-
-                                    <span>
-                                        Consumo total
-                                    </span>
-
-                                    <strong class="consumo-area-resultado">
-                                        —
-                                    </strong>
-
-                                    <small>
-                                        Incluye todas las unidades
-                                    </small>
-
-                                </div>
-
-                            </div>
-
-                        </div>
-
-
-                        <!-- CONSUMO NORMAL -->
-
-                        <div
-                            class="produccion-consumo-normal js-consumo-normal"
-                            {% if receta.modo_seleccion == "EXACTO"
-                                  and receta.modo_control == "ROLLO_AREA" %}
-                                style="display: none;"
-                            {% elif receta.modo_seleccion == "FAMILIA" %}
-                                style="display: none;"
-                            {% endif %}
-                        >
-
-                            <span>
-                                Consumo según receta
-                            </span>
-
-                            <strong class="consumo-normal-resultado">
-
-                                {% if receta.modo_seleccion == "EXACTO"
-                                      and receta.cantidad_necesaria is not none %}
-
-                                    {{ receta.cantidad_necesaria|numero_produccion }}
-                                    {{ receta.abreviatura }}
-
-                                {% else %}
-
-                                    {{ receta.cantidad|numero_produccion }}
-                                    por unidad
-
-                                {% endif %}
-
-                            </strong>
-
-                        </div>
-
-                    </div>
-
-                {% endfor %}
-
-            </div>
-
-
-            {% if produccion.estado == "EN_PRODUCCION"
-                  and produccion.costo_real is none %}
-
-                <div class="produccion-consumo-actions">
-
-                    <div class="produccion-info-note">
-
-                        <span>💡</span>
-
-                        <p>
-                            En familias, selecciona el color/material que
-                            realmente usaste. Si es un rollo por área,
-                            confirma o modifica el tamaño real del corte.
-                            Después ABC descontará inventario por FIFO.
-                        </p>
-
-                    </div>
-
-
-                    <button
-                        type="submit"
-                        class="btn-primary"
-                        onclick="return confirm(
-                            '¿Registrar estos consumos reales? ' +
-                            'Se descontarán del inventario usando FIFO.'
-                        );"
-                    >
-                        🧱 Registrar consumo real
-                    </button>
-
-                </div>
-
-            {% endif %}
-
-        </form>
-
+        </div>
 
     {% else %}
 
@@ -910,7 +598,7 @@ Producción #{{ produccion.id }} - ABC Business Manager
 </div>
 
 
-<!-- CONSUMOS REALES REGISTRADOS -->
+<!-- CONSUMOS REALES -->
 
 <div class="card produccion-detalle-card">
 
@@ -919,7 +607,7 @@ Producción #{{ produccion.id }} - ABC Business Manager
         <div>
 
             <h2>
-                📋 Consumo real registrado
+                📋 Consumo real
             </h2>
 
             <p>
@@ -947,14 +635,16 @@ Producción #{{ produccion.id }} - ABC Business Manager
             <table>
 
                 <thead>
+
                     <tr>
-                        <th>Material real</th>
+                        <th>Material</th>
                         <th>Lote</th>
                         <th>Cantidad</th>
                         <th>Costo unitario</th>
                         <th>Costo</th>
                         <th>Fecha</th>
                     </tr>
+
                 </thead>
 
                 <tbody>
@@ -1013,8 +703,8 @@ Producción #{{ produccion.id }} - ABC Business Manager
             <span>💡</span>
 
             <p>
-                El desglose aparecerá después de registrar
-                el consumo real de esta producción.
+                El desglose real aparecerá después de consumir
+                los materiales de esta producción.
             </p>
 
         </div>
@@ -1193,6 +883,283 @@ Producción #{{ produccion.id }} - ABC Business Manager
 
 
 <!-- ============================================================
+     PAGOS AL PROVEEDOR
+============================================================ -->
+
+{% if produccion.tipo == "EXTERNA" %}
+
+<div class="card produccion-detalle-card pago-proveedor-card">
+
+    <div class="produccion-section-header">
+
+        <div>
+
+            <h2>
+                💵 Pago al proveedor
+            </h2>
+
+            <p>
+                El costo indica cuánto cuesta el trabajo.
+                Aquí registras cuándo el dinero realmente sale de ABC.
+            </p>
+
+        </div>
+
+    </div>
+
+    {% if produccion.costo_real is none %}
+
+        <div class="pago-proveedor-aviso">
+            Primero registra el costo real del proveedor.
+            Después podrás registrar pagos.
+        </div>
+
+    {% else %}
+
+        <div class="pago-proveedor-resumen">
+
+            <div class="pago-proveedor-mini">
+                <span>Costo del proveedor</span>
+                <strong>
+                    Q {{ "%.2f"|format(produccion.costo_real) }}
+                </strong>
+            </div>
+
+            <div class="pago-proveedor-mini">
+                <span>Pagado</span>
+                <strong class="pago-proveedor-pagado">
+                    Q {{ "%.2f"|format(total_pagado_proveedor) }}
+                </strong>
+            </div>
+
+            <div class="pago-proveedor-mini">
+                <span>Pendiente</span>
+                <strong class="
+                    {% if saldo_proveedor > 0 %}
+                        pago-proveedor-pendiente
+                    {% else %}
+                        pago-proveedor-pagado
+                    {% endif %}
+                ">
+                    Q {{ "%.2f"|format(saldo_proveedor) }}
+                </strong>
+            </div>
+
+        </div>
+
+        <div class="pago-proveedor-estado">
+
+            {% if estado_pago_proveedor == "PAGADO" %}
+                <span class="pago-estado pago-estado-pagado">
+                    ✓ Pagado
+                </span>
+            {% elif estado_pago_proveedor == "PARCIAL" %}
+                <span class="pago-estado pago-estado-parcial">
+                    ◐ Pago parcial
+                </span>
+            {% else %}
+                <span class="pago-estado pago-estado-pendiente">
+                    ⏳ Pendiente de pago
+                </span>
+            {% endif %}
+
+        </div>
+
+        {% if saldo_proveedor > 0 %}
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'producciones.registrar_pago_proveedor',
+                    produccion_id=produccion.id
+                ) }}"
+                class="pago-proveedor-form"
+            >
+
+                <div class="pago-proveedor-grid">
+
+                    <div class="form-group">
+
+                        <label for="monto_pago">
+                            Monto pagado *
+                        </label>
+
+                        <div class="input-money">
+                            <span>Q</span>
+                            <input
+                                type="number"
+                                id="monto_pago"
+                                name="monto_pago"
+                                min="0.01"
+                                max="{{ saldo_proveedor }}"
+                                step="0.01"
+                                value="{{ '%.2f'|format(saldo_proveedor) }}"
+                                required
+                            >
+                        </div>
+
+                        <small class="form-help">
+                            Puedes pagar todo o registrar un abono parcial.
+                        </small>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="metodo_pago">
+                            Método de pago *
+                        </label>
+
+                        <select
+                            id="metodo_pago"
+                            name="metodo_pago"
+                            required
+                        >
+                            <option value="EFECTIVO">Efectivo</option>
+                            <option value="TRANSFERENCIA">Transferencia</option>
+                            <option value="TARJETA">Tarjeta</option>
+                            <option value="OTRO">Otro</option>
+                        </select>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="fecha_pago">
+                            Fecha
+                        </label>
+
+                        <input
+                            type="date"
+                            id="fecha_pago"
+                            name="fecha_pago"
+                        >
+
+                        <small class="form-help">
+                            Si la dejas vacía se utilizará la fecha actual.
+                        </small>
+
+                    </div>
+
+                    <div class="form-group">
+
+                        <label for="referencia_pago">
+                            Referencia
+                        </label>
+
+                        <input
+                            type="text"
+                            id="referencia_pago"
+                            name="referencia_pago"
+                            maxlength="150"
+                            placeholder="Ej. transferencia, comprobante..."
+                        >
+
+                    </div>
+
+                    <div class="form-group pago-proveedor-full">
+
+                        <label for="notas_pago_proveedor">
+                            Notas
+                        </label>
+
+                        <textarea
+                            id="notas_pago_proveedor"
+                            name="notas_pago_proveedor"
+                            rows="2"
+                            maxlength="500"
+                            placeholder="Ej. Primer abono de la producción..."
+                        ></textarea>
+
+                    </div>
+
+                </div>
+
+                <div class="produccion-externa-actions">
+
+                    <button
+                        type="submit"
+                        class="btn-primary"
+                        onclick="return confirm(
+                            '¿Registrar este pago al proveedor? ' +
+                            'También aparecerá como salida de efectivo en Finanzas.'
+                        );"
+                    >
+                        💵 Registrar pago
+                    </button>
+
+                </div>
+
+            </form>
+
+        {% else %}
+
+            <div class="pago-proveedor-completo">
+                ✓ El costo de esta producción ya está pagado por completo.
+            </div>
+
+        {% endif %}
+
+        {% if pagos_proveedor %}
+
+            <div class="pago-proveedor-historial">
+
+                <h3>
+                    Historial de pagos
+                </h3>
+
+                <div class="table-container">
+
+                    <table>
+
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Monto</th>
+                                <th>Método</th>
+                                <th>Referencia</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            {% for pago in pagos_proveedor %}
+
+                                <tr>
+                                    <td>{{ pago.fecha }}</td>
+                                    <td>
+                                        <strong>
+                                            Q {{ "%.2f"|format(pago.monto) }}
+                                        </strong>
+                                    </td>
+                                    <td>
+                                        {{ pago.metodo_pago|replace("_", " ")|title }}
+                                    </td>
+                                    <td>
+                                        {{ pago.referencia or "—" }}
+                                    </td>
+                                </tr>
+
+                            {% endfor %}
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        {% endif %}
+
+    {% endif %}
+
+</div>
+
+{% endif %}
+
+
+<!-- ============================================================
      ACCIONES
 ============================================================ -->
 
@@ -1243,9 +1210,26 @@ Producción #{{ produccion.id }} - ABC Business Manager
 
                 {% if produccion.costo_real is none %}
 
-                    <span class="produccion-action-warning">
-                        ↑ Registra el consumo real en la sección de materiales.
-                    </span>
+                    <form
+                        method="POST"
+                        action="{{ url_for(
+                            'producciones.consumir_materiales',
+                            produccion_id=produccion.id
+                        ) }}"
+                        onsubmit="return confirm(
+                            '¿Consumir los materiales de esta producción? ' +
+                            'Se descontarán del inventario usando FIFO.'
+                        );"
+                    >
+
+                        <button
+                            type="submit"
+                            class="btn-primary"
+                        >
+                            🧱 Consumir materiales
+                        </button>
+
+                    </form>
 
                 {% else %}
 
@@ -1614,727 +1598,134 @@ Producción #{{ produccion.id }} - ABC Business Manager
 
 <style>
 
-/* ============================================================
-   CONSUMO REAL POR MEDIDAS
-============================================================ */
+.pago-proveedor-card {
+    margin-top: 18px;
+}
 
-.produccion-materiales-grid {
+.pago-proveedor-resumen {
     display: grid;
-    gap: 14px;
-}
-
-.produccion-material-card {
-    padding: 17px 18px;
-    background: #ffffff;
-    border: 1px solid var(--border);
-    border-radius: 11px;
-}
-
-.produccion-material-area {
-    border-left: 4px solid #315ccf;
-}
-
-.produccion-material-card-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 14px;
-}
-
-.produccion-material-tipo {
-    display: block;
-    margin-bottom: 4px;
-    color: var(--text-soft);
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .04em;
-}
-
-.produccion-material-card h3 {
-    margin: 0;
-    color: var(--navy);
-    font-size: 16px;
-}
-
-.produccion-stock-pill {
-    flex-shrink: 0;
-    padding: 6px 9px;
-    border-radius: 999px;
-    font-size: 10px;
-    font-weight: 700;
-}
-
-.produccion-stock-ok {
-    background: #eefbf3;
-    color: #15803d;
-}
-
-.produccion-stock-bajo {
-    background: #fff3f3;
-    color: #c62828;
-}
-
-.produccion-medidas-referencia,
-.produccion-material-resumen {
-    display: grid;
-    grid-template-columns:
-        repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 12px;
-    margin-top: 14px;
+    margin: 18px 0 12px;
 }
 
-.produccion-medidas-referencia {
-    grid-template-columns:
-        minmax(0, 2fr)
-        minmax(120px, 1fr);
-}
-
-.produccion-medidas-referencia > div,
-.produccion-material-resumen > div {
-    padding: 11px 12px;
-    background: #f8fafc;
-    border: 1px solid #edf0f5;
-    border-radius: 8px;
-}
-
-.produccion-medidas-referencia span,
-.produccion-material-resumen span,
-.produccion-consumo-calculado > span {
-    display: block;
-    margin-bottom: 4px;
-    color: var(--text-soft);
-    font-size: 9px;
-    font-weight: 700;
-    text-transform: uppercase;
-}
-
-.produccion-medidas-referencia strong,
-.produccion-material-resumen strong {
-    color: var(--navy);
-}
-
-.produccion-medidas-referencia small {
-    display: block;
-    margin-top: 4px;
-    color: var(--text-soft);
-    font-size: 10px;
-}
-
-.produccion-corte-real {
-    margin-top: 14px;
-    padding: 14px;
-    background: #f7f9ff;
-    border: 1px solid #dce5fb;
-    border-radius: 9px;
-}
-
-.produccion-corte-title strong {
-    color: var(--navy);
-}
-
-.produccion-corte-title p {
-    margin: 3px 0 0;
-    color: var(--text-soft);
-    font-size: 11px;
-}
-
-.produccion-corte-grid {
-    display: grid;
-    grid-template-columns:
-        minmax(0, 1fr)
-        minmax(0, 1fr)
-        minmax(150px, .8fr);
-    gap: 12px;
-    margin-top: 12px;
-    align-items: end;
-}
-
-.produccion-corte-grid label > span {
-    display: block;
-    margin-bottom: 5px;
-    color: #43506a;
-    font-size: 10px;
-    font-weight: 700;
-}
-
-.produccion-unit-input {
-    position: relative;
-}
-
-.produccion-unit-input input {
-    width: 100%;
-    padding-right: 40px !important;
-}
-
-.produccion-unit-input small {
-    position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-soft);
-    pointer-events: none;
-}
-
-.produccion-consumo-calculado {
-    min-height: 67px;
-    padding: 10px 12px;
+.pago-proveedor-mini {
+    padding: 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
     background: #ffffff;
-    border: 1px solid #d9e2f3;
-    border-radius: 8px;
 }
 
-.produccion-consumo-calculado strong {
+.pago-proveedor-mini span {
     display: block;
-    color: #0b2a72;
-    font-size: 17px;
+    margin-bottom: 6px;
+    color: #6b7280;
+    font-size: 13px;
 }
 
-.produccion-consumo-calculado small {
-    color: var(--text-soft);
-    font-size: 9px;
+.pago-proveedor-mini strong {
+    display: block;
+    color: #172554;
+    font-size: 22px;
 }
 
-.produccion-consumo-actions {
-    display: flex;
+.pago-proveedor-pagado {
+    color: #15803d !important;
+}
+
+.pago-proveedor-pendiente {
+    color: #b45309 !important;
+}
+
+.pago-proveedor-estado {
+    margin-bottom: 18px;
+}
+
+.pago-estado {
+    display: inline-flex;
     align-items: center;
-    justify-content: space-between;
+    padding: 8px 12px;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.pago-estado-pagado {
+    color: #166534;
+    background: #dcfce7;
+}
+
+.pago-estado-parcial {
+    color: #92400e;
+    background: #fef3c7;
+}
+
+.pago-estado-pendiente {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+.pago-proveedor-form {
+    width: 100%;
+    max-width: none;
+    margin-top: 18px;
+}
+
+.pago-proveedor-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
+}
+
+.pago-proveedor-full {
+    grid-column: 1 / -1;
+}
+
+.pago-proveedor-aviso,
+.pago-proveedor-completo {
     margin-top: 16px;
+    padding: 14px 16px;
+    border-radius: 12px;
+    line-height: 1.5;
 }
 
-.produccion-consumo-actions .produccion-info-note {
-    flex: 1;
+.pago-proveedor-aviso {
+    color: #92400e;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
 }
 
-.produccion-consumo-actions .btn-primary {
-    flex-shrink: 0;
+.pago-proveedor-completo {
+    color: #166534;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    font-weight: 700;
+}
+
+.pago-proveedor-historial {
+    margin-top: 22px;
+    padding-top: 18px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.pago-proveedor-historial h3 {
+    margin: 0 0 12px;
+    color: #172554;
 }
 
 @media (max-width: 800px) {
 
-    .produccion-material-card-header {
-        flex-direction: column;
-    }
-
-    .produccion-medidas-referencia,
-    .produccion-material-resumen,
-    .produccion-corte-grid {
+    .pago-proveedor-resumen,
+    .pago-proveedor-grid {
         grid-template-columns: 1fr;
     }
 
-    .produccion-consumo-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .produccion-consumo-actions .btn-primary {
-        width: 100%;
+    .pago-proveedor-full {
+        grid-column: auto;
     }
 
 }
 
 </style>
-
-
-<script>
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        document
-            .querySelectorAll(
-                ".produccion-material-area"
-            )
-            .forEach(
-                function (card) {
-
-                    const ancho =
-                        card.querySelector(
-                            ".consumo-ancho-real"
-                        );
-
-                    const alto =
-                        card.querySelector(
-                            ".consumo-alto-real"
-                        );
-
-                    const resultado =
-                        card.querySelector(
-                            ".consumo-area-resultado"
-                        );
-
-                    if (
-                        !ancho
-                        || !alto
-                        || !resultado
-                    ) {
-                        return;
-                    }
-
-                    const factor =
-                        parseFloat(
-                            card.dataset.factor
-                            || "1"
-                        );
-
-                    const cantidadProducto =
-                        parseFloat(
-                            card.dataset.cantidadProducto
-                            || "1"
-                        );
-
-                    const abreviatura =
-                        card.dataset.abreviatura
-                        || "";
-
-
-                    function actualizarConsumo() {
-
-                        const anchoValor =
-                            parseFloat(
-                                ancho.value
-                                || "0"
-                            );
-
-                        const altoValor =
-                            parseFloat(
-                                alto.value
-                                || "0"
-                            );
-
-                        if (
-                            anchoValor <= 0
-                            || altoValor <= 0
-                            || factor <= 0
-                        ) {
-
-                            resultado.textContent =
-                                "—";
-
-                            return;
-                        }
-
-                        const areaCm2 =
-                            anchoValor
-                            * altoValor
-                            * cantidadProducto;
-
-                        const consumo =
-                            areaCm2 / factor;
-
-                        resultado.textContent =
-                            consumo.toFixed(4)
-                            + " "
-                            + abreviatura;
-
-                    }
-
-
-                    ancho.addEventListener(
-                        "input",
-                        actualizarConsumo
-                    );
-
-                    alto.addEventListener(
-                        "input",
-                        actualizarConsumo
-                    );
-
-                    actualizarConsumo();
-
-                }
-            );
-
-    }
-);
-
-</script>
-
-
-<style>
-
-.produccion-receta-nota {
-    display: block;
-    margin-top: 5px;
-    color: var(--text-soft);
-}
-
-.produccion-eleccion-material,
-.produccion-material-fijo,
-.produccion-consumo-normal {
-    margin-top: 14px;
-    padding: 12px 13px;
-    background: #f8fafc;
-    border: 1px solid var(--border);
-    border-radius: 9px;
-}
-
-.produccion-eleccion-material label,
-.produccion-material-fijo > span,
-.produccion-consumo-normal > span {
-    display: block;
-    margin-bottom: 5px;
-    color: var(--text-soft);
-    font-size: 10px;
-    font-weight: 700;
-}
-
-.produccion-material-fijo strong,
-.produccion-consumo-normal strong {
-    display: block;
-    color: var(--navy);
-}
-
-.produccion-material-fijo small {
-    display: block;
-    margin-top: 4px;
-    color: var(--text-soft);
-}
-
-</style>
-
-
-<script>
-
-document.addEventListener(
-    "DOMContentLoaded",
-    function () {
-
-        document
-            .querySelectorAll(
-                ".produccion-material-card"
-            )
-            .forEach(
-                function (card) {
-
-                    const select =
-                        card.querySelector(
-                            ".material-real-select"
-                        );
-
-                    const corte =
-                        card.querySelector(
-                            ".js-corte-real"
-                        );
-
-                    const normal =
-                        card.querySelector(
-                            ".js-consumo-normal"
-                        );
-
-                    const ancho =
-                        card.querySelector(
-                            ".consumo-ancho-real"
-                        );
-
-                    const alto =
-                        card.querySelector(
-                            ".consumo-alto-real"
-                        );
-
-                    const resultado =
-                        card.querySelector(
-                            ".consumo-area-resultado"
-                        );
-
-                    const cantidadProducto =
-                        parseFloat(
-                            card.dataset.cantidadProducto
-                            || "1"
-                        );
-
-
-                    function actualizarArea(
-                        factor,
-                        unidad
-                    ) {
-
-                        if (
-                            !ancho
-                            || !alto
-                            || !resultado
-                        ) {
-                            return;
-                        }
-
-                        const a =
-                            parseFloat(
-                                ancho.value
-                                || "0"
-                            );
-
-                        const h =
-                            parseFloat(
-                                alto.value
-                                || "0"
-                            );
-
-                        if (
-                            a <= 0
-                            || h <= 0
-                            || factor <= 0
-                        ) {
-
-                            resultado.textContent =
-                                "—";
-
-                            return;
-                        }
-
-                        const cantidad =
-                            (
-                                a
-                                * h
-                                * cantidadProducto
-                                / factor
-                            );
-
-                        resultado.textContent =
-                            cantidad.toFixed(4)
-                            + " "
-                            + unidad;
-
-                    }
-
-
-                    function actualizarMaterial() {
-
-                        let modo = null;
-                        let factor = 1;
-                        let unidad = "";
-
-                        if (select) {
-
-                            const opcion =
-                                select.options[
-                                    select.selectedIndex
-                                ];
-
-                            if (
-                                !opcion
-                                || !opcion.value
-                            ) {
-
-                                if (corte) {
-                                    corte.style.display =
-                                        "none";
-                                }
-
-                                if (normal) {
-                                    normal.style.display =
-                                        "none";
-                                }
-
-                                return;
-                            }
-
-                            modo =
-                                opcion.dataset.modo;
-
-                            factor =
-                                parseFloat(
-                                    opcion.dataset.factor
-                                    || "1"
-                                );
-
-                            unidad =
-                                opcion.dataset.unidad
-                                || "";
-
-                        } else {
-
-                            /*
-                             * Material exacto:
-                             * el HTML ya decidió si corresponde mostrar
-                             * corte por área o consumo normal.
-                             * NO forzamos aquí el bloque de corte.
-                             */
-
-                            const corteVisible =
-                                corte
-                                && corte.style.display !== "none";
-
-                            if (corteVisible) {
-
-                                const fijoAbrev =
-                                    card.querySelector(
-                                        ".produccion-material-fijo small"
-                                    );
-
-                                unidad =
-                                    (
-                                        fijoAbrev
-                                        ? fijoAbrev.textContent
-                                        : "cm²"
-                                    );
-
-                                if (ancho) {
-                                    ancho.required = true;
-                                }
-
-                                if (alto) {
-                                    alto.required = true;
-                                }
-
-                            } else {
-
-                                if (ancho) {
-                                    ancho.required = false;
-                                }
-
-                                if (alto) {
-                                    alto.required = false;
-                                }
-
-                            }
-
-                        }
-
-                        if (select) {
-
-                            const esArea =
-                                modo === "ROLLO_AREA";
-
-                            if (corte) {
-
-                                corte.style.display =
-                                    esArea
-                                        ? ""
-                                        : "none";
-
-                            }
-
-                            if (normal) {
-
-                                normal.style.display =
-                                    esArea
-                                        ? "none"
-                                        : "";
-
-                                if (!esArea) {
-
-                                    normal
-                                        .querySelector(
-                                            ".consumo-normal-resultado"
-                                        )
-                                        .textContent =
-                                        "Según cantidad base × "
-                                        + cantidadProducto
-                                        + " unidad(es)";
-
-                                }
-
-                            }
-
-                            if (esArea) {
-
-                                if (ancho) {
-                                    ancho.required = true;
-                                }
-
-                                if (alto) {
-                                    alto.required = true;
-                                }
-
-                                actualizarArea(
-                                    factor,
-                                    unidad
-                                );
-
-                            } else {
-
-                                if (ancho) {
-                                    ancho.required = false;
-                                }
-
-                                if (alto) {
-                                    alto.required = false;
-                                }
-
-                            }
-
-                        }
-
-                    }
-
-
-                    if (select) {
-
-                        select.addEventListener(
-                            "change",
-                            actualizarMaterial
-                        );
-
-                    }
-
-
-                    if (ancho) {
-
-                        ancho.addEventListener(
-                            "input",
-                            function () {
-
-                                if (!select) {
-                                    return;
-                                }
-
-                                const opcion =
-                                    select.options[
-                                        select.selectedIndex
-                                    ];
-
-                                if (
-                                    opcion
-                                    && opcion.value
-                                    && opcion.dataset.modo
-                                        === "ROLLO_AREA"
-                                ) {
-
-                                    actualizarArea(
-                                        parseFloat(
-                                            opcion.dataset.factor
-                                            || "1"
-                                        ),
-                                        opcion.dataset.unidad
-                                        || ""
-                                    );
-
-                                }
-
-                            }
-                        );
-
-                    }
-
-
-                    if (alto) {
-
-                        alto.addEventListener(
-                            "input",
-                            function () {
-
-                                if (ancho) {
-                                    ancho.dispatchEvent(
-                                        new Event("input")
-                                    );
-                                }
-
-                            }
-                        );
-
-                    }
-
-
-                    actualizarMaterial();
-
-                }
-            );
-
-    }
-);
-
-</script>
 
 {% endblock %}

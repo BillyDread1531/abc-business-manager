@@ -1,6 +1,7 @@
+
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from database import obtener_conexion
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 
 
 producciones_bp = Blueprint(
@@ -497,224 +498,73 @@ def detalle(produccion_id):
 
         cursor.execute("""
             SELECT
-                pm.id AS receta_id,
-                pm.modo_seleccion,
+                pm.id,
                 pm.material_id,
-                pm.familia_material_id,
-                pm.cantidad,
-                pm.es_estimado,
-                pm.notas,
-
                 m.nombre AS material,
-                m.color AS material_color,
-                m.modo_control,
-                m.stock_actual,
-                m.cantidad_por_compra,
-                m.costo_compra_referencia,
-                m.unidad_consumo_id,
 
-                u.id AS unidad_id,
+                pm.cantidad,
+
+                (
+                    pm.cantidad
+                    * produccion_cantidad.cantidad
+                ) AS cantidad_necesaria,
+
                 u.nombre AS unidad,
                 u.abreviatura,
-                u.tipo AS unidad_tipo,
-                u.factor_conversion,
 
-                fm.nombre AS familia,
-                fm.codigo AS familia_codigo
+                m.stock_actual,
+
+                (
+                    m.costo_compra_referencia
+                    / NULLIF(
+                        m.cantidad_por_compra,
+                        0
+                    )
+                ) AS costo_unitario,
+
+                (
+                    pm.cantidad
+                    * produccion_cantidad.cantidad
+                    * (
+                        m.costo_compra_referencia
+                        / NULLIF(
+                            m.cantidad_por_compra,
+                            0
+                        )
+                    )
+                ) AS costo_total
 
             FROM producto_materiales pm
 
-            LEFT JOIN materiales m
+            INNER JOIN materiales m
                 ON pm.material_id = m.id
 
-            LEFT JOIN unidades_medida u
-                ON m.unidad_consumo_id = u.id
+            INNER JOIN unidades_medida u
+                ON pm.unidad_id = u.id
 
-            LEFT JOIN familias_materiales fm
-                ON pm.familia_material_id = fm.id
+            CROSS JOIN (
+                SELECT cantidad
+                FROM detalle_pedido
+                WHERE id = %s
+            ) AS produccion_cantidad
 
             WHERE pm.producto_id = %s
-
-            ORDER BY pm.id ASC
         """, (
-            produccion["producto_id"],
+            produccion["detalle_pedido_id"],
+            produccion["producto_id"]
         ))
 
         materiales = cursor.fetchall()
 
-        cantidad_producto = Decimal(
-            str(
-                produccion["cantidad"]
-                or 0
+        costo_estimado = sum(
+            Decimal(
+                str(
+                    material["costo_total"]
+                    or 0
+                )
             )
+            for material in materiales
         )
-
-        ancho_pedido = (
-            Decimal(str(produccion["ancho"]))
-            if produccion["ancho"] is not None
-            else None
-        )
-
-        alto_pedido = (
-            Decimal(str(produccion["alto"]))
-            if produccion["alto"] is not None
-            else None
-        )
-
-        costo_estimado = Decimal("0.00")
-
-        for receta in materiales:
-
-            receta["opciones_materiales"] = []
-            receta["cantidad_necesaria"] = None
-            receta["costo_total"] = None
-            receta["medida_sugerida"] = False
-            receta["ancho_sugerido"] = ancho_pedido
-            receta["alto_sugerido"] = alto_pedido
-
-            # ------------------------------------------------
-            # MATERIAL EXACTO
-            # ------------------------------------------------
-
-            if receta["modo_seleccion"] == "EXACTO":
-
-                if not receta["material_id"]:
-                    continue
-
-                receta["opciones_materiales"] = [{
-                    "id": receta["material_id"],
-                    "nombre": receta["material"],
-                    "color": receta["material_color"],
-                    "modo_control": receta["modo_control"],
-                    "stock_actual": receta["stock_actual"],
-                    "unidad_id": receta["unidad_id"],
-                    "unidad": receta["unidad"],
-                    "abreviatura": receta["abreviatura"],
-                    "unidad_tipo": receta["unidad_tipo"],
-                    "factor_conversion": receta["factor_conversion"],
-                    "cantidad_por_compra": receta["cantidad_por_compra"],
-                    "costo_compra_referencia": receta["costo_compra_referencia"],
-                }]
-
-                cantidad_base = Decimal(
-                    str(
-                        receta["cantidad"]
-                        or 0
-                    )
-                )
-
-                costo_unitario = Decimal("0")
-
-                cantidad_por_compra = Decimal(
-                    str(
-                        receta["cantidad_por_compra"]
-                        or 0
-                    )
-                )
-
-                costo_compra = Decimal(
-                    str(
-                        receta["costo_compra_referencia"]
-                        or 0
-                    )
-                )
-
-                if cantidad_por_compra > 0:
-                    costo_unitario = (
-                        costo_compra
-                        / cantidad_por_compra
-                    )
-
-                if (
-                    receta["modo_control"] == "ROLLO_AREA"
-                    and receta["unidad_tipo"] == "AREA"
-                    and ancho_pedido is not None
-                    and alto_pedido is not None
-                    and ancho_pedido > 0
-                    and alto_pedido > 0
-                ):
-
-                    factor = Decimal(
-                        str(
-                            receta["factor_conversion"]
-                            or 1
-                        )
-                    )
-
-                    cantidad_necesaria = (
-                        ancho_pedido
-                        * alto_pedido
-                        / factor
-                        * cantidad_producto
-                    )
-
-                    receta["medida_sugerida"] = True
-
-                else:
-
-                    cantidad_necesaria = (
-                        cantidad_base
-                        * cantidad_producto
-                    )
-
-                receta["cantidad_necesaria"] = (
-                    cantidad_necesaria
-                )
-
-                receta["costo_total"] = (
-                    cantidad_necesaria
-                    * costo_unitario
-                )
-
-                costo_estimado += (
-                    receta["costo_total"]
-                )
-
-            # ------------------------------------------------
-            # FAMILIA: material real se elige al producir
-            # ------------------------------------------------
-
-            else:
-
-                cursor.execute("""
-                    SELECT
-                        m.id,
-                        m.nombre,
-                        m.color,
-                        m.modo_control,
-                        m.stock_actual,
-                        m.cantidad_por_compra,
-                        m.costo_compra_referencia,
-                        m.unidad_consumo_id,
-
-                        u.nombre AS unidad,
-                        u.abreviatura,
-                        u.tipo AS unidad_tipo,
-                        u.factor_conversion
-
-                    FROM materiales m
-
-                    INNER JOIN unidades_medida u
-                        ON m.unidad_consumo_id = u.id
-
-                    WHERE m.familia_id = %s
-                      AND m.activo = 1
-
-                    ORDER BY
-                        m.nombre ASC,
-                        m.color ASC
-                """, (
-                    receta["familia_material_id"],
-                ))
-
-                receta["opciones_materiales"] = (
-                    cursor.fetchall()
-                )
-
-                # La cantidad exacta/costo dependen del material
-                # que se elija en Producción.
-                receta["cantidad_necesaria"] = None
-                receta["costo_total"] = None
 
         cursor.execute("""
             UPDATE producciones
@@ -797,6 +647,65 @@ def detalle(produccion_id):
         proveedores = cursor.fetchall()
 
     # ========================================================
+    # PAGOS A PROVEEDOR DE PRODUCCIÓN EXTERNA
+    # ========================================================
+
+    pagos_proveedor = []
+    total_pagado_proveedor = Decimal("0.00")
+    saldo_proveedor = Decimal("0.00")
+    estado_pago_proveedor = None
+
+    if produccion["tipo"] == "EXTERNA":
+
+        cursor.execute("""
+            SELECT
+                ppe.id,
+                ppe.monto,
+                ppe.metodo_pago,
+                ppe.referencia,
+                ppe.notas,
+                ppe.fecha,
+                prov.nombre AS proveedor
+            FROM pagos_produccion_externa ppe
+            INNER JOIN proveedores prov
+                ON ppe.proveedor_id = prov.id
+            WHERE ppe.produccion_id = %s
+            ORDER BY ppe.fecha DESC, ppe.id DESC
+        """, (produccion_id,))
+
+        pagos_proveedor = cursor.fetchall()
+
+        total_pagado_proveedor = sum(
+            (
+                Decimal(str(pago["monto"] or 0))
+                for pago in pagos_proveedor
+            ),
+            Decimal("0.00")
+        )
+
+        if produccion["costo_real"] is not None:
+
+            costo_externo_decimal = Decimal(
+                str(produccion["costo_real"] or 0)
+            )
+
+            saldo_proveedor = (
+                costo_externo_decimal
+                - total_pagado_proveedor
+            )
+
+            if saldo_proveedor < 0:
+                saldo_proveedor = Decimal("0.00")
+
+            if total_pagado_proveedor <= 0:
+                estado_pago_proveedor = "PENDIENTE"
+            elif saldo_proveedor > 0:
+                estado_pago_proveedor = "PARCIAL"
+            else:
+                estado_pago_proveedor = "PAGADO"
+
+
+    # ========================================================
     # RENTABILIDAD DE ESTA PRODUCCIÓN
     # ========================================================
 
@@ -844,6 +753,11 @@ def detalle(produccion_id):
         consumos=consumos,
         costo_consumos=costo_consumos,
         proveedores=proveedores,
+
+        pagos_proveedor=pagos_proveedor,
+        total_pagado_proveedor=total_pagado_proveedor,
+        saldo_proveedor=saldo_proveedor,
+        estado_pago_proveedor=estado_pago_proveedor,
 
         ganancia_produccion=ganancia,
         margen_produccion=margen
@@ -976,10 +890,7 @@ def consumir_materiales(produccion_id):
                 pr.detalle_pedido_id,
 
                 dp.producto_id,
-                dp.cantidad,
-                dp.ancho,
-                dp.alto,
-                dp.largo
+                dp.cantidad
 
             FROM producciones pr
 
@@ -994,17 +905,20 @@ def consumir_materiales(produccion_id):
         produccion = cursor.fetchone()
 
         if not produccion:
+
             raise ValueError(
                 "La producción no existe."
             )
 
         if produccion["tipo"] != "INTERNA":
+
             raise ValueError(
                 "Solo las producciones internas "
                 "consumen materiales del inventario."
             )
 
         if produccion["estado"] != "EN_PRODUCCION":
+
             raise ValueError(
                 "La producción debe estar en producción "
                 "antes de consumir materiales."
@@ -1025,11 +939,14 @@ def consumir_materiales(produccion_id):
             SELECT COUNT(*) AS total
             FROM movimientos_inventario
             WHERE tipo = 'CONSUMO'
-              AND referencia_tipo = 'PRODUCCION'
-              AND referencia_id = %s
+            AND referencia_tipo = 'PRODUCCION'
+            AND referencia_id = %s
         """, (produccion_id,))
 
-        if cursor.fetchone()["total"] > 0:
+        consumo_existente = cursor.fetchone()
+
+        if consumo_existente["total"] > 0:
+
             raise ValueError(
                 "Los materiales de esta producción "
                 "ya fueron consumidos."
@@ -1041,31 +958,35 @@ def consumir_materiales(produccion_id):
 
         cursor.execute("""
             SELECT
-                pm.id AS receta_id,
-                pm.modo_seleccion,
+                pm.id,
                 pm.material_id,
-                pm.familia_material_id,
-                pm.cantidad,
-                pm.es_estimado,
-                pm.notas,
+                pm.unidad_id,
 
-                fm.nombre AS familia
+                m.nombre AS material,
+                m.stock_actual,
+
+                pm.cantidad,
+
+                u.nombre AS unidad,
+                u.abreviatura
 
             FROM producto_materiales pm
 
-            LEFT JOIN familias_materiales fm
-                ON pm.familia_material_id = fm.id
+            INNER JOIN materiales m
+                ON pm.material_id = m.id
+
+            INNER JOIN unidades_medida u
+                ON pm.unidad_id = u.id
 
             WHERE pm.producto_id = %s
-
-            ORDER BY pm.id ASC
         """, (
             produccion["producto_id"],
         ))
 
-        recetas = cursor.fetchall()
+        materiales = cursor.fetchall()
 
-        if not recetas:
+        if not materiales:
+
             raise ValueError(
                 "Este producto no tiene materiales definidos."
             )
@@ -1073,210 +994,22 @@ def consumir_materiales(produccion_id):
         costo_total_real = Decimal("0.00")
 
         # ====================================================
-        # PROCESAR CADA REQUERIMIENTO DE LA RECETA
+        # CONSUMIR CADA MATERIAL
         # ====================================================
 
-        for receta in recetas:
+        for material in materiales:
 
-            # ------------------------------------------------
-            # Elegir material real
-            # ------------------------------------------------
-
-            if receta["modo_seleccion"] == "FAMILIA":
-
-                material_real_texto = (
-                    request.form.get(
-                        f"material_real_{receta['receta_id']}",
-                        ""
-                    )
-                    .strip()
+            cantidad_por_producto = Decimal(
+                str(
+                    material["cantidad"]
+                    or 0
                 )
+            )
 
-                if not material_real_texto:
-                    raise ValueError(
-                        f"Debes elegir el material real para "
-                        f"la familia {receta['familia']}."
-                    )
-
-                material_real_id = int(
-                    material_real_texto
-                )
-
-                cursor.execute("""
-                    SELECT
-                        m.id,
-                        m.nombre,
-                        m.color,
-                        m.modo_control,
-                        m.stock_actual,
-                        m.unidad_consumo_id,
-
-                        u.nombre AS unidad,
-                        u.abreviatura,
-                        u.tipo AS unidad_tipo,
-                        u.factor_conversion
-
-                    FROM materiales m
-
-                    INNER JOIN unidades_medida u
-                        ON m.unidad_consumo_id = u.id
-
-                    WHERE m.id = %s
-                      AND m.familia_id = %s
-                      AND m.activo = 1
-
-                    FOR UPDATE
-                """, (
-                    material_real_id,
-                    receta["familia_material_id"]
-                ))
-
-            else:
-
-                if not receta["material_id"]:
-                    raise ValueError(
-                        "Una receta de material exacto "
-                        "no tiene material asociado."
-                    )
-
-                cursor.execute("""
-                    SELECT
-                        m.id,
-                        m.nombre,
-                        m.color,
-                        m.modo_control,
-                        m.stock_actual,
-                        m.unidad_consumo_id,
-
-                        u.nombre AS unidad,
-                        u.abreviatura,
-                        u.tipo AS unidad_tipo,
-                        u.factor_conversion
-
-                    FROM materiales m
-
-                    INNER JOIN unidades_medida u
-                        ON m.unidad_consumo_id = u.id
-
-                    WHERE m.id = %s
-                      AND m.activo = 1
-
-                    FOR UPDATE
-                """, (
-                    receta["material_id"],
-                ))
-
-            material = cursor.fetchone()
-
-            if not material:
-                raise ValueError(
-                    "El material seleccionado no existe, "
-                    "está inactivo o no pertenece a la familia requerida."
-                )
-
-            material_id = material["id"]
-            unidad_id = material["unidad_consumo_id"]
-
-            # ------------------------------------------------
-            # Cantidad REAL a consumir
-            # ------------------------------------------------
-
-            if material["modo_control"] == "ROLLO_AREA":
-
-                if material["unidad_tipo"] != "AREA":
-                    raise ValueError(
-                        f"'{material['nombre']}' está configurado "
-                        "como rollo por área, pero su unidad de "
-                        "consumo no es de tipo AREA."
-                    )
-
-                ancho_texto = (
-                    request.form.get(
-                        f"ancho_real_{receta['receta_id']}",
-                        ""
-                    )
-                    .strip()
-                )
-
-                alto_texto = (
-                    request.form.get(
-                        f"alto_real_{receta['receta_id']}",
-                        ""
-                    )
-                    .strip()
-                )
-
-                if not ancho_texto or not alto_texto:
-                    raise ValueError(
-                        f"Debes indicar ancho y alto reales "
-                        f"para {material['nombre']}."
-                    )
-
-                ancho_real = Decimal(
-                    ancho_texto
-                )
-
-                alto_real = Decimal(
-                    alto_texto
-                )
-
-                if ancho_real <= 0 or alto_real <= 0:
-                    raise ValueError(
-                        f"Las medidas reales de "
-                        f"{material['nombre']} deben ser mayores que 0."
-                    )
-
-                factor_area = Decimal(
-                    str(
-                        material["factor_conversion"]
-                        or 1
-                    )
-                )
-
-                if factor_area <= 0:
-                    raise ValueError(
-                        f"La unidad de consumo de "
-                        f"{material['nombre']} tiene un factor inválido."
-                    )
-
-                area_real_cm2_por_unidad = (
-                    ancho_real
-                    * alto_real
-                )
-
-                cantidad_necesaria = (
-                    area_real_cm2_por_unidad
-                    / factor_area
-                    * cantidad_producto
-                )
-
-                detalle_consumo = (
-                    f"Corte real: {ancho_real} x {alto_real} cm "
-                    f"por unidad; cantidad producto: {cantidad_producto}"
-                )
-
-            else:
-
-                cantidad_por_producto = Decimal(
-                    str(
-                        receta["cantidad"]
-                        or 0
-                    )
-                )
-
-                cantidad_necesaria = (
-                    cantidad_por_producto
-                    * cantidad_producto
-                )
-
-                detalle_consumo = (
-                    f"Consumo según receta: "
-                    f"{cantidad_por_producto} "
-                    f"{material['abreviatura']} por unidad"
-                )
-
-            if cantidad_necesaria <= 0:
-                continue
+            cantidad_necesaria = (
+                cantidad_por_producto
+                * cantidad_producto
+            )
 
             stock_actual = Decimal(
                 str(
@@ -1285,12 +1018,16 @@ def consumir_materiales(produccion_id):
                 )
             )
 
+            if cantidad_necesaria <= 0:
+                continue
+
             if cantidad_necesaria > stock_actual:
+
                 raise ValueError(
                     f"Stock insuficiente de "
-                    f"{material['nombre']}. "
+                    f"{material['material']}. "
                     f"Necesario: {cantidad_necesaria} "
-                    f"{material['abreviatura']}. "
+                    f"{material['unidad']}. "
                     f"Disponible: {stock_actual}."
                 )
 
@@ -1307,14 +1044,14 @@ def consumir_materiales(produccion_id):
                 FROM lotes_inventario
 
                 WHERE material_id = %s
-                  AND activo = 1
-                  AND cantidad_actual > 0
+                AND activo = 1
+                AND cantidad_actual > 0
 
                 ORDER BY id ASC
 
                 FOR UPDATE
             """, (
-                material_id,
+                material["material_id"],
             ))
 
             lotes = cursor.fetchall()
@@ -1352,15 +1089,9 @@ def consumir_materiales(produccion_id):
                     cantidad_lote
                 )
 
-                # El costo monetario de cada fragmento de lote
-                # se fija a centavos. Así el desglose visible y el
-                # costo real final siempre suman exactamente lo mismo.
                 costo_fragmento = (
                     cantidad_consumir
                     * costo_unitario
-                ).quantize(
-                    Decimal("0.01"),
-                    rounding=ROUND_HALF_UP
                 )
 
                 costo_material += (
@@ -1393,6 +1124,7 @@ def consumir_materiales(produccion_id):
                     lote["id"]
                 ))
 
+                # Guardamos el consumo exacto del lote.
                 cursor.execute("""
                     INSERT INTO consumos_produccion
                     (
@@ -1406,15 +1138,20 @@ def consumir_materiales(produccion_id):
                     )
                     VALUES
                     (
-                        %s, %s, %s, %s,
-                        %s, %s, %s
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s,
+                        %s
                     )
                 """, (
                     produccion_id,
-                    material_id,
+                    material["material_id"],
                     lote["id"],
                     cantidad_consumir,
-                    unidad_id,
+                    material["unidad_id"],
                     costo_unitario,
                     costo_fragmento
                 ))
@@ -1427,9 +1164,10 @@ def consumir_materiales(produccion_id):
                 cantidad_restante
                 > Decimal("0.000001")
             ):
+
                 raise ValueError(
                     f"No existen lotes suficientes para "
-                    f"{material['nombre']}."
+                    f"{material['material']}."
                 )
 
             # ------------------------------------------------
@@ -1453,7 +1191,7 @@ def consumir_materiales(produccion_id):
                 WHERE id = %s
             """, (
                 nuevo_stock,
-                material_id
+                material["material_id"]
             ))
 
             # ------------------------------------------------
@@ -1464,13 +1202,6 @@ def consumir_materiales(produccion_id):
                 costo_material
                 / cantidad_necesaria
             )
-
-            nombre_real = material["nombre"]
-
-            if material["color"]:
-                nombre_real += (
-                    f" - {material['color']}"
-                )
 
             cursor.execute("""
                 INSERT INTO movimientos_inventario
@@ -1500,29 +1231,18 @@ def consumir_materiales(produccion_id):
                     %s
                 )
             """, (
-                material_id,
+                material["material_id"],
                 cantidad_necesaria,
-                unidad_id,
+                material["unidad_id"],
                 costo_unitario_real,
                 produccion_id,
                 8,
-                (
-                    f"Consumo producción #{produccion_id}. "
-                    f"Material real: {nombre_real}. "
-                    f"{detalle_consumo}"
-                )
+                f"Consumo producción #{produccion_id}"
             ))
 
         # ====================================================
         # COSTO REAL DE LA PRODUCCIÓN
         # ====================================================
-
-        costo_total_real = (
-            costo_total_real.quantize(
-                Decimal("0.01"),
-                rounding=ROUND_HALF_UP
-            )
-        )
 
         cursor.execute("""
             UPDATE producciones
@@ -1658,6 +1378,28 @@ def registrar_costo_externo(produccion_id):
                 "a producciones externas."
             )
 
+        cursor.execute("""
+            SELECT
+                COALESCE(SUM(monto), 0) AS total_pagado
+            FROM pagos_produccion_externa
+            WHERE produccion_id = %s
+        """, (produccion_id,))
+
+        total_ya_pagado = Decimal(
+            str(
+                cursor.fetchone()["total_pagado"]
+                or 0
+            )
+        )
+
+        if costo_real < total_ya_pagado:
+
+            raise ValueError(
+                f"El costo real no puede quedar en Q{costo_real:.2f} "
+                f"porque ya registraste Q{total_ya_pagado:.2f} "
+                "en pagos al proveedor."
+            )
+
         if produccion["estado"] not in (
             "PENDIENTE",
             "EN_PRODUCCION",
@@ -1705,6 +1447,278 @@ def registrar_costo_externo(produccion_id):
 
         flash(
             f"No se pudo registrar el costo externo: {e}",
+            "danger"
+        )
+
+    finally:
+
+        cursor.close()
+        conn.close()
+
+    return redirect(
+        url_for(
+            "producciones.detalle",
+            produccion_id=produccion_id
+        )
+    )
+
+
+# ============================================================
+# REGISTRAR PAGO A PROVEEDOR DE PRODUCCIÓN EXTERNA
+# ============================================================
+
+@producciones_bp.route(
+    "/<int:produccion_id>/pago-proveedor",
+    methods=["POST"]
+)
+def registrar_pago_proveedor(produccion_id):
+
+    conn = obtener_conexion()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+
+        monto_texto = request.form.get(
+            "monto_pago",
+            ""
+        ).strip()
+
+        metodo_pago = request.form.get(
+            "metodo_pago",
+            "EFECTIVO"
+        ).strip().upper()
+
+        referencia = request.form.get(
+            "referencia_pago",
+            ""
+        ).strip() or None
+
+        notas = request.form.get(
+            "notas_pago_proveedor",
+            ""
+        ).strip() or None
+
+        fecha_pago = request.form.get(
+            "fecha_pago",
+            ""
+        ).strip() or None
+
+        if not monto_texto:
+            raise ValueError(
+                "Debes indicar cuánto pagaste al proveedor."
+            )
+
+        monto = Decimal(monto_texto)
+
+        if monto <= 0:
+            raise ValueError(
+                "El pago debe ser mayor que Q0.00."
+            )
+
+        metodos_validos = {
+            "EFECTIVO",
+            "TRANSFERENCIA",
+            "TARJETA",
+            "OTRO"
+        }
+
+        if metodo_pago not in metodos_validos:
+            raise ValueError(
+                "El método de pago no es válido."
+            )
+
+        cursor.execute("""
+            SELECT
+                pr.id,
+                pr.tipo,
+                pr.estado,
+                pr.costo_real,
+                pr.proveedor_id,
+                pr.detalle_pedido_id,
+                dp.pedido_id,
+                p.nombre AS producto,
+                prov.nombre AS proveedor
+            FROM producciones pr
+            INNER JOIN detalle_pedido dp
+                ON pr.detalle_pedido_id = dp.id
+            INNER JOIN productos p
+                ON dp.producto_id = p.id
+            LEFT JOIN proveedores prov
+                ON pr.proveedor_id = prov.id
+            WHERE pr.id = %s
+            FOR UPDATE
+        """, (produccion_id,))
+
+        produccion = cursor.fetchone()
+
+        if not produccion:
+            raise ValueError(
+                "La producción no existe."
+            )
+
+        if produccion["tipo"] != "EXTERNA":
+            raise ValueError(
+                "Solo las producciones externas "
+                "tienen pagos a proveedor."
+            )
+
+        if produccion["estado"] == "CANCELADO":
+            raise ValueError(
+                "No puedes registrar pagos en una "
+                "producción cancelada."
+            )
+
+        if produccion["costo_real"] is None:
+            raise ValueError(
+                "Primero registra el costo real "
+                "cobrado por el proveedor."
+            )
+
+        if produccion["proveedor_id"] is None:
+            raise ValueError(
+                "Primero selecciona el proveedor "
+                "en el costo de producción externa."
+            )
+
+        costo_real = Decimal(
+            str(produccion["costo_real"] or 0)
+        )
+
+        cursor.execute("""
+            SELECT
+                COALESCE(SUM(monto), 0) AS total_pagado
+            FROM pagos_produccion_externa
+            WHERE produccion_id = %s
+        """, (produccion_id,))
+
+        total_pagado = Decimal(
+            str(
+                cursor.fetchone()["total_pagado"]
+                or 0
+            )
+        )
+
+        saldo = costo_real - total_pagado
+
+        if saldo <= 0:
+            raise ValueError(
+                "Esta producción ya está pagada por completo."
+            )
+
+        if monto > saldo:
+            raise ValueError(
+                f"El saldo pendiente es Q{saldo:.2f}. "
+                "No puedes registrar un pago mayor."
+            )
+
+        cursor.execute("""
+            INSERT INTO pagos_produccion_externa (
+                produccion_id,
+                pedido_id,
+                proveedor_id,
+                usuario_id,
+                monto,
+                metodo_pago,
+                referencia,
+                notas,
+                fecha
+            )
+            VALUES (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                COALESCE(%s, NOW())
+            )
+        """, (
+            produccion_id,
+            produccion["pedido_id"],
+            produccion["proveedor_id"],
+            8,
+            monto,
+            metodo_pago,
+            referencia,
+            notas,
+            fecha_pago
+        ))
+
+        descripcion = (
+            f"Pago a proveedor por producción #{produccion_id} "
+            f"- {produccion['producto']}"
+        )
+
+        if produccion["proveedor"]:
+            descripcion += (
+                f" - {produccion['proveedor']}"
+            )
+
+        cursor.execute("""
+            INSERT INTO egresos (
+                pedido_id,
+                proveedor_id,
+                compra_id,
+                usuario_id,
+                categoria,
+                monto,
+                fecha,
+                descripcion
+            )
+            VALUES (
+                %s,
+                %s,
+                NULL,
+                %s,
+                'PRODUCCION_EXTERNA',
+                %s,
+                COALESCE(%s, NOW()),
+                %s
+            )
+        """, (
+            produccion["pedido_id"],
+            produccion["proveedor_id"],
+            8,
+            monto,
+            fecha_pago,
+            descripcion
+        ))
+
+        conn.commit()
+
+        nuevo_total_pagado = (
+            total_pagado
+            + monto
+        )
+
+        nuevo_saldo = (
+            costo_real
+            - nuevo_total_pagado
+        )
+
+        if nuevo_saldo <= 0:
+            mensaje_estado = (
+                "Producción externa pagada por completo."
+            )
+        else:
+            mensaje_estado = (
+                f"Quedan Q{nuevo_saldo:.2f} por pagar."
+            )
+
+        flash(
+            f"Pago al proveedor registrado: Q{monto:.2f}. "
+            f"{mensaje_estado}",
+            "success"
+        )
+
+    except Exception as e:
+
+        conn.rollback()
+
+        flash(
+            f"No se pudo registrar el pago al proveedor: {e}",
             "danger"
         )
 

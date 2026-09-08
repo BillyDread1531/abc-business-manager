@@ -42,6 +42,179 @@ Finanzas - ABC Business Manager
 
 
 
+
+<!-- =====================================================
+     CAJA Y SEPARACIÓN DEL DINERO
+===================================================== -->
+
+<div class="card caja-card">
+
+    <div class="caja-header">
+
+        <div>
+
+            <span class="caja-eyebrow">
+                💼 Caja del negocio
+            </span>
+
+            <h2>
+                ¿Cuánto dinero es tuyo y cuánto le queda a ABC?
+            </h2>
+
+            <p>
+                Las compras de inventario sí reducen el efectivo disponible
+                del negocio, pero no reducen la utilidad positiva que ya
+                generaste para ti en semanas anteriores.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="caja-grid">
+
+        <div class="caja-item caja-efectivo">
+
+            <span class="caja-item-icon">💵</span>
+
+            <div>
+
+                <small>Efectivo neto registrado</small>
+
+                <strong
+                    class="{% if efectivo_neto_registrado >= 0 %}margen-positivo{% else %}margen-negativo{% endif %}"
+                >
+                    Q {{ "%.2f"|format(efectivo_neto_registrado) }}
+                </strong>
+
+                <p>
+                    Ingresos menos todos los egresos registrados,
+                    incluyendo compras de inventario.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="caja-item caja-propietario">
+
+            <span class="caja-item-icon">👤</span>
+
+            <div>
+
+                <small>
+                    Separado para ti · {{ "%.2f"|format(porcentaje_propietario) }}%
+                </small>
+
+                <strong>
+                    Q {{ "%.2f"|format(ganancia_propietario_acumulada) }}
+                </strong>
+
+                <p>
+                    Es tu ganancia personal acumulada. ABC no necesita
+                    saber en qué la gastas.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="caja-item caja-abc">
+
+            <span class="caja-item-icon">🏪</span>
+
+            <div>
+
+                <small>Disponible real para ABC</small>
+
+                <strong
+                    class="{% if dinero_abc_disponible >= 0 %}margen-positivo{% else %}margen-negativo{% endif %}"
+                >
+                    Q {{ "%.2f"|format(dinero_abc_disponible) }}
+                </strong>
+
+                <p>
+                    Efectivo registrado menos lo que ya se considera
+                    separado para ti.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="caja-item">
+
+            <span class="caja-item-icon">📈</span>
+
+            <div>
+
+                <small>
+                    Reinversión acumulada · {{ "%.2f"|format(porcentaje_reinversion) }}%
+                </small>
+
+                <strong>
+                    Q {{ "%.2f"|format(reinversion_acumulada) }}
+                </strong>
+
+                <p>
+                    Parte de la utilidad generada para crecimiento,
+                    materiales, publicidad o equipo.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="caja-item">
+
+            <span class="caja-item-icon">🛡️</span>
+
+            <div>
+
+                <small>
+                    Reserva acumulada · {{ "%.2f"|format(porcentaje_reserva) }}%
+                </small>
+
+                <strong>
+                    Q {{ "%.2f"|format(reserva_acumulada) }}
+                </strong>
+
+                <p>
+                    Parte de la utilidad destinada a estabilidad
+                    e imprevistos del negocio.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    {% if dinero_abc_disponible < 0 %}
+
+        <div class="caja-alerta">
+
+            <span>⚠️</span>
+
+            <p>
+                ABC ha utilizado más efectivo del que le corresponde después
+                de separar tu ganancia personal acumulada. Esto puede ocurrir
+                por compras fuertes de inventario u otros egresos.
+            </p>
+
+        </div>
+
+    {% endif %}
+
+</div>
+
+
 <!-- =====================================================
      UTILIDAD PARA TI
 ===================================================== -->
@@ -73,7 +246,10 @@ Finanzas - ABC Business Manager
             <a
                 href="{{ url_for(
                     'finanzas.index',
-                    periodo_utilidad='SEMANA'
+                    periodo_utilidad='SEMANA',
+                    mes=mes_filtro,
+                    anio=anio_filtro,
+                    tipo=tipo_filtro
                 ) }}"
                 class="
                     utilidad-periodo-btn
@@ -88,7 +264,10 @@ Finanzas - ABC Business Manager
             <a
                 href="{{ url_for(
                     'finanzas.index',
-                    periodo_utilidad='MES'
+                    periodo_utilidad='MES',
+                    mes=mes_filtro,
+                    anio=anio_filtro,
+                    tipo=tipo_filtro
                 ) }}"
                 class="
                     utilidad-periodo-btn
@@ -501,6 +680,7 @@ Finanzas - ABC Business Manager
 </div>
 
 
+
 <!-- =====================================================
      FILTROS
 ===================================================== -->
@@ -511,10 +691,11 @@ Finanzas - ABC Business Manager
 
         <div>
 
-            <h2>Filtros</h2>
+            <h2>Período de movimientos</h2>
 
             <p>
-                Consulta los movimientos de un período específico.
+                Por defecto se muestra el mes actual. Puedes consultar
+                cualquier mes anterior sin perder la información guardada.
             </p>
 
         </div>
@@ -528,36 +709,68 @@ Finanzas - ABC Business Manager
         class="finanzas-filtros-form"
     >
 
+        <input
+            type="hidden"
+            name="periodo_utilidad"
+            value="{{ periodo_utilidad }}"
+        >
+
         <div class="finanzas-filtros-grid">
 
             <div class="form-group">
 
-                <label for="desde">
-                    Desde
+                <label for="mes">
+                    Mes
                 </label>
 
-                <input
-                    type="date"
-                    id="desde"
-                    name="desde"
-                    value="{{ fecha_desde }}"
+                <select
+                    id="mes"
+                    name="mes"
                 >
+
+                    {% for numero_mes, nombre_mes in meses %}
+
+                        <option
+                            value="{{ numero_mes }}"
+                            {% if numero_mes == mes_filtro %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ nombre_mes }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
 
             </div>
 
 
             <div class="form-group">
 
-                <label for="hasta">
-                    Hasta
+                <label for="anio">
+                    Año
                 </label>
 
-                <input
-                    type="date"
-                    id="hasta"
-                    name="hasta"
-                    value="{{ fecha_hasta }}"
+                <select
+                    id="anio"
+                    name="anio"
                 >
+
+                    {% for anio in anios_disponibles %}
+
+                        <option
+                            value="{{ anio }}"
+                            {% if anio == anio_filtro %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ anio }}
+                        </option>
+
+                    {% endfor %}
+
+                </select>
 
             </div>
 
@@ -607,20 +820,33 @@ Finanzas - ABC Business Manager
         </div>
 
 
+        <div class="finanzas-filtros-periodo-activo">
+
+            <span>Período mostrado:</span>
+
+            <strong>
+                {{ fecha_desde.strftime('%d/%m/%Y') }}
+                -
+                {{ fecha_hasta.strftime('%d/%m/%Y') }}
+            </strong>
+
+        </div>
+
+
         <div class="finanzas-filtros-actions">
 
             <a
                 href="{{ url_for('finanzas.index') }}"
                 class="btn-secondary"
             >
-                Limpiar
+                Mes actual
             </a>
 
             <button
                 type="submit"
                 class="btn-primary"
             >
-                🔎 Filtrar
+                🔎 Consultar
             </button>
 
         </div>
@@ -916,6 +1142,147 @@ Finanzas - ABC Business Manager
 
 
 <style>
+
+/* ============================================================
+   CAJA Y SEPARACIÓN DEL DINERO
+============================================================ */
+
+.caja-card {
+    margin-bottom: 20px;
+    padding: 22px 24px;
+}
+
+.caja-header h2 {
+    margin: 0;
+    color: #0b245f;
+    font-size: 21px;
+}
+
+.caja-header p {
+    margin: 6px 0 0;
+    max-width: 760px;
+    color: #727c8e;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.caja-eyebrow {
+    display: block;
+    margin-bottom: 5px;
+    color: #657086;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+
+.caja-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.caja-item {
+    display: flex;
+    gap: 10px;
+    min-width: 0;
+    padding: 15px;
+    background: #f8fafc;
+    border: 1px solid #e4e9f2;
+    border-radius: 10px;
+}
+
+.caja-item-icon {
+    flex-shrink: 0;
+    font-size: 20px;
+}
+
+.caja-item small {
+    display: block;
+    color: #69758b;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    line-height: 1.35;
+}
+
+.caja-item strong {
+    display: block;
+    margin-top: 5px;
+    font-size: 19px;
+    line-height: 1.2;
+}
+
+.caja-item p {
+    margin: 6px 0 0;
+    color: #717c8e;
+    font-size: 9px;
+    line-height: 1.45;
+}
+
+.caja-propietario {
+    background: #eef7ff;
+    border-color: #cfe2fb;
+}
+
+.caja-propietario strong {
+    color: #0b2a72;
+}
+
+.caja-abc {
+    background: #f3fbf6;
+    border-color: #d5ecdc;
+}
+
+.caja-alerta {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    padding: 12px 13px;
+    background: #fff3f3;
+    border: 1px solid #f1c9c9;
+    border-radius: 9px;
+}
+
+.caja-alerta p {
+    margin: 0;
+    color: #8a3f3f;
+    font-size: 10px;
+    line-height: 1.5;
+}
+
+.finanzas-filtros-periodo-activo {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 13px;
+    color: #707a8c;
+    font-size: 10px;
+}
+
+.finanzas-filtros-periodo-activo strong {
+    color: #263453;
+}
+
+@media (max-width: 1200px) {
+    .caja-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 800px) {
+    .caja-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 560px) {
+    .caja-card {
+        padding: 17px;
+    }
+}
+
 
 .utilidad-card {
     margin-bottom: 20px;

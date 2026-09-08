@@ -790,6 +790,137 @@
 
     </div>
 
+    <!-- ========================================================
+         TU DINERO DE ESTE PEDIDO
+    ========================================================= -->
+
+    <div class="pedido-ganancia-personal">
+
+        <div class="pedido-ganancia-personal-header">
+
+            <span>
+                👤 TU DINERO DE ESTE PEDIDO
+            </span>
+
+            <h3>
+                ¿Cuánto de este trabajo es realmente para ti?
+            </h3>
+
+        </div>
+
+
+        {% if not costos_completos %}
+
+            <div class="pedido-ganancia-estado pendiente">
+
+                ⏳ Todavía no se puede calcular.
+
+                <strong>
+                    Falta registrar el costo real de uno o más productos.
+                </strong>
+
+            </div>
+
+
+        {% elif ganancia_real_pedido <= 0 %}
+
+            <div class="pedido-ganancia-estado perdida">
+
+                ⚠️ Este pedido no dejó una ganancia positiva para repartir.
+
+            </div>
+
+
+        {% else %}
+
+            <div class="pedido-ganancia-grid">
+
+                <div class="pedido-ganancia-box principal">
+
+                    <small>
+                        👤 Para ti · {{ "%.0f"|format(porcentaje_propietario) }}%
+                    </small>
+
+                    <strong>
+                        Q {{ "%.2f"|format(ganancia_para_ti_pedido) }}
+                    </strong>
+
+                </div>
+
+
+                <div class="pedido-ganancia-box">
+
+                    <small>
+                        📈 Reinversión · {{ "%.0f"|format(porcentaje_reinversion) }}%
+                    </small>
+
+                    <strong>
+                        Q {{ "%.2f"|format(reinversion_pedido) }}
+                    </strong>
+
+                </div>
+
+
+                <div class="pedido-ganancia-box">
+
+                    <small>
+                        🛡️ Reserva · {{ "%.0f"|format(porcentaje_reserva) }}%
+                    </small>
+
+                    <strong>
+                        Q {{ "%.2f"|format(reserva_pedido) }}
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            {% if ganancia_personal_disponible %}
+
+                <div class="pedido-ganancia-estado disponible">
+
+                    ✅ Pedido totalmente pagado.
+
+                    <strong>
+                        Ya puedes separar
+                        Q {{ "%.2f"|format(ganancia_para_ti_pedido) }}
+                        como dinero tuyo.
+                    </strong>
+
+                </div>
+
+
+            {% else %}
+
+                <div class="pedido-ganancia-estado pendiente">
+
+                    ⏳ Tu ganancia final de este pedido será
+
+                    <strong>
+                        Q {{ "%.2f"|format(ganancia_para_ti_pedido) }}
+                    </strong>,
+
+                    pero todavía faltan
+
+                    <strong>
+                        Q {{ "%.2f"|format(saldo_pendiente) }}
+                    </strong>
+
+                    por cobrar.
+
+                    Como decidiste esperar el pago completo,
+                    todavía no la cuentes como dinero personal.
+
+                </div>
+
+            {% endif %}
+
+        {% endif %}
+
+    </div>
+
+
 
     {% if detalles %}
 
@@ -1527,6 +1658,83 @@ function toggleDetalles(id, boton) {
     font-size: 10px;
     line-height: 1.35;
 }
+
+.pedido-ganancia-personal {
+    margin-top: 18px;
+    padding: 18px;
+    border-radius: 16px;
+    border: 1px solid #dbeafe;
+    background: #f8fbff;
+}
+
+.pedido-ganancia-personal-header span {
+    display: block;
+    font-size: .78rem;
+    font-weight: 800;
+    color: #1d4ed8;
+}
+
+.pedido-ganancia-personal-header h3 {
+    margin: 5px 0 0;
+}
+
+.pedido-ganancia-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.pedido-ganancia-box {
+    padding: 14px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+}
+
+.pedido-ganancia-box.principal {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.pedido-ganancia-box small,
+.pedido-ganancia-box strong {
+    display: block;
+}
+
+.pedido-ganancia-box strong {
+    font-size: 1.35rem;
+    margin-top: 5px;
+}
+
+.pedido-ganancia-estado {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    line-height: 1.5;
+}
+
+.pedido-ganancia-estado.disponible {
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+}
+
+.pedido-ganancia-estado.pendiente {
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+}
+
+.pedido-ganancia-estado.perdida {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+}
+
+@media (max-width: 700px) {
+    .pedido-ganancia-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
 </style>
 
 {% endblock %}

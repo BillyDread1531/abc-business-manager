@@ -6,19 +6,14 @@ Finanzas - ABC Business Manager
 
 {% block content %}
 
-
 <div class="page-header">
 
     <div>
-
         <h1>Finanzas</h1>
-
         <p>
-            Consulta los ingresos, egresos y resultados del negocio.
+            Mira cuánto ganaste realmente y consulta los movimientos de ABC.
         </p>
-
     </div>
-
 
     <div class="finanzas-header-actions">
 
@@ -41,182 +36,8 @@ Finanzas - ABC Business Manager
 </div>
 
 
-
-
 <!-- =====================================================
-     CAJA Y SEPARACIÓN DEL DINERO
-===================================================== -->
-
-<div class="card caja-card">
-
-    <div class="caja-header">
-
-        <div>
-
-            <span class="caja-eyebrow">
-                💼 Caja del negocio
-            </span>
-
-            <h2>
-                ¿Cuánto dinero es tuyo y cuánto le queda a ABC?
-            </h2>
-
-            <p>
-                Las compras de inventario sí reducen el efectivo disponible
-                del negocio, pero no reducen la utilidad positiva que ya
-                generaste para ti en semanas anteriores.
-            </p>
-
-        </div>
-
-    </div>
-
-
-    <div class="caja-grid">
-
-        <div class="caja-item caja-efectivo">
-
-            <span class="caja-item-icon">💵</span>
-
-            <div>
-
-                <small>Efectivo neto registrado</small>
-
-                <strong
-                    class="{% if efectivo_neto_registrado >= 0 %}margen-positivo{% else %}margen-negativo{% endif %}"
-                >
-                    Q {{ "%.2f"|format(efectivo_neto_registrado) }}
-                </strong>
-
-                <p>
-                    Ingresos menos todos los egresos registrados,
-                    incluyendo compras de inventario.
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="caja-item caja-propietario">
-
-            <span class="caja-item-icon">👤</span>
-
-            <div>
-
-                <small>
-                    Separado para ti · {{ "%.2f"|format(porcentaje_propietario) }}%
-                </small>
-
-                <strong>
-                    Q {{ "%.2f"|format(ganancia_propietario_acumulada) }}
-                </strong>
-
-                <p>
-                    Es tu ganancia personal acumulada. ABC no necesita
-                    saber en qué la gastas.
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="caja-item caja-abc">
-
-            <span class="caja-item-icon">🏪</span>
-
-            <div>
-
-                <small>Disponible real para ABC</small>
-
-                <strong
-                    class="{% if dinero_abc_disponible >= 0 %}margen-positivo{% else %}margen-negativo{% endif %}"
-                >
-                    Q {{ "%.2f"|format(dinero_abc_disponible) }}
-                </strong>
-
-                <p>
-                    Efectivo registrado menos lo que ya se considera
-                    separado para ti.
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="caja-item">
-
-            <span class="caja-item-icon">📈</span>
-
-            <div>
-
-                <small>
-                    Reinversión acumulada · {{ "%.2f"|format(porcentaje_reinversion) }}%
-                </small>
-
-                <strong>
-                    Q {{ "%.2f"|format(reinversion_acumulada) }}
-                </strong>
-
-                <p>
-                    Parte de la utilidad generada para crecimiento,
-                    materiales, publicidad o equipo.
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="caja-item">
-
-            <span class="caja-item-icon">🛡️</span>
-
-            <div>
-
-                <small>
-                    Reserva acumulada · {{ "%.2f"|format(porcentaje_reserva) }}%
-                </small>
-
-                <strong>
-                    Q {{ "%.2f"|format(reserva_acumulada) }}
-                </strong>
-
-                <p>
-                    Parte de la utilidad destinada a estabilidad
-                    e imprevistos del negocio.
-                </p>
-
-            </div>
-
-        </div>
-
-    </div>
-
-
-    {% if dinero_abc_disponible < 0 %}
-
-        <div class="caja-alerta">
-
-            <span>⚠️</span>
-
-            <p>
-                ABC ha utilizado más efectivo del que le corresponde después
-                de separar tu ganancia personal acumulada. Esto puede ocurrir
-                por compras fuertes de inventario u otros egresos.
-            </p>
-
-        </div>
-
-    {% endif %}
-
-</div>
-
-
-<!-- =====================================================
-     UTILIDAD PARA TI
+     TU GANANCIA
 ===================================================== -->
 
 <div class="card utilidad-card">
@@ -226,16 +47,16 @@ Finanzas - ABC Business Manager
         <div>
 
             <span class="utilidad-eyebrow">
-                💰 Utilidad del negocio
+                👤 TU GANANCIA
             </span>
 
             <h2>
-                ¿Cuánto generó ABC para ti?
+                ¿Cuánto dinero es realmente mío?
             </h2>
 
             <p>
-                Calculado con ventas cobradas, costo asociado
-                a esas ventas y gastos operativos.
+                Solo cuenta pedidos totalmente pagados
+                y con sus costos reales completos.
             </p>
 
         </div>
@@ -289,16 +110,85 @@ Finanzas - ABC Business Manager
     </div>
 
 
+    <div class="finanzas-explicacion">
+        <strong>Así lo calcula ABC:</strong><br>
+        Venta del pedido − costo real = ganancia real.<br>
+        Después la ganancia positiva se reparte:
+        {{ "%.0f"|format(porcentaje_propietario) }}% para ti,
+        {{ "%.0f"|format(porcentaje_reinversion) }}% reinversión y
+        {{ "%.0f"|format(porcentaje_reserva) }}% reserva.
+        <br><br>
+        <strong>Los adelantos no cuentan todavía como tu dinero.</strong>
+        Si falta saldo por cobrar, espera al pago completo.
+    </div>
+
+
+    <div class="ganancia-pedidos-grid">
+
+        <div class="ganancia-resumen-card principal">
+
+            <small>
+                👤 PARA TI EN ESTE PERÍODO
+            </small>
+
+            <strong class="finanzas-monto-mio margen-positivo">
+                Q {{ "%.2f"|format(ganancia_propietario) }}
+            </strong>
+
+            <p>
+                Este monto ya corresponde a pedidos completamente pagados.
+                Puedes separarlo para tus gastos personales.
+            </p>
+
+        </div>
+
+
+        <div class="ganancia-resumen-card">
+
+            <small>
+                📈 Reinversión generada
+            </small>
+
+            <strong>
+                Q {{ "%.2f"|format(monto_reinversion) }}
+            </strong>
+
+            <p>
+                Parte de la ganancia que sigue trabajando en ABC.
+            </p>
+
+        </div>
+
+
+        <div class="ganancia-resumen-card">
+
+            <small>
+                🛡️ Reserva generada
+            </small>
+
+            <strong>
+                Q {{ "%.2f"|format(monto_reserva) }}
+            </strong>
+
+            <p>
+                Parte de la ganancia que corresponde guardar.
+            </p>
+
+        </div>
+
+    </div>
+
+
     <div class="utilidad-calculo">
 
         <div class="utilidad-calculo-fila">
 
             <span>
-                Ventas cobradas
+                Ventas de pedidos ya pagados
             </span>
 
-            <strong class="margen-positivo">
-                Q {{ "%.2f"|format(ventas_cobradas_utilidad) }}
+            <strong>
+                Q {{ "%.2f"|format(ventas_confirmadas) }}
             </strong>
 
         </div>
@@ -307,24 +197,11 @@ Finanzas - ABC Business Manager
         <div class="utilidad-calculo-fila">
 
             <span>
-                Costo asociado a esas ventas
+                Costos reales de esos pedidos
             </span>
 
             <strong class="margen-negativo">
-                - Q {{ "%.2f"|format(costo_ventas_utilidad) }}
-            </strong>
-
-        </div>
-
-
-        <div class="utilidad-calculo-fila">
-
-            <span>
-                Gastos operativos
-            </span>
-
-            <strong class="margen-negativo">
-                - Q {{ "%.2f"|format(gastos_operativos_utilidad) }}
+                - Q {{ "%.2f"|format(costos_confirmados) }}
             </strong>
 
         </div>
@@ -333,7 +210,7 @@ Finanzas - ABC Business Manager
         <div class="utilidad-calculo-fila utilidad-calculo-total">
 
             <span>
-                Utilidad real
+                Ganancia real de esos pedidos
             </span>
 
             <strong
@@ -353,141 +230,110 @@ Finanzas - ABC Business Manager
     </div>
 
 
-    {% if utilidad_real > 0 %}
+    {% if pedidos_pendientes_ganancia > 0 %}
 
-        <div class="utilidad-distribucion">
-
-            <div class="utilidad-distribucion-card utilidad-propietario">
-
-                <span class="utilidad-distribucion-icon">
-                    👤
-                </span>
-
-                <div>
-
-                    <small>
-                        Para ti · {{ "%.2f"|format(porcentaje_propietario) }}%
-                    </small>
-
-                    <strong>
-                        Q {{ "%.2f"|format(ganancia_propietario) }}
-                    </strong>
-
-                    <p>
-                        Puedes considerar este monto tu ganancia personal.
-                        ABC no necesita saber en qué lo gastas.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="utilidad-distribucion-card">
-
-                <span class="utilidad-distribucion-icon">
-                    📈
-                </span>
-
-                <div>
-
-                    <small>
-                        Reinversión · {{ "%.2f"|format(porcentaje_reinversion) }}%
-                    </small>
-
-                    <strong>
-                        Q {{ "%.2f"|format(monto_reinversion) }}
-                    </strong>
-
-                    <p>
-                        Para crecimiento, inventario adicional,
-                        publicidad o equipo.
-                    </p>
-
-                </div>
-
-            </div>
-
-
-            <div class="utilidad-distribucion-card">
-
-                <span class="utilidad-distribucion-icon">
-                    🛡️
-                </span>
-
-                <div>
-
-                    <small>
-                        Reserva · {{ "%.2f"|format(porcentaje_reserva) }}%
-                    </small>
-
-                    <strong>
-                        Q {{ "%.2f"|format(monto_reserva) }}
-                    </strong>
-
-                    <p>
-                        Fondo para imprevistos y estabilidad del negocio.
-                    </p>
-
-                </div>
-
-            </div>
-
+        <div class="finanzas-alerta-simple">
+            ⏳ Hay {{ pedidos_pendientes_ganancia }}
+            {% if pedidos_pendientes_ganancia == 1 %}
+                pedido con pago o costo pendiente.
+            {% else %}
+                pedidos con pagos o costos pendientes.
+            {% endif %}
+            No se incluyen todavía en tu dinero.
         </div>
 
+    {% endif %}
 
-    {% else %}
 
-        <div class="utilidad-sin-distribucion">
+    <div class="pedido-ganancia-lista">
 
-            <span>ℹ️</span>
+        <h3>
+            Pedidos que generaron tu dinero
+        </h3>
 
-            <div>
+        {% if pedidos_ganancia %}
 
-                <strong>
-                    No hay utilidad para distribuir en este período.
-                </strong>
+            {% for item in pedidos_ganancia %}
+
+                <div class="pedido-ganancia-item">
+
+                    <div class="pedido-ganancia-top">
+
+                        <a
+                            href="{{ url_for(
+                                'pedidos.detalle',
+                                pedido_id=item.id
+                            ) }}"
+                            class="finanza-referencia"
+                        >
+                            <strong>
+                                {{ item.numero }}
+                            </strong>
+                            <span>↗</span>
+                        </a>
+
+                        <strong class="margen-positivo">
+                            👤 Tuyo: Q {{ "%.2f"|format(item.para_ti) }}
+                        </strong>
+
+                    </div>
+
+                    <div class="pedido-ganancia-numeros">
+
+                        <div>
+                            <span>Venta</span>
+                            <strong>
+                                Q {{ "%.2f"|format(item.venta) }}
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Costo real</span>
+                            <strong>
+                                Q {{ "%.2f"|format(item.costo) }}
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Ganancia</span>
+                            <strong>
+                                Q {{ "%.2f"|format(item.ganancia) }}
+                            </strong>
+                        </div>
+
+                        <div>
+                            <span>Último pago</span>
+                            <strong>
+                                {{ item.fecha_ultimo_pago.strftime('%d/%m/%Y') }}
+                            </strong>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            {% endfor %}
+
+        {% else %}
+
+            <div class="empty-state">
+
+                <div class="empty-state-icon">
+                    💰
+                </div>
+
+                <h3>
+                    Todavía no hay ganancia personal confirmada
+                </h3>
 
                 <p>
-                    Cuando la utilidad real sea positiva,
-                    ABC calculará automáticamente cuánto corresponde
-                    para ti, reinversión y reserva.
+                    Cuando un pedido quede completamente pagado
+                    y tenga sus costos reales, aparecerá aquí.
                 </p>
 
             </div>
 
-        </div>
-
-    {% endif %}
-
-
-    {% if otros_ingresos_utilidad > 0 %}
-
-        <div class="utilidad-nota">
-
-            <span>＋</span>
-
-            <p>
-                Hay Q {{ "%.2f"|format(otros_ingresos_utilidad) }}
-                de otros ingresos en este período. No se incluyen
-                automáticamente en la utilidad distribuible para evitar
-                confundir aportes de capital u otros movimientos con ventas.
-            </p>
-
-        </div>
-
-    {% endif %}
-
-
-    <div class="utilidad-nota utilidad-nota-importante">
-
-        <span>💡</span>
-
-        <p>
-            Este valor indica utilidad generada, no el efectivo exacto
-            que hay físicamente en caja. Si compraste inventario por
-            adelantado, el dinero disponible en tu cuenta puede ser menor.
-        </p>
+        {% endif %}
 
     </div>
 
@@ -495,194 +341,7 @@ Finanzas - ABC Business Manager
 
 
 <!-- =====================================================
-     RESUMEN
-===================================================== -->
-<div class="finanzas-resumen">
-
-
-    <!-- TOTAL INGRESOS -->
-
-    <div class="finanza-card finanza-card-ingresos">
-
-        <div class="finanza-card-icon">
-            ↗
-        </div>
-
-        <div class="finanza-card-content">
-
-            <span class="finanza-card-label">
-                Total de ingresos
-            </span>
-
-            <strong class="finanza-card-valor">
-                Q {{ "%.2f"|format(total_ingresos) }}
-            </strong>
-
-        </div>
-
-    </div>
-
-
-    <!-- VENTAS COBRADAS -->
-
-    <div class="finanza-card finanza-card-ventas">
-
-        <div class="finanza-card-icon">
-            🛍️
-        </div>
-
-        <div class="finanza-card-content">
-
-            <span class="finanza-card-label">
-                Ventas cobradas
-            </span>
-
-            <strong class="finanza-card-valor">
-                Q {{ "%.2f"|format(ventas_cobradas) }}
-            </strong>
-
-        </div>
-
-    </div>
-
-
-    <!-- OTROS INGRESOS -->
-
-    <div class="finanza-card finanza-card-otros-ingresos">
-
-        <div class="finanza-card-icon">
-            ＋
-        </div>
-
-        <div class="finanza-card-content">
-
-            <span class="finanza-card-label">
-                Otros ingresos
-            </span>
-
-            <strong class="finanza-card-valor">
-                Q {{ "%.2f"|format(otros_ingresos) }}
-            </strong>
-
-        </div>
-
-    </div>
-
-
-    <!-- TOTAL EGRESOS -->
-
-    <div class="finanza-card finanza-card-egresos">
-
-        <div class="finanza-card-icon">
-            ↘
-        </div>
-
-        <div class="finanza-card-content">
-
-            <span class="finanza-card-label">
-                Total de egresos
-            </span>
-
-            <strong class="finanza-card-valor">
-                Q {{ "%.2f"|format(total_egresos) }}
-            </strong>
-
-        </div>
-
-    </div>
-
-
-    <!-- COMPRAS -->
-
-    <div class="finanza-card finanza-card-compras">
-
-        <div class="finanza-card-icon">
-            🛒
-        </div>
-
-        <div class="finanza-card-content">
-
-            <span class="finanza-card-label">
-                Compras de materiales
-            </span>
-
-            <strong class="finanza-card-valor">
-                Q {{ "%.2f"|format(compras_pagadas) }}
-            </strong>
-
-        </div>
-
-    </div>
-
-
-    <!-- OTROS EGRESOS -->
-
-    <div class="finanza-card finanza-card-otros-egresos">
-
-        <div class="finanza-card-icon">
-            −
-        </div>
-
-        <div class="finanza-card-content">
-
-            <span class="finanza-card-label">
-                Otros egresos
-            </span>
-
-            <strong class="finanza-card-valor">
-                Q {{ "%.2f"|format(otros_egresos) }}
-            </strong>
-
-        </div>
-
-    </div>
-
-
-    <!-- RESULTADO -->
-
-    <div
-        class="
-            finanza-card
-            finanza-card-resultado
-
-            {% if resultado >= 0 %}
-                finanza-card-resultado-positivo
-            {% else %}
-                finanza-card-resultado-negativo
-            {% endif %}
-        "
-    >
-
-        <div class="finanza-card-icon">
-            {% if resultado >= 0 %}
-                ✓
-            {% else %}
-                !
-            {% endif %}
-        </div>
-
-
-        <div class="finanza-card-content">
-
-            <span class="finanza-card-label">
-                Resultado
-            </span>
-
-            <strong class="finanza-card-valor">
-                Q {{ "%.2f"|format(resultado) }}
-            </strong>
-
-        </div>
-
-    </div>
-
-
-</div>
-
-
-
-<!-- =====================================================
-     FILTROS
+     MOVIMIENTOS DEL NEGOCIO
 ===================================================== -->
 
 <div class="card finanzas-filtros-card">
@@ -691,11 +350,13 @@ Finanzas - ABC Business Manager
 
         <div>
 
-            <h2>Período de movimientos</h2>
+            <h2>
+                Movimientos de ABC · {{ etiqueta_mes }}
+            </h2>
 
             <p>
-                Por defecto se muestra el mes actual. Puedes consultar
-                cualquier mes anterior sin perder la información guardada.
+                Esto muestra dinero que entró y salió del negocio.
+                No significa "tu ganancia".
             </p>
 
         </div>
@@ -715,7 +376,7 @@ Finanzas - ABC Business Manager
             value="{{ periodo_utilidad }}"
         >
 
-        <div class="finanzas-filtros-grid">
+        <div class="finanzas-periodo-mensual">
 
             <div class="form-group">
 
@@ -724,23 +385,19 @@ Finanzas - ABC Business Manager
                 </label>
 
                 <select
-                    id="mes"
                     name="mes"
+                    id="mes"
                 >
-
-                    {% for numero_mes, nombre_mes in meses %}
-
+                    {% for numero_mes in range(1, 13) %}
                         <option
                             value="{{ numero_mes }}"
                             {% if numero_mes == mes_filtro %}
                                 selected
                             {% endif %}
                         >
-                            {{ nombre_mes }}
+                            {{ nombres_meses[numero_mes] }}
                         </option>
-
                     {% endfor %}
-
                 </select>
 
             </div>
@@ -753,12 +410,10 @@ Finanzas - ABC Business Manager
                 </label>
 
                 <select
-                    id="anio"
                     name="anio"
+                    id="anio"
                 >
-
                     {% for anio in anios_disponibles %}
-
                         <option
                             value="{{ anio }}"
                             {% if anio == anio_filtro %}
@@ -767,9 +422,7 @@ Finanzas - ABC Business Manager
                         >
                             {{ anio }}
                         </option>
-
                     {% endfor %}
-
                 </select>
 
             </div>
@@ -817,36 +470,12 @@ Finanzas - ABC Business Manager
 
             </div>
 
-        </div>
-
-
-        <div class="finanzas-filtros-periodo-activo">
-
-            <span>Período mostrado:</span>
-
-            <strong>
-                {{ fecha_desde.strftime('%d/%m/%Y') }}
-                -
-                {{ fecha_hasta.strftime('%d/%m/%Y') }}
-            </strong>
-
-        </div>
-
-
-        <div class="finanzas-filtros-actions">
-
-            <a
-                href="{{ url_for('finanzas.index') }}"
-                class="btn-secondary"
-            >
-                Mes actual
-            </a>
 
             <button
                 type="submit"
                 class="btn-primary"
             >
-                🔎 Consultar
+                🔎 Ver período
             </button>
 
         </div>
@@ -855,6 +484,158 @@ Finanzas - ABC Business Manager
 
 </div>
 
+
+<div class="finanzas-resumen">
+
+    <div class="finanza-card finanza-card-ingresos">
+
+        <div class="finanza-card-icon">
+            ↗
+        </div>
+
+        <div class="finanza-card-content">
+
+            <span class="finanza-card-label">
+                Total de ingresos
+            </span>
+
+            <strong class="finanza-card-valor">
+                Q {{ "%.2f"|format(total_ingresos) }}
+            </strong>
+
+            <small>
+                Dinero que entró en {{ etiqueta_mes }}.
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="finanza-card finanza-card-egresos">
+
+        <div class="finanza-card-icon">
+            ↘
+        </div>
+
+        <div class="finanza-card-content">
+
+            <span class="finanza-card-label">
+                Total de egresos
+            </span>
+
+            <strong class="finanza-card-valor">
+                Q {{ "%.2f"|format(total_egresos) }}
+            </strong>
+
+            <small>
+                Dinero que salió en {{ etiqueta_mes }}.
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="
+            finanza-card
+            finanza-card-resultado
+
+            {% if resultado >= 0 %}
+                finanza-card-resultado-positivo
+            {% else %}
+                finanza-card-resultado-negativo
+            {% endif %}
+        "
+    >
+
+        <div class="finanza-card-icon">
+            ↔
+        </div>
+
+        <div class="finanza-card-content">
+
+            <span class="finanza-card-label">
+                Movimiento neto del mes
+            </span>
+
+            <strong class="finanza-card-valor">
+                Q {{ "%.2f"|format(resultado) }}
+            </strong>
+
+            <small>
+                Ingresos menos egresos. Esto no es tu ganancia.
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="finanza-card finanza-card-ventas">
+
+        <div class="finanza-card-icon">
+            🛍️
+        </div>
+
+        <div class="finanza-card-content">
+
+            <span class="finanza-card-label">
+                Ventas cobradas
+            </span>
+
+            <strong class="finanza-card-valor">
+                Q {{ "%.2f"|format(ventas_cobradas) }}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div class="finanza-card finanza-card-compras">
+
+        <div class="finanza-card-icon">
+            🛒
+        </div>
+
+        <div class="finanza-card-content">
+
+            <span class="finanza-card-label">
+                Compras de materiales
+            </span>
+
+            <strong class="finanza-card-valor">
+                Q {{ "%.2f"|format(compras_pagadas) }}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div class="finanza-card finanza-card-otros-egresos">
+
+        <div class="finanza-card-icon">
+            −
+        </div>
+
+        <div class="finanza-card-content">
+
+            <span class="finanza-card-label">
+                Otros egresos
+            </span>
+
+            <strong class="finanza-card-valor">
+                Q {{ "%.2f"|format(otros_egresos) }}
+            </strong>
+
+        </div>
+
+    </div>
+
+</div>
 
 <!-- =====================================================
      MOVIMIENTOS
@@ -1141,148 +922,8 @@ Finanzas - ABC Business Manager
 
 
 
+
 <style>
-
-/* ============================================================
-   CAJA Y SEPARACIÓN DEL DINERO
-============================================================ */
-
-.caja-card {
-    margin-bottom: 20px;
-    padding: 22px 24px;
-}
-
-.caja-header h2 {
-    margin: 0;
-    color: #0b245f;
-    font-size: 21px;
-}
-
-.caja-header p {
-    margin: 6px 0 0;
-    max-width: 760px;
-    color: #727c8e;
-    font-size: 11px;
-    line-height: 1.5;
-}
-
-.caja-eyebrow {
-    display: block;
-    margin-bottom: 5px;
-    color: #657086;
-    font-size: 10px;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: .05em;
-}
-
-.caja-grid {
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: 16px;
-}
-
-.caja-item {
-    display: flex;
-    gap: 10px;
-    min-width: 0;
-    padding: 15px;
-    background: #f8fafc;
-    border: 1px solid #e4e9f2;
-    border-radius: 10px;
-}
-
-.caja-item-icon {
-    flex-shrink: 0;
-    font-size: 20px;
-}
-
-.caja-item small {
-    display: block;
-    color: #69758b;
-    font-size: 9px;
-    font-weight: 800;
-    text-transform: uppercase;
-    line-height: 1.35;
-}
-
-.caja-item strong {
-    display: block;
-    margin-top: 5px;
-    font-size: 19px;
-    line-height: 1.2;
-}
-
-.caja-item p {
-    margin: 6px 0 0;
-    color: #717c8e;
-    font-size: 9px;
-    line-height: 1.45;
-}
-
-.caja-propietario {
-    background: #eef7ff;
-    border-color: #cfe2fb;
-}
-
-.caja-propietario strong {
-    color: #0b2a72;
-}
-
-.caja-abc {
-    background: #f3fbf6;
-    border-color: #d5ecdc;
-}
-
-.caja-alerta {
-    display: flex;
-    gap: 10px;
-    margin-top: 14px;
-    padding: 12px 13px;
-    background: #fff3f3;
-    border: 1px solid #f1c9c9;
-    border-radius: 9px;
-}
-
-.caja-alerta p {
-    margin: 0;
-    color: #8a3f3f;
-    font-size: 10px;
-    line-height: 1.5;
-}
-
-.finanzas-filtros-periodo-activo {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    margin-top: 13px;
-    color: #707a8c;
-    font-size: 10px;
-}
-
-.finanzas-filtros-periodo-activo strong {
-    color: #263453;
-}
-
-@media (max-width: 1200px) {
-    .caja-grid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-
-@media (max-width: 800px) {
-    .caja-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-@media (max-width: 560px) {
-    .caja-card {
-        padding: 17px;
-    }
-}
-
 
 .utilidad-card {
     margin-bottom: 20px;
@@ -1500,6 +1141,137 @@ Finanzas - ABC Business Manager
 
 }
 
+</style>
+
+
+
+<style>
+.finanzas-explicacion {
+    margin: 16px 0;
+    padding: 14px 16px;
+    border-radius: 12px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    line-height: 1.55;
+}
+
+.ganancia-pedidos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.ganancia-resumen-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 16px;
+    background: #fff;
+}
+
+.ganancia-resumen-card.principal {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.ganancia-resumen-card small,
+.ganancia-resumen-card strong {
+    display: block;
+}
+
+.ganancia-resumen-card strong {
+    font-size: 1.45rem;
+    margin-top: 5px;
+}
+
+.finanzas-monto-mio {
+    font-size: clamp(2rem, 7vw, 3.2rem) !important;
+}
+
+.pedido-ganancia-lista {
+    margin-top: 20px;
+}
+
+.pedido-ganancia-item {
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 10px;
+    background: #fff;
+}
+
+.pedido-ganancia-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.pedido-ganancia-numeros {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.pedido-ganancia-numeros div {
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 10px;
+}
+
+.pedido-ganancia-numeros span,
+.pedido-ganancia-numeros strong {
+    display: block;
+}
+
+.pedido-ganancia-numeros span {
+    font-size: .78rem;
+    color: #64748b;
+}
+
+.pedido-ganancia-numeros strong {
+    margin-top: 3px;
+}
+
+.finanzas-periodo-mensual {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: end;
+}
+
+.finanzas-periodo-mensual .form-group {
+    min-width: 135px;
+    flex: 1;
+}
+
+.finanzas-alerta-simple {
+    margin-top: 14px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+}
+
+@media (max-width: 760px) {
+    .ganancia-pedidos-grid,
+    .pedido-ganancia-numeros {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .pedido-ganancia-top {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 480px) {
+    .ganancia-pedidos-grid,
+    .pedido-ganancia-numeros {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 
 {% endblock %}

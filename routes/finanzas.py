@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash
 from database import obtener_conexion
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import date, timedelta
+import calendar
 
 
 finanzas_bp = Blueprint(
@@ -15,933 +16,562 @@ finanzas_bp = Blueprint(
 # PANEL PRINCIPAL
 # ============================================================
 
-
 @finanzas_bp.route("/")
 def index():
 
     conn = obtener_conexion()
     cursor = conn.cursor(dictionary=True)
 
-    hoy = date.today()
+    try:
 
-    # ========================================================
-    # CONFIGURACIÓN DE DISTRIBUCIÓN
-    # ========================================================
+        hoy = date.today()
 
-    cursor.execute("""
-        SELECT
-            porcentaje_propietario,
-            porcentaje_reinversion,
-            porcentaje_reserva
-        FROM configuracion_negocio
-        ORDER BY id ASC
-        LIMIT 1
-    """)
+        # ========================================================
+        # CONFIGURACIÓN DE UTILIDADES
+        # ========================================================
 
-    configuracion_utilidad = cursor.fetchone() or {}
+        cursor.execute("""
+            SELECT
+                porcentaje_propietario,
+                porcentaje_reinversion,
+                porcentaje_reserva
+            FROM configuracion_negocio
+            ORDER BY id ASC
+            LIMIT 1
+        """)
 
-    porcentaje_propietario = Decimal(
-        str(
-            configuracion_utilidad.get(
-                "porcentaje_propietario",
-                50
-            ) or 50
+        configuracion = cursor.fetchone() or {}
+
+        porcentaje_propietario = Decimal(
+            str(configuracion.get("porcentaje_propietario", 50) or 50)
         )
-    )
-
-    porcentaje_reinversion = Decimal(
-        str(
-            configuracion_utilidad.get(
-                "porcentaje_reinversion",
-                30
-            ) or 30
+        porcentaje_reinversion = Decimal(
+            str(configuracion.get("porcentaje_reinversion", 30) or 30)
         )
-    )
-
-    porcentaje_reserva = Decimal(
-        str(
-            configuracion_utilidad.get(
-                "porcentaje_reserva",
-                20
-            ) or 20
+        porcentaje_reserva = Decimal(
+            str(configuracion.get("porcentaje_reserva", 20) or 20)
         )
-    )
 
-    # ========================================================
-    # UTILIDAD: SEMANA / MES
-    # ========================================================
+        # ========================================================
+        # TU GANANCIA: SEMANA / MES
+        #
+        # Solo cuenta pedidos:
+        # 1) totalmente pagados
+        # 2) con costo real completo
+        #
+        # venta - costo = ganancia
+        # la ganancia positiva se reparte 50/30/20
+        # ========================================================
 
-    periodo_utilidad = request.args.get(
-        "periodo_utilidad",
-        "SEMANA"
-    ).strip().upper()
+        periodo_utilidad = request.args.get(
+            "periodo_utilidad",
+            "SEMANA"
+        ).strip().upper()
 
-    if periodo_utilidad not in {
-        "SEMANA",
-        "MES"
-    }:
-        periodo_utilidad = "SEMANA"
+        if periodo_utilidad not in {"SEMANA", "MES"}:
+            periodo_utilidad = "SEMANA"
 
-    if periodo_utilidad == "MES":
+        if periodo_utilidad == "MES":
+            utilidad_desde = hoy.replace(day=1)
+        else:
+            utilidad_desde = hoy - timedelta(days=hoy.weekday())
 
-        utilidad_desde = hoy.replace(day=1)
         utilidad_hasta = hoy
 
-    else:
-
-        utilidad_desde = (
-            hoy
-            - timedelta(days=hoy.weekday())
+        etiqueta_periodo_utilidad = (
+            utilidad_desde.strftime("%d/%m/%Y")
+            + " - "
+            + utilidad_hasta.strftime("%d/%m/%Y")
         )
-        utilidad_hasta = hoy
 
-    etiqueta_periodo_utilidad = (
-        utilidad_desde.strftime("%d/%m/%Y")
-        + " - "
-        + utilidad_hasta.strftime("%d/%m/%Y")
-    )
-
-    def calcular_utilidad_periodo(desde, hasta):
-
-        # Ventas cobradas en el período.
         cursor.execute("""
             SELECT
-                COALESCE(SUM(i.monto), 0) AS total
-            FROM ingresos i
-            WHERE UPPER(i.categoria) = 'VENTA'
-              AND DATE(i.fecha) BETWEEN %s AND %s
+                p.id,
+                p.numero,
+                p.total,
+
+                pagos.total_pagado,
+                pagos.fecha_ultimo_pago,
+
+                costos.costo_real_total,
+                costos.cantidad_detalles,
+                costos.detalles_con_costo_real
+
+            FROM pedidos p
+
+            INNER JOIN (
+                SELECT
+                    pedido_id,
+                    SUM(monto) AS total_pagado,
+                    MAX(fecha) AS fecha_ultimo_pago
+                FROM pagos
+                GROUP BY pedido_id
+            ) pagos
+                ON pagos.pedido_id = p.id
+
+            INNER JOIN (
+                SELECT
+                    pedido_id,
+                    COUNT(*) AS cantidad_detalles,
+                    SUM(
+                        CASE
+                            WHEN costo_real IS NOT NULL
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) AS detalles_con_costo_real,
+                    SUM(COALESCE(costo_real, 0)) AS costo_real_total
+                FROM detalle_pedido
+                GROUP BY pedido_id
+            ) costos
+                ON costos.pedido_id = p.id
+
+            WHERE p.estado != 'CANCELADO'
+              AND pagos.total_pagado >= p.total
+              AND costos.cantidad_detalles > 0
+              AND costos.detalles_con_costo_real = costos.cantidad_detalles
+              AND DATE(pagos.fecha_ultimo_pago) BETWEEN %s AND %s
+
+            ORDER BY pagos.fecha_ultimo_pago DESC, p.id DESC
         """, (
-            desde,
-            hasta
+            utilidad_desde,
+            utilidad_hasta
         ))
 
-        ventas = Decimal(
+        pedidos_ganancia = cursor.fetchall()
+
+        ventas_confirmadas = Decimal("0.00")
+        costos_confirmados = Decimal("0.00")
+        utilidad_real = Decimal("0.00")
+        ganancia_propietario = Decimal("0.00")
+        monto_reinversion = Decimal("0.00")
+        monto_reserva = Decimal("0.00")
+
+        for item in pedidos_ganancia:
+
+            venta = Decimal(
+                str(item["total"] or 0)
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            costo = Decimal(
+                str(item["costo_real_total"] or 0)
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            ganancia = (
+                venta - costo
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            distribuible = max(
+                ganancia,
+                Decimal("0.00")
+            )
+
+            para_ti = (
+                distribuible
+                * porcentaje_propietario
+                / Decimal("100")
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            reinversion = (
+                distribuible
+                * porcentaje_reinversion
+                / Decimal("100")
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            reserva = (
+                distribuible
+                - para_ti
+                - reinversion
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            item["venta"] = venta
+            item["costo"] = costo
+            item["ganancia"] = ganancia
+            item["para_ti"] = para_ti
+            item["reinversion"] = reinversion
+            item["reserva"] = reserva
+
+            ventas_confirmadas += venta
+            costos_confirmados += costo
+            utilidad_real += ganancia
+            ganancia_propietario += para_ti
+            monto_reinversion += reinversion
+            monto_reserva += reserva
+
+        ventas_confirmadas = ventas_confirmadas.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+        costos_confirmados = costos_confirmados.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+        utilidad_real = utilidad_real.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+        ganancia_propietario = ganancia_propietario.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+        monto_reinversion = monto_reinversion.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+        monto_reserva = monto_reserva.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
+        # Pedidos con algún pago pero que todavía no están listos
+        # para considerar ganancia personal.
+        cursor.execute("""
+            SELECT COUNT(*) AS cantidad
+            FROM pedidos p
+
+            LEFT JOIN (
+                SELECT
+                    pedido_id,
+                    SUM(monto) AS total_pagado
+                FROM pagos
+                GROUP BY pedido_id
+            ) pagos
+                ON pagos.pedido_id = p.id
+
+            LEFT JOIN (
+                SELECT
+                    pedido_id,
+                    COUNT(*) AS cantidad_detalles,
+                    SUM(
+                        CASE
+                            WHEN costo_real IS NOT NULL
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) AS detalles_con_costo_real
+                FROM detalle_pedido
+                GROUP BY pedido_id
+            ) costos
+                ON costos.pedido_id = p.id
+
+            WHERE p.estado != 'CANCELADO'
+              AND COALESCE(pagos.total_pagado, 0) > 0
+              AND (
+                    COALESCE(pagos.total_pagado, 0) < p.total
+                    OR COALESCE(costos.cantidad_detalles, 0) = 0
+                    OR COALESCE(costos.detalles_con_costo_real, 0)
+                       < COALESCE(costos.cantidad_detalles, 0)
+              )
+        """)
+
+        pedidos_pendientes_ganancia = int(
+            cursor.fetchone()["cantidad"] or 0
+        )
+
+        # ========================================================
+        # MOVIMIENTOS: MES / AÑO
+        #
+        # Por defecto abre el mes actual.
+        # Esto es flujo de dinero, NO ganancia personal.
+        # ========================================================
+
+        try:
+            mes_filtro = int(
+                request.args.get("mes", hoy.month)
+            )
+        except (TypeError, ValueError):
+            mes_filtro = hoy.month
+
+        if mes_filtro < 1 or mes_filtro > 12:
+            mes_filtro = hoy.month
+
+        try:
+            anio_filtro = int(
+                request.args.get("anio", hoy.year)
+            )
+        except (TypeError, ValueError):
+            anio_filtro = hoy.year
+
+        if anio_filtro < 2000 or anio_filtro > 2100:
+            anio_filtro = hoy.year
+
+        tipo = request.args.get(
+            "tipo",
+            ""
+        ).strip().upper()
+
+        if tipo not in ("", "INGRESO", "EGRESO"):
+            tipo = ""
+
+        ultimo_dia = calendar.monthrange(
+            anio_filtro,
+            mes_filtro
+        )[1]
+
+        fecha_desde_obj = date(
+            anio_filtro,
+            mes_filtro,
+            1
+        )
+
+        fecha_hasta_obj = date(
+            anio_filtro,
+            mes_filtro,
+            ultimo_dia
+        )
+
+        fecha_desde = fecha_desde_obj.isoformat()
+        fecha_hasta = fecha_hasta_obj.isoformat()
+
+        nombres_meses = [
+            "",
+            "Enero",
+            "Febrero",
+            "Marzo",
+            "Abril",
+            "Mayo",
+            "Junio",
+            "Julio",
+            "Agosto",
+            "Septiembre",
+            "Octubre",
+            "Noviembre",
+            "Diciembre"
+        ]
+
+        etiqueta_mes = (
+            f"{nombres_meses[mes_filtro]} {anio_filtro}"
+        )
+
+        cursor.execute("""
+            SELECT
+                MIN(anio) AS minimo,
+                MAX(anio) AS maximo
+            FROM (
+                SELECT YEAR(fecha) AS anio
+                FROM ingresos
+
+                UNION ALL
+
+                SELECT YEAR(fecha) AS anio
+                FROM egresos
+            ) fechas
+            WHERE anio IS NOT NULL
+        """)
+
+        rango_anios = cursor.fetchone() or {}
+
+        anio_minimo = int(
+            rango_anios.get("minimo") or hoy.year
+        )
+        anio_maximo = max(
+            int(rango_anios.get("maximo") or hoy.year),
+            hoy.year
+        )
+
+        anios_disponibles = list(
+            range(
+                anio_maximo,
+                anio_minimo - 1,
+                -1
+            )
+        )
+
+        # --------------------------------------------------------
+        # Totales del mes
+        # --------------------------------------------------------
+
+        cursor.execute("""
+            SELECT COALESCE(SUM(monto), 0) AS total
+            FROM ingresos
+            WHERE DATE(fecha) BETWEEN %s AND %s
+        """, (
+            fecha_desde,
+            fecha_hasta
+        ))
+
+        total_ingresos = Decimal(
             str(cursor.fetchone()["total"] or 0)
         )
 
-        # Otros ingresos se muestran como referencia, pero no se
-        # consideran automáticamente utilidad por ventas.
         cursor.execute("""
-            SELECT
-                COALESCE(SUM(i.monto), 0) AS total
-            FROM ingresos i
-            WHERE UPPER(i.categoria) != 'VENTA'
-              AND DATE(i.fecha) BETWEEN %s AND %s
+            SELECT COALESCE(SUM(monto), 0) AS total
+            FROM egresos
+            WHERE DATE(fecha) BETWEEN %s AND %s
         """, (
-            desde,
-            hasta
+            fecha_desde,
+            fecha_hasta
         ))
 
-        otros_ingresos_periodo = Decimal(
+        total_egresos = Decimal(
             str(cursor.fetchone()["total"] or 0)
         )
 
-        # Las compras de inventario reducen caja, pero no se vuelven
-        # a restar de la utilidad. El material se reconoce como costo
-        # cuando se utiliza para producir lo vendido.
-        cursor.execute("""
-            SELECT
-                COALESCE(SUM(e.monto), 0) AS total
-            FROM egresos e
-            WHERE UPPER(e.categoria) != 'COMPRA'
-              AND DATE(e.fecha) BETWEEN %s AND %s
-        """, (
-            desde,
-            hasta
-        ))
-
-        gastos_operativos = Decimal(
-            str(cursor.fetchone()["total"] or 0)
-        )
-
-        # Costo asociado a lo efectivamente cobrado en el período.
-        # Si un pedido se cobró parcialmente, solo se reconoce la
-        # misma proporción del costo total del pedido.
         cursor.execute("""
             SELECT
                 COALESCE(
                     SUM(
                         CASE
-                            WHEN p.total > 0
-                            THEN
-                                LEAST(
-                                    cobros.cobrado_periodo / p.total,
-                                    1
-                                )
-                                * COALESCE(costos.costo_pedido, 0)
+                            WHEN UPPER(categoria) = 'VENTA'
+                            THEN monto
                             ELSE 0
                         END
                     ),
                     0
-                ) AS costo_asociado
+                ) AS ventas_cobradas,
 
-            FROM (
-                SELECT
-                    i.pedido_id,
-                    SUM(i.monto) AS cobrado_periodo
-                FROM ingresos i
-                WHERE UPPER(i.categoria) = 'VENTA'
-                  AND i.pedido_id IS NOT NULL
-                  AND DATE(i.fecha) BETWEEN %s AND %s
-                GROUP BY i.pedido_id
-            ) cobros
-
-            INNER JOIN pedidos p
-                ON p.id = cobros.pedido_id
-
-            LEFT JOIN (
-                SELECT
-                    dp.pedido_id,
-                    SUM(
-                        COALESCE(
-                            dp.costo_real,
-                            pr.costo_real,
-                            NULLIF(pr.costo_estimado, 0),
-                            NULLIF(dp.costo_estimado, 0),
-                            0
-                        )
-                    ) AS costo_pedido
-                FROM detalle_pedido dp
-
-                LEFT JOIN producciones pr
-                    ON pr.detalle_pedido_id = dp.id
-                   AND pr.estado != 'CANCELADO'
-
-                GROUP BY dp.pedido_id
-            ) costos
-                ON costos.pedido_id = p.id
-
-            WHERE p.estado != 'CANCELADO'
-        """, (
-            desde,
-            hasta
-        ))
-
-        costo_ventas = Decimal(
-            str(
-                cursor.fetchone()["costo_asociado"]
-                or 0
-            )
-        ).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-
-        utilidad = (
-            ventas
-            - costo_ventas
-            - gastos_operativos
-        ).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-
-        distribuible = max(
-            utilidad,
-            Decimal("0.00")
-        )
-
-        propietario = (
-            distribuible
-            * porcentaje_propietario
-            / Decimal("100")
-        ).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-
-        reinversion = (
-            distribuible
-            * porcentaje_reinversion
-            / Decimal("100")
-        ).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-
-        # La reserva absorbe cualquier centavo de redondeo para que
-        # propietario + reinversión + reserva sea exactamente la utilidad.
-        reserva = (
-            distribuible
-            - propietario
-            - reinversion
-        ).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-
-        return {
-            "ventas": ventas,
-            "otros_ingresos": otros_ingresos_periodo,
-            "gastos_operativos": gastos_operativos,
-            "costo_ventas": costo_ventas,
-            "utilidad": utilidad,
-            "distribuible": distribuible,
-            "propietario": propietario,
-            "reinversion": reinversion,
-            "reserva": reserva,
-        }
-
-    utilidad_periodo = calcular_utilidad_periodo(
-        utilidad_desde,
-        utilidad_hasta
-    )
-
-    ventas_cobradas_utilidad = utilidad_periodo["ventas"]
-    otros_ingresos_utilidad = utilidad_periodo["otros_ingresos"]
-    costo_ventas_utilidad = utilidad_periodo["costo_ventas"]
-    gastos_operativos_utilidad = utilidad_periodo["gastos_operativos"]
-    utilidad_real = utilidad_periodo["utilidad"]
-    utilidad_distribuible = utilidad_periodo["distribuible"]
-    ganancia_propietario = utilidad_periodo["propietario"]
-    monto_reinversion = utilidad_periodo["reinversion"]
-    monto_reserva = utilidad_periodo["reserva"]
-
-    # ========================================================
-    # SEPARACIÓN ACUMULADA POR SEMANAS
-    # ========================================================
-    #
-    # Esta parte permite tratar tu porcentaje como dinero separado.
-    # Las compras posteriores de inventario sí reducen la caja de ABC,
-    # pero no disminuyen la utilidad positiva que ya generaste en semanas
-    # anteriores.
-
-    cursor.execute("""
-        SELECT
-            i.fecha,
-            i.pedido_id,
-            i.monto,
-            p.total AS total_pedido
-        FROM ingresos i
-        LEFT JOIN pedidos p
-            ON p.id = i.pedido_id
-        WHERE UPPER(i.categoria) = 'VENTA'
-          AND DATE(i.fecha) <= %s
-        ORDER BY i.fecha ASC, i.id ASC
-    """, (hoy,))
-
-    cobros_historicos = cursor.fetchall()
-
-    cursor.execute("""
-        SELECT
-            dp.pedido_id,
-            SUM(
                 COALESCE(
-                    dp.costo_real,
-                    pr.costo_real,
-                    NULLIF(pr.costo_estimado, 0),
-                    NULLIF(dp.costo_estimado, 0),
+                    SUM(
+                        CASE
+                            WHEN UPPER(categoria) != 'VENTA'
+                            THEN monto
+                            ELSE 0
+                        END
+                    ),
                     0
-                )
-            ) AS costo_pedido
-        FROM detalle_pedido dp
-        LEFT JOIN producciones pr
-            ON pr.detalle_pedido_id = dp.id
-           AND pr.estado != 'CANCELADO'
-        GROUP BY dp.pedido_id
-    """)
+                ) AS otros_ingresos
 
-    costos_por_pedido = {
-        fila["pedido_id"]: Decimal(
-            str(fila["costo_pedido"] or 0)
-        )
-        for fila in cursor.fetchall()
-    }
-
-    cursor.execute("""
-        SELECT
-            e.fecha,
-            e.monto
-        FROM egresos e
-        WHERE UPPER(e.categoria) != 'COMPRA'
-          AND DATE(e.fecha) <= %s
-        ORDER BY e.fecha ASC, e.id ASC
-    """, (hoy,))
-
-    egresos_operativos_historicos = cursor.fetchall()
-
-    ventas_por_semana = {}
-    gastos_por_semana = {}
-    cobros_semana_pedido = {}
-    total_pedido_por_id = {}
-
-    def fecha_simple(valor):
-        if hasattr(valor, "date"):
-            return valor.date()
-        return valor
-
-    def inicio_semana(valor_fecha):
-        valor_fecha = fecha_simple(valor_fecha)
-        return (
-            valor_fecha
-            - timedelta(days=valor_fecha.weekday())
-        )
-
-    for cobro in cobros_historicos:
-
-        semana = inicio_semana(cobro["fecha"])
-        monto = Decimal(str(cobro["monto"] or 0))
-
-        ventas_por_semana[semana] = (
-            ventas_por_semana.get(
-                semana,
-                Decimal("0.00")
-            )
-            + monto
-        )
-
-        pedido_id = cobro.get("pedido_id")
-        total_pedido = cobro.get("total_pedido")
-
-        if pedido_id and total_pedido:
-
-            total_pedido_decimal = Decimal(
-                str(total_pedido)
-            )
-
-            if total_pedido_decimal > 0:
-
-                clave = (
-                    semana,
-                    pedido_id
-                )
-
-                cobros_semana_pedido[clave] = (
-                    cobros_semana_pedido.get(
-                        clave,
-                        Decimal("0.00")
-                    )
-                    + monto
-                )
-
-                total_pedido_por_id[pedido_id] = (
-                    total_pedido_decimal
-                )
-
-    for egreso in egresos_operativos_historicos:
-
-        semana = inicio_semana(egreso["fecha"])
-        monto = Decimal(str(egreso["monto"] or 0))
-
-        gastos_por_semana[semana] = (
-            gastos_por_semana.get(
-                semana,
-                Decimal("0.00")
-            )
-            + monto
-        )
-
-    costos_por_semana = {}
-
-    for (
-        semana,
-        pedido_id
-    ), cobrado_semana in cobros_semana_pedido.items():
-
-        total_pedido = total_pedido_por_id.get(
-            pedido_id,
-            Decimal("0.00")
-        )
-
-        costo_pedido = costos_por_pedido.get(
-            pedido_id,
-            Decimal("0.00")
-        )
-
-        if total_pedido <= 0:
-            continue
-
-        proporcion = (
-            cobrado_semana
-            / total_pedido
-        )
-
-        if proporcion > Decimal("1"):
-            proporcion = Decimal("1")
-
-        costo_semana = (
-            costo_pedido
-            * proporcion
-        )
-
-        costos_por_semana[semana] = (
-            costos_por_semana.get(
-                semana,
-                Decimal("0.00")
-            )
-            + costo_semana
-        )
-
-    semanas = set(ventas_por_semana.keys())
-    semanas.update(gastos_por_semana.keys())
-    semanas.update(costos_por_semana.keys())
-
-    ganancia_propietario_acumulada = Decimal("0.00")
-    reinversion_acumulada = Decimal("0.00")
-    reserva_acumulada = Decimal("0.00")
-    utilidad_distribuida_acumulada = Decimal("0.00")
-
-    for semana in sorted(semanas):
-
-        utilidad_semana = (
-            ventas_por_semana.get(
-                semana,
-                Decimal("0.00")
-            )
-            - costos_por_semana.get(
-                semana,
-                Decimal("0.00")
-            )
-            - gastos_por_semana.get(
-                semana,
-                Decimal("0.00")
-            )
-        ).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-
-        if utilidad_semana <= 0:
-            continue
-
-        utilidad_distribuida_acumulada += utilidad_semana
-
-        propietario_semana = (
-            utilidad_semana
-            * porcentaje_propietario
-            / Decimal("100")
-        ).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-
-        reinversion_semana = (
-            utilidad_semana
-            * porcentaje_reinversion
-            / Decimal("100")
-        ).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-
-        reserva_semana = (
-            utilidad_semana
-            - propietario_semana
-            - reinversion_semana
-        ).quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-
-        ganancia_propietario_acumulada += propietario_semana
-        reinversion_acumulada += reinversion_semana
-        reserva_acumulada += reserva_semana
-
-    ganancia_propietario_acumulada = (
-        ganancia_propietario_acumulada.quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-    )
-
-    reinversion_acumulada = (
-        reinversion_acumulada.quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-    )
-
-    reserva_acumulada = (
-        reserva_acumulada.quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-    )
-
-    utilidad_distribuida_acumulada = (
-        utilidad_distribuida_acumulada.quantize(
-            Decimal("0.01"),
-            rounding=ROUND_HALF_UP
-        )
-    )
-
-    # ========================================================
-    # CAJA REAL DEL NEGOCIO
-    # ========================================================
-
-    cursor.execute("""
-        SELECT
-            COALESCE(SUM(monto), 0) AS total
-        FROM ingresos
-    """)
-
-    ingresos_acumulados = Decimal(
-        str(cursor.fetchone()["total"] or 0)
-    )
-
-    cursor.execute("""
-        SELECT
-            COALESCE(SUM(monto), 0) AS total
-        FROM egresos
-    """)
-
-    egresos_acumulados = Decimal(
-        str(cursor.fetchone()["total"] or 0)
-    )
-
-    efectivo_neto_registrado = (
-        ingresos_acumulados
-        - egresos_acumulados
-    ).quantize(
-        Decimal("0.01"),
-        rounding=ROUND_HALF_UP
-    )
-
-    dinero_abc_disponible = (
-        efectivo_neto_registrado
-        - ganancia_propietario_acumulada
-    ).quantize(
-        Decimal("0.01"),
-        rounding=ROUND_HALF_UP
-    )
-
-    # ========================================================
-    # FILTRO DE MOVIMIENTOS: MES / AÑO
-    # ========================================================
-
-    try:
-        mes_filtro = int(
-            request.args.get(
-                "mes",
-                hoy.month
-            )
-        )
-    except (TypeError, ValueError):
-        mes_filtro = hoy.month
-
-    try:
-        anio_filtro = int(
-            request.args.get(
-                "anio",
-                hoy.year
-            )
-        )
-    except (TypeError, ValueError):
-        anio_filtro = hoy.year
-
-    if mes_filtro < 1 or mes_filtro > 12:
-        mes_filtro = hoy.month
-
-    if anio_filtro < 2000 or anio_filtro > 2100:
-        anio_filtro = hoy.year
-
-    tipo = request.args.get(
-        "tipo",
-        ""
-    ).strip().upper()
-
-    if tipo not in (
-        "",
-        "INGRESO",
-        "EGRESO"
-    ):
-        tipo = ""
-
-    fecha_desde = date(
-        anio_filtro,
-        mes_filtro,
-        1
-    )
-
-    if mes_filtro == 12:
-        siguiente_mes = date(
-            anio_filtro + 1,
-            1,
-            1
-        )
-    else:
-        siguiente_mes = date(
-            anio_filtro,
-            mes_filtro + 1,
-            1
-        )
-
-    fecha_hasta = (
-        siguiente_mes
-        - timedelta(days=1)
-    )
-
-    meses = [
-        (1, "Enero"),
-        (2, "Febrero"),
-        (3, "Marzo"),
-        (4, "Abril"),
-        (5, "Mayo"),
-        (6, "Junio"),
-        (7, "Julio"),
-        (8, "Agosto"),
-        (9, "Septiembre"),
-        (10, "Octubre"),
-        (11, "Noviembre"),
-        (12, "Diciembre"),
-    ]
-
-    cursor.execute("""
-        SELECT
-            MIN(fecha_minima) AS fecha_minima,
-            MAX(fecha_maxima) AS fecha_maxima
-        FROM (
-            SELECT
-                MIN(fecha) AS fecha_minima,
-                MAX(fecha) AS fecha_maxima
             FROM ingresos
 
-            UNION ALL
+            WHERE DATE(fecha) BETWEEN %s AND %s
+        """, (
+            fecha_desde,
+            fecha_hasta
+        ))
 
+        resumen_ingresos = cursor.fetchone()
+
+        ventas_cobradas = Decimal(
+            str(resumen_ingresos["ventas_cobradas"] or 0)
+        )
+        otros_ingresos = Decimal(
+            str(resumen_ingresos["otros_ingresos"] or 0)
+        )
+
+        cursor.execute("""
             SELECT
-                MIN(fecha) AS fecha_minima,
-                MAX(fecha) AS fecha_maxima
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN UPPER(categoria) = 'COMPRA'
+                            THEN monto
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS compras_pagadas,
+
+                COALESCE(
+                    SUM(
+                        CASE
+                            WHEN UPPER(categoria) != 'COMPRA'
+                            THEN monto
+                            ELSE 0
+                        END
+                    ),
+                    0
+                ) AS otros_egresos
+
             FROM egresos
-        ) fechas
-    """)
 
-    rango_fechas = cursor.fetchone() or {}
+            WHERE DATE(fecha) BETWEEN %s AND %s
+        """, (
+            fecha_desde,
+            fecha_hasta
+        ))
 
-    fecha_minima = fecha_simple(
-        rango_fechas.get("fecha_minima")
-    )
-    fecha_maxima = fecha_simple(
-        rango_fechas.get("fecha_maxima")
-    )
+        resumen_egresos = cursor.fetchone()
 
-    anio_minimo = (
-        fecha_minima.year
-        if fecha_minima
-        else hoy.year
-    )
-
-    anio_maximo = max(
-        hoy.year,
-        fecha_maxima.year
-        if fecha_maxima
-        else hoy.year
-    )
-
-    anios_disponibles = list(
-        range(
-            anio_maximo,
-            anio_minimo - 1,
-            -1
+        compras_pagadas = Decimal(
+            str(resumen_egresos["compras_pagadas"] or 0)
         )
-    )
-
-    if anio_filtro not in anios_disponibles:
-        anios_disponibles.append(anio_filtro)
-        anios_disponibles.sort(reverse=True)
-
-    condiciones_ingresos = [
-        "DATE(i.fecha) BETWEEN %s AND %s"
-    ]
-    parametros_ingresos = [
-        fecha_desde,
-        fecha_hasta
-    ]
-
-    condiciones_egresos = [
-        "DATE(e.fecha) BETWEEN %s AND %s"
-    ]
-    parametros_egresos = [
-        fecha_desde,
-        fecha_hasta
-    ]
-
-    where_ingresos = (
-        "WHERE "
-        + " AND ".join(condiciones_ingresos)
-    )
-
-    where_egresos = (
-        "WHERE "
-        + " AND ".join(condiciones_egresos)
-    )
-
-    # ========================================================
-    # RESUMEN DEL MES SELECCIONADO
-    # ========================================================
-
-    cursor.execute(
-        f"""
-        SELECT
-            COALESCE(SUM(i.monto), 0) AS total
-        FROM ingresos i
-        {where_ingresos}
-        """,
-        tuple(parametros_ingresos)
-    )
-
-    total_ingresos = cursor.fetchone()["total"]
-
-    cursor.execute(
-        f"""
-        SELECT
-            COALESCE(SUM(e.monto), 0) AS total
-        FROM egresos e
-        {where_egresos}
-        """,
-        tuple(parametros_egresos)
-    )
-
-    total_egresos = cursor.fetchone()["total"]
-
-    cursor.execute(
-        f"""
-        SELECT
-            COALESCE(
-                SUM(
-                    CASE
-                        WHEN UPPER(i.categoria) = 'VENTA'
-                        THEN i.monto
-                        ELSE 0
-                    END
-                ),
-                0
-            ) AS ventas_cobradas,
-
-            COALESCE(
-                SUM(
-                    CASE
-                        WHEN UPPER(i.categoria) != 'VENTA'
-                        THEN i.monto
-                        ELSE 0
-                    END
-                ),
-                0
-            ) AS otros_ingresos
-
-        FROM ingresos i
-        {where_ingresos}
-        """,
-        tuple(parametros_ingresos)
-    )
-
-    resumen_ingresos = cursor.fetchone()
-    ventas_cobradas = resumen_ingresos["ventas_cobradas"]
-    otros_ingresos = resumen_ingresos["otros_ingresos"]
-
-    cursor.execute(
-        f"""
-        SELECT
-            COALESCE(
-                SUM(
-                    CASE
-                        WHEN UPPER(e.categoria) = 'COMPRA'
-                        THEN e.monto
-                        ELSE 0
-                    END
-                ),
-                0
-            ) AS compras_pagadas,
-
-            COALESCE(
-                SUM(
-                    CASE
-                        WHEN UPPER(e.categoria) != 'COMPRA'
-                        THEN e.monto
-                        ELSE 0
-                    END
-                ),
-                0
-            ) AS otros_egresos
-
-        FROM egresos e
-        {where_egresos}
-        """,
-        tuple(parametros_egresos)
-    )
-
-    resumen_egresos = cursor.fetchone()
-    compras_pagadas = resumen_egresos["compras_pagadas"]
-    otros_egresos = resumen_egresos["otros_egresos"]
-
-    # ========================================================
-    # MOVIMIENTOS DEL MES SELECCIONADO
-    # ========================================================
-
-    consultas = []
-    parametros_movimientos = []
-
-    if tipo in (
-        "",
-        "INGRESO"
-    ):
-
-        consultas.append(
-            f"""
-            SELECT
-                i.id,
-                i.fecha,
-                'INGRESO' AS tipo,
-                i.categoria,
-                i.descripcion,
-                i.monto,
-                i.pedido_id,
-                i.pago_id AS pago_id,
-                NULL AS compra_id,
-                p.numero AS pedido_numero,
-                NULL AS compra_numero
-
-            FROM ingresos i
-
-            LEFT JOIN pedidos p
-                ON i.pedido_id = p.id
-
-            {where_ingresos}
-            """
+        otros_egresos = Decimal(
+            str(resumen_egresos["otros_egresos"] or 0)
         )
 
-        parametros_movimientos.extend(
-            parametros_ingresos
+        resultado = (
+            total_ingresos - total_egresos
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
         )
 
-    if tipo in (
-        "",
-        "EGRESO"
-    ):
+        # --------------------------------------------------------
+        # Historial del mes
+        # --------------------------------------------------------
 
-        consultas.append(
-            f"""
-            SELECT
-                e.id,
-                e.fecha,
-                'EGRESO' AS tipo,
-                e.categoria,
-                e.descripcion,
-                e.monto,
-                e.pedido_id,
-                NULL AS pago_id,
-                e.compra_id,
-                p.numero AS pedido_numero,
-                c.numero AS compra_numero
+        consultas = []
+        parametros = []
 
-            FROM egresos e
+        if tipo in ("", "INGRESO"):
 
-            LEFT JOIN pedidos p
-                ON e.pedido_id = p.id
+            consultas.append("""
+                SELECT
+                    i.id,
+                    i.fecha,
+                    'INGRESO' AS tipo,
+                    i.categoria,
+                    i.descripcion,
+                    i.monto,
+                    i.pedido_id,
+                    NULL AS compra_id,
+                    p.numero AS pedido_numero,
+                    NULL AS compra_numero
+                FROM ingresos i
+                LEFT JOIN pedidos p
+                    ON i.pedido_id = p.id
+                WHERE DATE(i.fecha) BETWEEN %s AND %s
+            """)
 
-            LEFT JOIN compras c
-                ON e.compra_id = c.id
+            parametros.extend([
+                fecha_desde,
+                fecha_hasta
+            ])
 
-            {where_egresos}
-            """
-        )
+        if tipo in ("", "EGRESO"):
 
-        parametros_movimientos.extend(
-            parametros_egresos
-        )
+            consultas.append("""
+                SELECT
+                    e.id,
+                    e.fecha,
+                    'EGRESO' AS tipo,
+                    e.categoria,
+                    e.descripcion,
+                    e.monto,
+                    e.pedido_id,
+                    e.compra_id,
+                    p.numero AS pedido_numero,
+                    c.numero AS compra_numero
+                FROM egresos e
+                LEFT JOIN pedidos p
+                    ON e.pedido_id = p.id
+                LEFT JOIN compras c
+                    ON e.compra_id = c.id
+                WHERE DATE(e.fecha) BETWEEN %s AND %s
+            """)
 
-    movimientos = []
-
-    if consultas:
+            parametros.extend([
+                fecha_desde,
+                fecha_hasta
+            ])
 
         sql_movimientos = (
             " UNION ALL ".join(consultas)
@@ -950,74 +580,59 @@ def index():
 
         cursor.execute(
             sql_movimientos,
-            tuple(parametros_movimientos)
+            tuple(parametros)
         )
 
         movimientos = cursor.fetchall()
 
-    resultado = (
-        Decimal(str(total_ingresos))
-        - Decimal(str(total_egresos))
-    ).quantize(
-        Decimal("0.01"),
-        rounding=ROUND_HALF_UP
-    )
+        return render_template(
+            "finanzas/index.html",
 
-    cursor.close()
-    conn.close()
+            periodo_utilidad=periodo_utilidad,
+            utilidad_desde=utilidad_desde,
+            utilidad_hasta=utilidad_hasta,
+            etiqueta_periodo_utilidad=etiqueta_periodo_utilidad,
 
-    return render_template(
-        "finanzas/index.html",
+            pedidos_ganancia=pedidos_ganancia,
+            pedidos_pendientes_ganancia=pedidos_pendientes_ganancia,
 
-        # Filtro mensual.
-        mes_filtro=mes_filtro,
-        anio_filtro=anio_filtro,
-        meses=meses,
-        anios_disponibles=anios_disponibles,
-        fecha_desde=fecha_desde,
-        fecha_hasta=fecha_hasta,
-        tipo_filtro=tipo,
+            ventas_confirmadas=ventas_confirmadas,
+            costos_confirmados=costos_confirmados,
+            utilidad_real=utilidad_real,
 
-        # Resumen del mes.
-        total_ingresos=total_ingresos,
-        total_egresos=total_egresos,
-        resultado=resultado,
-        movimientos=movimientos,
-        ventas_cobradas=ventas_cobradas,
-        otros_ingresos=otros_ingresos,
-        compras_pagadas=compras_pagadas,
-        otros_egresos=otros_egresos,
+            porcentaje_propietario=porcentaje_propietario,
+            porcentaje_reinversion=porcentaje_reinversion,
+            porcentaje_reserva=porcentaje_reserva,
 
-        # Utilidad del período corto.
-        periodo_utilidad=periodo_utilidad,
-        utilidad_desde=utilidad_desde,
-        utilidad_hasta=utilidad_hasta,
-        etiqueta_periodo_utilidad=etiqueta_periodo_utilidad,
-        ventas_cobradas_utilidad=ventas_cobradas_utilidad,
-        otros_ingresos_utilidad=otros_ingresos_utilidad,
-        costo_ventas_utilidad=costo_ventas_utilidad,
-        gastos_operativos_utilidad=gastos_operativos_utilidad,
-        utilidad_real=utilidad_real,
-        utilidad_distribuible=utilidad_distribuible,
-        ganancia_propietario=ganancia_propietario,
-        monto_reinversion=monto_reinversion,
-        monto_reserva=monto_reserva,
+            ganancia_propietario=ganancia_propietario,
+            monto_reinversion=monto_reinversion,
+            monto_reserva=monto_reserva,
 
-        # Porcentajes.
-        porcentaje_propietario=porcentaje_propietario,
-        porcentaje_reinversion=porcentaje_reinversion,
-        porcentaje_reserva=porcentaje_reserva,
+            mes_filtro=mes_filtro,
+            anio_filtro=anio_filtro,
+            anios_disponibles=anios_disponibles,
+            nombres_meses=nombres_meses,
+            etiqueta_mes=etiqueta_mes,
 
-        # Separación acumulada y caja real.
-        utilidad_distribuida_acumulada=utilidad_distribuida_acumulada,
-        ganancia_propietario_acumulada=ganancia_propietario_acumulada,
-        reinversion_acumulada=reinversion_acumulada,
-        reserva_acumulada=reserva_acumulada,
-        ingresos_acumulados=ingresos_acumulados,
-        egresos_acumulados=egresos_acumulados,
-        efectivo_neto_registrado=efectivo_neto_registrado,
-        dinero_abc_disponible=dinero_abc_disponible,
-    )
+            total_ingresos=total_ingresos,
+            total_egresos=total_egresos,
+            resultado=resultado,
+
+            ventas_cobradas=ventas_cobradas,
+            otros_ingresos=otros_ingresos,
+            compras_pagadas=compras_pagadas,
+            otros_egresos=otros_egresos,
+
+            movimientos=movimientos,
+            fecha_desde=fecha_desde,
+            fecha_hasta=fecha_hasta,
+            tipo_filtro=tipo
+        )
+
+    finally:
+
+        cursor.close()
+        conn.close()
 
 
 # ============================================================

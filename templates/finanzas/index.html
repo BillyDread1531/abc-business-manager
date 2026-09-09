@@ -327,6 +327,122 @@ Finanzas - ABC Business Manager
 </div>
 
 
+
+<!-- =====================================================
+     CAJA REAL DE ABC
+===================================================== -->
+
+<div class="card caja-abc-card">
+
+    <div class="caja-abc-header">
+
+        <div>
+
+            <span class="caja-abc-eyebrow">
+                💼 CAJA DEL NEGOCIO
+            </span>
+
+            <h2>
+                ¿Cuánto dinero le pertenece a ABC ahora?
+            </h2>
+
+            <p>
+                Esta cantidad es acumulada y no se reinicia por semana ni por mes.
+                Cambia cada vez que entra o sale dinero registrado.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="caja-abc-principal">
+
+        <span>
+            💵 CAJA REAL DE ABC
+        </span>
+
+        <strong
+            class="
+                {% if caja_abc_actual >= 0 %}
+                    margen-positivo
+                {% else %}
+                    margen-negativo
+                {% endif %}
+            "
+        >
+            Q {{ "%.2f"|format(caja_abc_actual) }}
+        </strong>
+
+        <p>
+            Esto es lo que debería quedar físicamente para el negocio
+            después de todos los ingresos, todos los egresos y de quitar
+            lo que ya se considera tu 50% personal.
+        </p>
+
+    </div>
+
+
+    <div class="caja-abc-grid">
+
+        <div class="caja-abc-box caja-trabajo">
+
+            <small>
+                📈 DISPONIBLE PARA TRABAJAR / REINVERTIR
+            </small>
+
+            <strong>
+                Q {{ "%.2f"|format(disponible_para_trabajar) }}
+            </strong>
+
+            <p>
+                De aquí salen materiales, hojas, empaques, productos dañados,
+                pagos a proveedores y demás gastos normales de ABC.
+            </p>
+
+        </div>
+
+
+        <div class="caja-abc-box caja-reserva">
+
+            <small>
+                🛡️ RESERVA PROTEGIDA
+            </small>
+
+            <strong>
+                Q {{ "%.2f"|format(reserva_disponible) }}
+            </strong>
+
+            <p>
+                Es la parte de la caja que conviene mantener guardada
+                para imprevistos o emergencias del negocio.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <div class="caja-abc-nota">
+
+        <strong>Importante:</strong>
+
+        cuando compras inventario aunque todavía no lo uses,
+        el efectivo sí salió de ABC. Por eso esa compra reduce
+        la caja inmediatamente, aunque el material siga existiendo
+        en el inventario.
+
+        <br><br>
+
+        Lo mismo aplica a una playera que arruinaste, papel,
+        empaques o cualquier gasto hecho para trabajar:
+        regístralo como egreso de ABC y la caja bajará automáticamente.
+
+    </div>
+
+</div>
+
+
 <!-- =====================================================
      MOVIMIENTOS DEL NEGOCIO
 ===================================================== -->
@@ -1247,6 +1363,115 @@ Finanzas - ABC Business Manager
 @media (max-width: 480px) {
     .ganancia-pedidos-grid,
     .pedido-ganancia-numeros {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+
+
+<style>
+.caja-abc-card {
+    margin-top: 18px;
+}
+
+.caja-abc-header {
+    margin-bottom: 14px;
+}
+
+.caja-abc-eyebrow {
+    display: block;
+    font-size: .78rem;
+    font-weight: 800;
+    color: #475569;
+    margin-bottom: 6px;
+}
+
+.caja-abc-header h2 {
+    margin: 0;
+}
+
+.caja-abc-header p {
+    margin-top: 8px;
+    color: #64748b;
+}
+
+.caja-abc-principal {
+    padding: 18px;
+    border-radius: 16px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    margin-bottom: 12px;
+}
+
+.caja-abc-principal span,
+.caja-abc-principal strong {
+    display: block;
+}
+
+.caja-abc-principal span {
+    font-size: .78rem;
+    font-weight: 800;
+    color: #166534;
+}
+
+.caja-abc-principal strong {
+    font-size: clamp(2rem, 6vw, 3rem);
+    margin: 5px 0;
+}
+
+.caja-abc-principal p {
+    margin: 0;
+    line-height: 1.5;
+}
+
+.caja-abc-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.caja-abc-box {
+    padding: 16px;
+    border-radius: 14px;
+    border: 1px solid #e2e8f0;
+    background: white;
+}
+
+.caja-abc-box small,
+.caja-abc-box strong {
+    display: block;
+}
+
+.caja-abc-box small {
+    font-weight: 800;
+    color: #475569;
+}
+
+.caja-abc-box strong {
+    font-size: 1.65rem;
+    margin: 6px 0;
+}
+
+.caja-trabajo {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.caja-reserva {
+    background: #f8fafc;
+}
+
+.caja-abc-nota {
+    margin-top: 12px;
+    padding: 13px 15px;
+    border-radius: 12px;
+    background: #fff7ed;
+    border: 1px solid #fed7aa;
+    line-height: 1.55;
+}
+
+@media (max-width: 700px) {
+    .caja-abc-grid {
         grid-template-columns: 1fr;
     }
 }

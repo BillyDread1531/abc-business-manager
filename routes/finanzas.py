@@ -287,6 +287,217 @@ def index():
         )
 
         # ========================================================
+        # CAJA REAL DE ABC - ACUMULADO HISTÓRICO
+        #
+        # Esta parte NO se reinicia cada semana ni cada mes.
+        #
+        # Efectivo neto registrado:
+        #   todos los ingresos - todos los egresos
+        #
+        # Caja de ABC:
+        #   efectivo neto - tu 50% de ganancias confirmadas
+        #
+        # Para tu 50% solo se cuentan pedidos:
+        #   - totalmente pagados
+        #   - con costo real completo
+        #
+        # La reserva se protege primero. El resto de la caja
+        # queda disponible para trabajar, comprar materiales,
+        # empaques, reponer pérdidas, pagar proveedores, etc.
+        # ========================================================
+
+        cursor.execute("""
+            SELECT
+                COALESCE(SUM(monto), 0) AS total
+            FROM ingresos
+        """)
+
+        ingresos_historicos = Decimal(
+            str(cursor.fetchone()["total"] or 0)
+        )
+
+        cursor.execute("""
+            SELECT
+                COALESCE(SUM(monto), 0) AS total
+            FROM egresos
+        """)
+
+        egresos_historicos = Decimal(
+            str(cursor.fetchone()["total"] or 0)
+        )
+
+        efectivo_neto_registrado = (
+            ingresos_historicos
+            - egresos_historicos
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
+        # --------------------------------------------------------
+        # Ganancias confirmadas históricas de pedidos pagados
+        # --------------------------------------------------------
+
+        cursor.execute("""
+            SELECT
+                p.id,
+                p.total,
+                costos.costo_real_total
+
+            FROM pedidos p
+
+            INNER JOIN (
+                SELECT
+                    pedido_id,
+                    SUM(monto) AS total_pagado
+                FROM pagos
+                GROUP BY pedido_id
+            ) pagos
+                ON pagos.pedido_id = p.id
+
+            INNER JOIN (
+                SELECT
+                    pedido_id,
+                    COUNT(*) AS cantidad_detalles,
+                    SUM(
+                        CASE
+                            WHEN costo_real IS NOT NULL
+                            THEN 1
+                            ELSE 0
+                        END
+                    ) AS detalles_con_costo_real,
+                    SUM(
+                        COALESCE(costo_real, 0)
+                    ) AS costo_real_total
+                FROM detalle_pedido
+                GROUP BY pedido_id
+            ) costos
+                ON costos.pedido_id = p.id
+
+            WHERE p.estado != 'CANCELADO'
+              AND pagos.total_pagado >= p.total
+              AND costos.cantidad_detalles > 0
+              AND costos.detalles_con_costo_real
+                  = costos.cantidad_detalles
+        """)
+
+        pedidos_confirmados_historicos = cursor.fetchall()
+
+        tu_dinero_historico = Decimal("0.00")
+        reinversion_generada_historica = Decimal("0.00")
+        reserva_generada_historica = Decimal("0.00")
+
+        for item_historico in pedidos_confirmados_historicos:
+
+            venta_historica = Decimal(
+                str(item_historico["total"] or 0)
+            )
+
+            costo_historico = Decimal(
+                str(
+                    item_historico["costo_real_total"]
+                    or 0
+                )
+            )
+
+            ganancia_historica = (
+                venta_historica
+                - costo_historico
+            )
+
+            distribuible_historica = max(
+                ganancia_historica,
+                Decimal("0.00")
+            )
+
+            para_ti_historico = (
+                distribuible_historica
+                * porcentaje_propietario
+                / Decimal("100")
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            reinversion_historica = (
+                distribuible_historica
+                * porcentaje_reinversion
+                / Decimal("100")
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            reserva_historica = (
+                distribuible_historica
+                - para_ti_historico
+                - reinversion_historica
+            ).quantize(
+                Decimal("0.01"),
+                rounding=ROUND_HALF_UP
+            )
+
+            tu_dinero_historico += para_ti_historico
+            reinversion_generada_historica += reinversion_historica
+            reserva_generada_historica += reserva_historica
+
+        tu_dinero_historico = tu_dinero_historico.quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
+        reinversion_generada_historica = (
+            reinversion_generada_historica
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
+        reserva_generada_historica = (
+            reserva_generada_historica
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
+        # --------------------------------------------------------
+        # Dinero que realmente sigue perteneciendo a ABC
+        # --------------------------------------------------------
+
+        caja_abc_actual = (
+            efectivo_neto_registrado
+            - tu_dinero_historico
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
+        # La reserva se considera protegida dentro de la caja.
+        # Si por algún motivo la caja real es menor que la reserva
+        # generada, nunca mostramos más reserva disponible que
+        # efectivo real de ABC.
+        caja_abc_positiva = max(
+            caja_abc_actual,
+            Decimal("0.00")
+        )
+
+        reserva_disponible = min(
+            reserva_generada_historica,
+            caja_abc_positiva
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
+        disponible_para_trabajar = (
+            caja_abc_actual
+            - reserva_disponible
+        ).quantize(
+            Decimal("0.01"),
+            rounding=ROUND_HALF_UP
+        )
+
+        # ========================================================
         # MOVIMIENTOS: MES / AÑO
         #
         # Por defecto abre el mes actual.
@@ -607,6 +818,17 @@ def index():
             ganancia_propietario=ganancia_propietario,
             monto_reinversion=monto_reinversion,
             monto_reserva=monto_reserva,
+
+            # Caja real del negocio
+            ingresos_historicos=ingresos_historicos,
+            egresos_historicos=egresos_historicos,
+            efectivo_neto_registrado=efectivo_neto_registrado,
+            tu_dinero_historico=tu_dinero_historico,
+            reinversion_generada_historica=reinversion_generada_historica,
+            reserva_generada_historica=reserva_generada_historica,
+            caja_abc_actual=caja_abc_actual,
+            reserva_disponible=reserva_disponible,
+            disponible_para_trabajar=disponible_para_trabajar,
 
             mes_filtro=mes_filtro,
             anio_filtro=anio_filtro,

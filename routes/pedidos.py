@@ -1,6 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, send_from_directory, flash
 from database import obtener_conexion
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 import os
 import uuid
 

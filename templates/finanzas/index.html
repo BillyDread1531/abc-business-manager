@@ -110,19 +110,6 @@ Finanzas - ABC Business Manager
     </div>
 
 
-    <div class="finanzas-explicacion">
-        <strong>Así lo calcula ABC:</strong><br>
-        Venta del pedido − costo real = ganancia real.<br>
-        Después la ganancia positiva se reparte:
-        {{ "%.0f"|format(porcentaje_propietario) }}% para ti,
-        {{ "%.0f"|format(porcentaje_reinversion) }}% reinversión y
-        {{ "%.0f"|format(porcentaje_reserva) }}% reserva.
-        <br><br>
-        <strong>Los adelantos no cuentan todavía como tu dinero.</strong>
-        Si falta saldo por cobrar, espera al pago completo.
-    </div>
-
-
     <div class="ganancia-pedidos-grid">
 
         <div class="ganancia-resumen-card principal">
@@ -136,7 +123,7 @@ Finanzas - ABC Business Manager
             </strong>
 
             <p>
-                Este monto ya corresponde a pedidos completamente pagados.
+                Este es tu dinero de pedidos ya pagados y con costo real completo.
                 Puedes separarlo para tus gastos personales.
             </p>
 
@@ -239,7 +226,7 @@ Finanzas - ABC Business Manager
             {% else %}
                 pedidos con pagos o costos pendientes.
             {% endif %}
-            No se incluyen todavía en tu dinero.
+            No se suman a tu dinero hasta que estén completamente pagados y con costo real.
         </div>
 
     {% endif %}
@@ -1146,15 +1133,6 @@ Finanzas - ABC Business Manager
 
 
 <style>
-.finanzas-explicacion {
-    margin: 16px 0;
-    padding: 14px 16px;
-    border-radius: 12px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    line-height: 1.55;
-}
-
 .ganancia-pedidos-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
